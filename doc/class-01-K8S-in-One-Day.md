@@ -55,8 +55,11 @@
 
 ## K8S Basic
 
-- K8S 有哪些组件？kube proxy、api server、kube scheduler、kube dns、kubelete、kubeproxy、etcd
-- 怎么理解 YAML？
+- [K8S 有哪些组件](https://kubernetes.io/zh/docs/concepts/architecture/#)？kube proxy、api server、kube scheduler、kube dns、kubelete、kubeproxy、etcd
+
+    ![](https://d33wubrfki0l68.cloudfront.net/e298a92e2454520dddefc3b4df28ad68f9b91c6f/70d52/images/docs/pre-ccm-arch.png)
+
+- 怎么理解 YAML？列表 / 字典 / 数字 / 字符串
 - K8S 有哪些基本概念？deployment、replica set、daemon sets、stateful set、Pod、Node
 - K8S 的认证过程？Authentication、Authorization（ RBRA / ABAC / WebHook ）、Admission Controller
 - K8S 的用户权限管理
@@ -88,6 +91,11 @@
 
 - 监控和计量
 - 日志
-- 怎么部署一个 HA 的 K8S 环境？
+- [怎么部署一个 HA 的 K8S 环境？](https://github.com/99cloud/training-kubernetes/blob/master/doc/deploy-aws-ha-k8s-cluster.md)，参考：[penshift-container-platform-reference-architecture-implementation-guides](https://blog.openshift.com/openshift-container-platform-reference-architecture-implementation-guides/)
+
+    ![](https://i1.wp.com/blog.openshift.com/wp-content/uploads/refarch-ocp-on-azure-v6.png?w=1338&ssl=1)
+
+    ![](https://miro.medium.com/max/2712/1*hX5dwGlqq4-myZNSbYwZ7g.png)
+
 - 怎么理解 HPA / CA / VPA？
-- Kubenetes Federation
+- Kubenetes Federation vs ManageIQ
