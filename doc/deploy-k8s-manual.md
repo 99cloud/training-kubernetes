@@ -124,8 +124,10 @@
 
 1. 在另一台机器上，完成上述“部署k8s集群"之前所有操作
 2. 在 master 执行 kubeadm init 之后会有加入集群的提示，如下图
-3. ![join](imgs/join.png)
-4. 内如如下
+
+    ![join](../image/join.png)
+
+4. 内容如下：
 
     ```console
     [centos@k8s-slave ~]$ kubeadm join 192.168.11.15:6443 --token 8lrj88.951kc5gn2hgrppts \--discovery-token-ca-cert-hash    sha256:eaf73dff349a3e2b7ba91961a89eed4617746fb8d85d7e79761b32106cb640b6
@@ -133,7 +135,7 @@
 
 5. 如果没有保存上一个步骤，则执行如下命令获取（ 在 master 节点上 ）
 
-    ```bash
+    ```console
     #获取token
     [centos@k8s-master ~]$ kubeadm  token list
     #获取 ca 的 hash 值
