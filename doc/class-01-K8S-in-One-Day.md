@@ -12,10 +12,6 @@
     ![](https://camo.githubusercontent.com/c998b5298e47a56406a882fa983079f50be88230/68747470733a2f2f692e696d6775722e636f6d2f57476a754270532e706e67)
 
 - [容器和虚拟机有什么区别？](https://docs.docker.com/get-started/)
-
-    ![](https://docs.docker.com/images/Container%402x.png)
-    ![](https://docs.docker.com/images/VM%402x.png)
-
 - 什么是 Kubernetes ？它和 Docker 有什么关系？
 - K8S 有什么优势？适用于哪些场景？自动化编排：容错纠错，一键部署应用，自动缩放，一键升降级，备份恢复
 - 什么是 [OpenShift](https://www.openshift.com/learn/what-is-openshift-x)？和 K8S 相比，OpenShift 有哪些优势？
