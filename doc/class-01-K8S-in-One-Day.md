@@ -8,12 +8,35 @@
     ![](https://camo.githubusercontent.com/32d7d4def8e4bfef2562f15b073083272ee1d13f/687474703a2f2f6c616f61722e6769746875622e696f2f696d616765732f6e616d6573706163652d73706163652e706e67)
 
 - 什么是 CGroup？
-- 什么是 [Docker](https://docs.docker.com/engine/docker-overview/#namespaces)（ [QuickStart 1](https://docs.docker.com/get-started/)，[QuickStart 2](https://github.com/99cloud/lab-openstack/tree/master/src/docker-quickstart) ）？Docker 和容器有什么关系（ why Linus don't care docker ）？
+- 什么是 [Docker](https://docs.docker.com/engine/docker-overview/#namespaces)（ [QuickStart](https://docs.docker.com/get-started/) ）？Docker 和容器有什么关系（ why Linus don't care docker ）？
 
     ![](https://camo.githubusercontent.com/c998b5298e47a56406a882fa983079f50be88230/68747470733a2f2f692e696d6775722e636f6d2f57476a754270532e706e67)
 
+- [如何创建一个镜像？如何启动和调试容器？](https://github.com/99cloud/lab-openstack/tree/master/src/docker-quickstart)
+
+    ```console
+    $ python app.py
+     * Running on http://0.0.0.0:80/ (Press CTRL+C to quit)
+
+    $ docker run -p 4000:80 maodouzi/get-started:part2
+     * Running on http://0.0.0.0:80/ (Press CTRL+C to quit)
+
+    # 进入容器调试
+    $ docker exec -it 4224b69e7ee3 /bin/bash
+    root@4224b69e7ee3:/app# env
+    HOSTNAME=4224b69e7ee3
+    PWD=/app
+    HOME=/root
+    NAME=World
+    ...
+
+    # 结束容器
+    $ docker stop 4224b69e7ee3
+    ```
+
 - [容器和虚拟机有什么区别？](https://docs.docker.com/get-started/)
-- [什么是 CRI-O](https://zhuanlan.zhihu.com/p/30667806)？
+- [什么是 CRI-O ？](https://zhuanlan.zhihu.com/p/30667806)
+-  [什么是 kata-container ？](https://katacontainers.io/collateral/kata-containers-1pager.pdf)
 - 什么是 Kubernetes ？它和 Docker 有什么关系？参考：[Container runtimes](https://kubernetes.io/docs/setup/production-environment/container-runtimes/)
 - K8S 有什么优势？适用于哪些场景？自动化编排：容错纠错，一键部署应用，自动缩放，一键升降级，备份恢复
 - 什么是 [OpenShift](https://www.openshift.com/learn/what-is-openshift-x)？和 K8S 相比，OpenShift 有哪些优势？
