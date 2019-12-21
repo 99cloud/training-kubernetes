@@ -138,7 +138,7 @@
 
     - 实验：创建一个 Service
 
-        ```
+        ```yaml
         apiVersion: v1
         kind: Service
         metadata:
