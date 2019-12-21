@@ -82,6 +82,77 @@
 
 - 怎么理解 YAML？列表 / 字典 / 数字 / 字符串
 - K8S 有哪些基本概念？pod（ pause container ）、deployment、replica set、daemon sets、stateful set、Node
+    - 实验：创建一个 namespace
+
+        ```console
+        [root@cn-shanghai ~]# kubectl create namespace student-wuwenxiang
+        namespace/wuwenxiang created
+        ```
+
+    - 实验：创建一个 pod
+
+        ```console
+        [root@cn-shanghai ~]# cat student-wuwenxiang-test1.yaml
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          name: test1
+          labels:
+            app: test1
+          namespace: student-wuwenxiang
+        spec:
+          containers:
+            - name: test1
+              image: maodouzi/get-started:part2
+              ports:
+                - containerPort: 80
+
+        [root@cn-shanghai ~]# kubectl create -f student-wuwenxiang-test1.yaml
+        pod/test1 created
+        ```
+
+    - 实验：创建一个 Deployment
+
+        ```yaml
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: test2
+          namespace: student-wuwenxiang
+        spec:
+          selector:
+            matchLabels:
+              app: test2
+          replicas: 3
+          template:
+            metadata:
+              labels:
+                app: test2
+            spec:
+              containers:
+                - name: test2
+                  image: maodouzi/get-started:part2
+                  ports:
+                    - containerPort: 80
+        ```
+
+    - 实验：创建一个 Service
+
+        ```
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: test2
+          namespace: student-wuwenxiang
+        spec:
+          selector:
+            app: test2
+          ports:
+            - protocol: TCP
+              port: 80
+              targetPort: 80
+        ```
+
 - K8S 的认证过程？Authentication、Authorization（ RBRA / ABAC / WebHook ）、Admission Controller
 - K8S 的用户权限管理
     - 实验：创建 Normal 用户使用 kubectl 工具
