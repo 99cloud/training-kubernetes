@@ -81,7 +81,7 @@
     ![](https://d33wubrfki0l68.cloudfront.net/e298a92e2454520dddefc3b4df28ad68f9b91c6f/70d52/images/docs/pre-ccm-arch.png)
 
 - 怎么理解 YAML？列表 / 字典 / 数字 / 字符串
-- K8S 有哪些基本概念？deployment、replica set、daemon sets、stateful set、Pod、Node
+- K8S 有哪些基本概念？pod（ pause container ）、deployment、replica set、daemon sets、stateful set、Node
 - K8S 的认证过程？Authentication、Authorization（ RBRA / ABAC / WebHook ）、Admission Controller
 - K8S 的用户权限管理
     - 实验：创建 Normal 用户使用 kubectl 工具
