@@ -151,9 +151,9 @@
 
 3. 内容如下：
 
-    ```bash
-    kubeadm join 192.168.11.15:6443 --token 8lrj88.951kc5gn2hgrppts \
-    --discovery-token-ca-cert-hash sha256:eaf73dff349a3e2b7ba91961a89eed4617746fb8d85d7e79761b32106cb640b6
+    ```console
+    [centos@k8s-slave ~]$ kubeadm join 192.168.11.15:6443 --token 8lrj88.951kc5gn2hgrppts --discovery-token-ca-cert-hash
+    sha256:eaf73dff349a3e2b7ba91961a89eed4617746fb8d85d7e79761b32106cb640b6
     ```
 
 4. 如果没有保存上一个步骤，则执行如下命令获取（ 在 master 节点上 ）
