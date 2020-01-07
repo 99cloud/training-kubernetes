@@ -56,3 +56,101 @@
 | 第 3 天 | 上午 | [Lesson 09：CKA 考试讲解](#) | [考试注意事项](#) |
 | | | | [模拟题讲解](#) |
 | | 下午 | | [实验：做模拟题](#) |
+
+## Lesson 01：LXC & Docker
+
+### What is LXC
+
+### What is Docker
+
+### Docker Network
+
+### Docker Storage
+
+### Docker Quick Start
+
+## Lesson 02：Kubernetes Concepts
+
+### Kubernetes Introduction
+
+### YAML
+
+### Namespace & Quota
+
+### Pod / Deployment / ReplicaSet
+
+### Lab: K8S Dashboard
+
+### Lab: K8S Objects Operation
+
+### DeamonSet & SetfulSet
+
+## Lesson 03：K8S Arch & Deployment
+
+### Kubernetes Arch
+
+### ETCD
+
+### Static Pod
+
+### Lab: K8S Deployment
+
+### HA 部署方案
+
+## Lesson 04：K8S Auth & Security
+
+### Authentication / Authorization / Admission
+
+### Network Security
+
+### Service Account & Role
+
+### Lab: User & Role
+
+## Lesson 05: K8S Schedule
+
+### Labels
+
+### Taints & Toleration
+
+### Node Affinity
+
+### Inter-Pod Affinity / Anti
+
+### Lab: Pod Schedule
+
+## Lesson 06: K8S Storage
+
+### ConfigMap & Secret
+
+### PV / PVC
+
+### Storage Class
+
+### Lab: ConfigMap / Secret / PV & PVC / StorageClass
+
+## Lesson 07: Service
+
+### Lab: Service
+
+### Ingress
+
+### Lab: Ingress Controller
+
+## Lesson 08：Advance
+
+### Monitor / Log / Debug
+
+### HPA / CA / VA
+
+### Federation
+
+### CRD & Operator
+
+##	Lesson 09：CKA
+
+### Tips
+
+### Quiz
+
+### Lab: Quiz
