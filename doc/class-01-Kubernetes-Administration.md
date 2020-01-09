@@ -114,7 +114,7 @@
 
 - 什么是 Kubernetes ？它和 Docker 有什么关系？参考：[Container runtimes](https://kubernetes.io/docs/setup/production-environment/container-runtimes/)
 - K8S 有什么优势？适用于哪些场景？自动化编排：容错纠错，一键部署应用，自动缩放，一键升降级，备份恢复
-- 什么是 [OpenShift](https://www.openshift.com/learn/what-is-openshift-x)？和 K8S 相比，OpenShift 有哪些优势？
+- 什么是 [OpenShift](https://www.openshift.com/learn/what-is-openshift-x)？和 K8S 相比，OpenShift（ 红帽最有价值的产品 ）有哪些优势？
 
     ![](../images/openshift-k8s.svg)
 
@@ -147,6 +147,7 @@
 
     - [Web UI](https://console.openshift1-aio-apps.demotheworld.com/k8s/cluster/projects)
 - 如何查文档？[K8S](https://kubernetes.io/)，[OpenShift Origin](https://www.okd.io/)
+- 其它资料：slack、cncf、quay.io
 
 ### YAML
 
