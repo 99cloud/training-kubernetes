@@ -2,8 +2,10 @@
 
 ## 准备环境
 
-1. 系统准备 centos7.6 以上
-2. 关闭 firewalld 和 selinux
+1. 系统准备 centos 7.6/7.7
+1. 整个部署过程是先部署一个 All-In-One 节点，然后添加一个 Worker 节点
+1.   2 台机器都是 2C/4G
+1. 关闭 firewalld 和 selinux
 
 ## 安装 docker
 
@@ -15,8 +17,12 @@
 
 2. 安装 docker
 
-    ```bash
-    sudo yum install docker-ce -y
+    ```console
+    [root@k8s-cluster2-master ~]# sudo yum install docker-ce -y
+
+    # 目前 docker 版本是 19.03.05
+    [root@k8s-cluster2-master ~]# docker --version
+    Docker version 19.03.5, build 633a0ea
     ```
 
 3. 配置 Docker 使用 systemd 作为默认 Cgroup 驱动
@@ -61,7 +67,8 @@
 2. 安装 kubeadm 等
 
     ```bash
-    sudo yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes # https://github.com/kubernetes/kubeadm/issues/954
+    sudo yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
+    # https://github.com/kubernetes/kubeadm/issues/954
     ```
 
 3. 设置 kubelet 开机自启动
@@ -170,4 +177,12 @@
     ```bash
     # 使用上面查询到的结果，分别替代 `$token` 和 `$ca_hash` 值
     [centos@k8s-worker ~]# kubeadm join $master_ip:6443 --token $token --discovery-token-ca-cert-hash sha256:$ca_hash
+    ```
+
+6. 查看版本
+
+    ```console
+    [root@k8s-cluster2-master ~]# kubectl version
+    Client Version: version.Info{Major:"1", Minor:"17", GitVersion:"v1.17.0", GitCommit:"70132b0f130acc0bed193d9ba59dd186f0e634cf", GitTreeState:"clean", BuildDate:"2019-12-07T21:20:10Z", GoVersion:"go1.13.4", Compiler:"gc", Platform:"linux/amd64"}
+    Server Version: version.Info{Major:"1", Minor:"17", GitVersion:"v1.17.0", GitCommit:"70132b0f130acc0bed193d9ba59dd186f0e634cf", GitTreeState:"clean", BuildDate:"2019-12-07T21:12:17Z", GoVersion:"go1.13.4", Compiler:"gc", Platform:"linux/amd64"}
     ```

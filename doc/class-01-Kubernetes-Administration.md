@@ -268,24 +268,10 @@
 ### Authentication / Authorization / Admission
 
 - K8S 的认证过程？Authentication、Authorization（ RBRA / ABAC / WebHook ）、Admission Controller
-- Kubenetes 的调度
-    - 实验：Node Label 和 Node Selector
-    - 实验：Pod Label 和 Replica Controller
-    - 实验：Taints 污染标签 & Toleration 容忍标签
-    - 实验：Node Affinity 节点亲和
-    - 实验：Inter-Pod Affinity / Anti，Pod 的亲和与反亲和
-- Kubernetes 的网络选型？flannel、calico、ovs、ovn
-- Kubernetes 的存储
-    - 基本概念：PV / PVC / Storage Class
-    - 实验：Config Map
-    - 实验：Secret
-    - 实验：Storage Class
-- Kubernetes 服务发布
-    - 基本概念：Service
-    - 实验：Service
-    - 实验：Ingress / Route
 
 ### Network Security
+
+- Kubernetes 的网络选型？flannel、calico、ovs、ovn
 
 ### Service Account & Role
 
@@ -299,11 +285,20 @@
 
 ### Labels
 
+- 实验：Node Label 和 Node Selector
+- 实验：Pod Label 和 Replica Controller
+
 ### Taints & Toleration
+
+- 实验：Taints 污染标签 & Toleration 容忍标签
 
 ### Node Affinity
 
+- 实验：Node Affinity 节点亲和
+
 ### Inter-Pod Affinity / Anti
+
+- 实验：Inter-Pod Affinity / Anti，Pod 的亲和与反亲和
 
 ### Lab: Pod Schedule
 
@@ -311,9 +306,17 @@
 
 ### ConfigMap & Secret
 
+- 实验：Config Map
+- 实验：Secret
+
 ### PV / PVC
 
+- 基本概念：PV / PVC
+
 ### Storage Class
+
+- 基本概念：Storage Class
+- 实验：Storage Class
 
 ### Lab: ConfigMap / Secret / PV & PVC / StorageClass
 
@@ -321,7 +324,12 @@
 
 ### Lab: Service
 
+- 基本概念：Service
+- 实验：Service
+
 ### Ingress
+
+- 实验：Ingress / Route
 
 ### Lab: Ingress Controller
 
