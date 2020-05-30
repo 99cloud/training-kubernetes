@@ -1,6 +1,6 @@
 # Kubernetes-Administration
 
-## Prefix
+## 1. Prefix
 
 - 授课时长：
     - 上午：9:30 至 11:30
@@ -11,49 +11,64 @@
     - 基础的 linux 知识 -- 权限、文件系统、服务
     - systemd 的基础操作 -- 重启、关闭、启动、重载、查看 systemd 的服务
 
-## Catalog
+## 2. Catalog
 
 | Date | Time | Title | Content |
 | ---- | ---- | ----- | ------- |
-| 第 1 天 | 上午 | [Lesson 01：Linux 容器和 Docker](#lesson-01lxc--docker) | [什么是 Linux 容器]() |
-| | | | [什么是 Docker]() |
-| | | | [Docker 的网络模型]() |
+| 第 1 天 | 上午 | [Lesson 01：Linux 容器和 Docker](#lesson-01lxc--docker) | [什么是 Linux 容器？]()Mac 和 Win 上 有容器技术么？ |
+| | | | [容器和虚拟机有何区别？]()原理 & 应用场景 |
+| | | | [虚拟化是为了解决什么问题？]()资源隔离（计算/存储/网络） & 资源限制 |
+| | | | [Docker 和容器技术有什么关系？]()Docker 有哪些竞争产品？ |
+| | | | [Docker 的架构和概念空间是怎样的？]() |
+| | | | [什么是所谓的安全容器技术？]()Kata-Container |
+| | | | [实验：Docker Quick Start]() |
+| | 下午 | | [Docker 的网络模型]() |
 | | | | [Docker 的存储模型]() |
-| | | | [实验：Docker Quick Start]()  |
-| | 下午 | [Lesson 02：Kubernetes 的基本概念](#lesson-02kubernetes-concepts) | [Kubernetes（ K8S ）的起源和适用场景]() |
-| | | | [YAML]() |
-| | | | [Namespace & Quota]() |
-| | | | [Pod / Deployment / ReplicaSet]() |
-| | | | [实验：K8S Dashboard]() |
-| | | | [实验：K8S 对象管理操作]() |
-| | | | [DeamonSet & SetfulSet]() |
-| | | [Lesson 03：K8S 的模块架构和部署](#lesson-03k8s-arch--deployment) | [Kubernetes 的模块架构]() |
-| | | | [ETCD]() |
-| | | | [静态 Pod]() |
+| | | [Lesson 02：Kubernetes 的基本概念](#lesson-02kubernetes-concepts) | [什么是 K8S？]() 为什么叫 K8S？和 Borg 有何关系？|
+| | | | [K8S 是为了解决什么问题？]()运维自动化：快速缩放 & 自愈 |
+| | | | [K8S 不解决什么问题？]()用户管理 & 限流熔断 & 监控审计 & Dashboard |
+| | | | [K8S 的模块架构是怎样的？]() |
+| | | | [K8S 有哪些竞争产品？]()OpenShift / VMware / KubeSphere / Rancher |
+| | | | [市场上的容器云产品基于 K8S 做了哪些改良？]() 界面 / 监控 / 日志 / 云支持 / 用户管理 / 中间件 |
+| | | | [怎么部署出一个 K8S 群集？]() kubeadm |
 | | | | [实验：K8S 的部署]() |
-| 第 2 天 | 上午 | | [HA 部署方案]() |
-| | | [Lesson 04：K8S 的认证和安全](#lesson-04k8s-auth--security) | [认证、鉴权和准入]() |
-| | | | [网络安全]() |
-| | | | [用户和角色]() |
+| | | | [什么是 Pod？]()为什么调度的基本单位是 pod 不是容器？ |
+| | | | [实验：启动一个 pod ]() |
+| 第 2 天 | 上午 | | [什么是 YAML？]() |
+| | | | [什么是 Namespace & Quota？]() |
+| | | | [什么是 Deployment & ReplicaSet？]() |
+| | | | [什么是 Services？]() |
+| | | | [实验：K8S Dashboard]() |
+| | | | [实验：K8S 对象管理操作]()：Namespace / Deployment / Service / Label |
+| | | | [实验：K8S 怎么发布服务和扩缩容？]() |
+| | | | [DeamonSet & SetfulSet]() |
+| | 下午 | [Lesson 03：K8S 的模块解析](#lesson-03k8s-arch--ha) | [Kubernetes 的模块解析]() |
+| | | | [实验：ETCD 操作]() |
+| | | | [什么是静态 Pod？]() |
+| | | | [怎么部署一个 HA 的 K8S 群集？]() |
+| | | [Lesson 04：K8S 的认证和安全](#lesson-04k8s-auth--security) | [什么是 K8S 的 3A？]()认证、 / 鉴权 / 准入 |
+| | | | [怎么配置 kubectl？]() |
+| | | | [K8S 怎么保证网络安全？]() |
+| | | | [什么是用户和角色？]() |
 | | | | [实验：添加用户 & 绑定角色]() |
-| | | [Lesson 05：K8S 的调度](#lesson-05-k8s-schedule) | [Labels：标签](#) |
-| | | | [Taints：污染标签 & Toleration：容忍标签](#) |
-| | | | [Node Affinity：节点亲和 ](#) |
-| | | | [Inter-Pod Affinity / Anti：Pod 的亲和 / 反亲和](#) |
-| | | | [实验：Pod 调度](#) |
-| | 下午 | [Lesson 06：K8S 的数据持久化](#lesson-06-k8s-storage) | [ConfigMap & Secret](#) |
-| | | | [PV / PVC](#) |
-| | | | [Storage Class](#) |
-| | | | [实验：ConfigMap / Secret / PV & PVC / StorageClass](#) |
-| | | [Lesson 07：服务发布](#lesson-07-service) | [Service](#) |
-| | | | [实验：发布服务](#) |
-| | | | [Ingress](#) |
-| | | | [实验：对集群外发布服务](#) |
+| 第 3 天 | 上午 | [Lesson 05：K8S 的调度](#lesson-05-k8s-schedule) | [什么是 Labels？]() |
+| | | | [什么是 Taints & Toleration？]()污染标签 & 容忍标签 |
+| | | | [什么是 Node Affinity？]()节点亲和 / 反亲和 |
+| | | | [什么是 Pod Affinity？]()Pod 的亲和 / 反亲和 |
+| | | | [实验：Pod 调度]() |
+| | 下午 | [Lesson 06：K8S 的数据持久化](#lesson-06-k8s-storage) | [什么是 ConfigMap & Secret ？]() |
+| | | | [什么是 PV / PVC？]() |
+| | | | [什么是 Storage Class？]() |
+| | | | [实验：ConfigMap / Secret / PV & PVC / StorageClass]() |
+| | | [Lesson 07：服务发布](#lesson-07-service) | [Service 在底层是怎么实现的？]() |
+| | | | [实验：发布服务]() |
+| | | | [什么是 Ingress？]() |
+| | | | [实验：对集群外发布服务]() |
 | | | [Lesson 08：其它](#lesson-08advance) | [监控、日志、排错](#) |
-| | | | [HPA / CA / VA](#) |
-| | | | [Federation](#) |
-| | | | [CRD & Operator](#) |
-| 第 3 天 | 上午 | [Lesson 09：CKA 考试讲解](#lesson-09cka) | [考试注意事项](#) |
+| | | | [什么是 HPA / CA / VA？]() |
+| | | | [什么是 Federation？]() |
+| | | | [K8S 怎么处理有状态服务?]() CRD & Operator |
+| 第 4 天 | 上午 | [Lesson 09：CKA 考试讲解](#lesson-09cka) | [考试注意事项](#) |
 | | | | [模拟题讲解](#) |
 | | 下午 | | [实验：做模拟题](#) |
 
@@ -149,6 +164,10 @@
 - 如何查文档？[K8S](https://kubernetes.io/)，[OpenShift Origin](https://www.okd.io/)
 - 其它资料：slack、cncf、quay.io
 
+### Lab: K8S Deployment
+
+- [怎么部署一个 All-In-One 和 Multi-Node 的 K8S 环境？](https://github.com/99cloud/training-kubernetes/blob/master/doc/deploy-k8s-manual.md)
+
 ### YAML
 
 - 怎么理解 YAML？列表 / 字典 / 数字 / 字符串
@@ -240,7 +259,7 @@
 
 ### DeamonSet & SetfulSet
 
-## Lesson 03：K8S Arch & Deployment
+## Lesson 03：K8S Arch & HA
 
 ### Kubernetes Arch
 
@@ -251,10 +270,6 @@
 ### ETCD
 
 ### Static Pod
-
-### Lab: K8S Deployment
-
-- [怎么部署一个 All-In-One 和 Multi-Node 的 K8S 环境？](https://github.com/99cloud/training-kubernetes/blob/master/doc/deploy-k8s-manual.md)
 
 ### HA 部署方案
 
