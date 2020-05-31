@@ -15,20 +15,19 @@
 
 | Date | Time | Title | Content |
 | ---- | ---- | ----- | ------- |
-| 第 1 天 | 上午 | [1. Linux 容器和 Docker](#lesson-01lxc--docker) | [什么是 Linux 容器？]()Mac 和 Win 上 有容器技术么？ |
-| | | | [容器和虚拟机有何区别？]()原理 & 应用场景 |
-| | | | [虚拟化是为了解决什么问题？]()资源隔离/资源限制 |
-| | | | [Docker 和容器技术有什么关系？]()Docker 有哪些竞争产品？ |
-| | | | [Docker 的架构和概念空间是怎样的？]() |
-| | | | [什么是所谓的安全容器技术？]()Kata-Container |
-| | | | [实验：Docker Quick Start]() |
-| | 下午 | | [Docker 的网络模型]() |
-| | | | [Docker 的存储模型]() |
-| | | [2. Kubernetes 的基本概念](#lesson-02kubernetes-concepts) | [什么是 K8S？]() 为什么叫 K8S？和 Borg 有何关系？|
-| | | | [K8S 是为了解决什么问题？]()快速缩放 / 自愈 |
-| | | | [K8S 不解决什么问题？]()用户管理/限流熔断/监控审计 |
-| | | | [K8S 的模块架构是怎样的？]() |
-| | | | [K8S 有哪些竞争产品？]()OpenShift/VMware/KubeSphere|
+| 第 1 天 | 上午 | [1. Linux 容器和 Docker](#lesson-01lxc--docker) | [1.1 什么是 Linux 容器？]() |
+| | | | [1.2 容器和虚拟机有何区别？]() |
+| | | | [1.3 Docker 和容器技术有什么关系？]() |
+| | | | [1.4 Docker 的架构和概念空间是怎样的？]() |
+| | | | [1.5 什么是所谓的安全容器技术？]() |
+| | | | [1.6 实验：Docker Quick Start]() |
+| | 下午 | | [1.7 Docker 的网络模型]() |
+| | | | [1.8 Docker 的存储模型]() |
+| | | [2. Kubernetes 的基本概念](#lesson-02kubernetes-concepts) | [2.1 什么是 K8S？]() |
+| | | | [2.2 K8S 是为了解决什么问题？]()快速缩放 / 自愈 |
+| | | | [2.3 K8S 不解决什么问题？]()用户管理/限流熔断/监控审计 |
+| | | | [2.4 K8S 的模块架构是怎样的？]() |
+| | | | [2.5 K8S 有哪些竞争产品？]()OpenShift/VMware/KubeSphere|
 | | | | [产品会基于 K8S 做哪些改良？]() 界面/中间件/云支持 |
 | | | | [怎么部署出一个 K8S 群集？]() kubeadm |
 | | | | [实验：K8S 的部署]() |
@@ -74,28 +73,65 @@
 
 ## Lesson 01：LXC & Docker
 
-### What is LXC
+### 1.1 什么是 Linux 容器？
 
+- 虚拟化技术的演进
+
+    ![](../images/container-evolution.png)
+
+- 虚拟化是为了解决什么问题？资源隔离 & 资源限制
 - 什么是 Linux 容器？namespace & cgroup
 - 什么是 lxc namespace？
 
     ![](../images/kernel-user-mode.png)
 
 - 什么是 CGroup？
+- Mac 和 Win 上 有容器技术么？
 
-### What is Docker
+### 1.2 容器和虚拟机有何区别？
+
+- 原理
+- 应用场景
+
+### 1.3 Docker 和容器技术有什么关系？
 
 - 什么是 [Docker](https://docs.docker.com/engine/docker-overview/#namespaces)（ [QuickStart](https://docs.docker.com/get-started/) ）？
 
     ![](../images/docker-undertech.png)
 
 - Docker 和容器有什么关系（ why Linus don't care docker ）？
+- Docker 有哪些竞争产品？[CRI-O ？](https://zhuanlan.zhihu.com/p/30667806)
 
-### Docker Network
+### 1.4 Docker 的架构和概念空间是怎样的？
 
-### Docker Storage
+- 概念空间
 
-### Docker Quick Start
+    ![](../images/docker-arch.png)
+
+- 模块架构
+
+### 1.5 什么是所谓的安全容器技术？
+
+- 容器的天然不安全与天然安全
+- [Kata Container](https://katacontainers.io/learn/)，[PDF](https://katacontainers.io/collateral/kata-containers-1pager.pdf)
+
+    ![](../images/katacontainers_traditionalvskata_diagram.jpg)
+
+- 竞争者：gVisor / firecracker / rustVM
+
+### 1.6 实验：Docker Quick Start
+
+- 在 Ubuntu 18.04 上配置 Docker
+
+    ```bash
+    # 更新依赖仓库
+    apt-get update -y
+
+    # 安装 Docker
+    apt-get install docker.io -y
+    systemctl enable docker
+    systemctl start docker
+    ```
 
 - [如何创建一个镜像？如何启动和调试容器？](https://github.com/99cloud/lab-openstack/tree/master/src/docker-quickstart)
 
@@ -119,15 +155,29 @@
     $ docker stop 4224b69e7ee3
     ```
 
-- [容器和虚拟机有什么区别？](https://docs.docker.com/get-started/)
-- [什么是 CRI-O ？](https://zhuanlan.zhihu.com/p/30667806)
-- [什么是 kata-container ？](https://katacontainers.io/collateral/kata-containers-1pager.pdf)
+- [Docker 官方入门参考资料](https://docs.docker.com/get-started/)
+
+### 1.7 Docker 的网络模型
+
+- Bridge 模式
+- Host 模式
+- CNM
+
+### 1.8 Docker 的存储模型
+
+- Mount 模式
+- Volumn 模式
 
 ## Lesson 02：Kubernetes Concepts
 
-### Kubernetes Introduction
+### 2.1 什么是 K8S？
 
-- 什么是 Kubernetes ？它和 Docker 有什么关系？参考：[Container runtimes](https://kubernetes.io/docs/setup/production-environment/container-runtimes/)
+- 什么是 Kubernetes？容器编排工具
+- K8S 和 Docker 有什么关系？参考：[Container runtimes](https://kubernetes.io/docs/setup/production-environment/container-runtimes/)
+- 为什么叫 K8S？和 Borg 有何关系？
+
+### 2.2 
+
 - K8S 有什么优势？适用于哪些场景？自动化编排：容错纠错，一键部署应用，自动缩放，一键升降级，备份恢复
 - 什么是 [OpenShift](https://www.openshift.com/learn/what-is-openshift-x)？和 K8S 相比，OpenShift（ 红帽最有价值的产品 ）有哪些优势？
 
