@@ -24,15 +24,15 @@
 | | 下午 | | [1.7 Docker 的网络模型](#17-docker-的网络模型) |
 | | | | [1.8 Docker 的存储模型](#18-docker-的存储模型) |
 | | | [2. Kubernetes 的基本概念](#lesson-02kubernetes-concepts) | [2.1 什么是 K8S？](#21-什么是-k8s) |
-| | | | [2.2 K8S 是为了解决什么问题？]()快速缩放 / 自愈 |
+| | | | [2.2 K8S 是为了解决什么问题？]() |
 | | | | [2.3 K8S 不解决什么问题？]()用户管理/限流熔断/监控审计 |
 | | | | [2.4 K8S 的模块架构是怎样的？]() |
 | | | | [2.5 K8S 有哪些竞争产品？]()OpenShift/VMware/KubeSphere|
-| | | | [产品会基于 K8S 做哪些改良？]() 界面/中间件/云支持 |
-| | | | [怎么部署出一个 K8S 群集？]() kubeadm |
-| | | | [实验：K8S 的部署]() |
-| | | | [什么是 Pod？]()为什么调度的基本单位是 pod 不是容器？ |
-| | | | [实验：启动一个 pod ]() |
+| | | | [2.6 产品会基于 K8S 做哪些改良？]() 界面/中间件/云支持 |
+| | | | [2.7 怎么部署出一个 K8S 群集？]() kubeadm |
+| | | | [2.8 实验：K8S 的部署]() |
+| | | | [2.9 什么是 Pod？]()为什么调度的基本单位是 pod 不是容器？ |
+| | | | [2.10 实验：启动一个 pod ]() |
 | 第 2 天 | 上午 | | [什么是 YAML？]() |
 | | | | [什么是 Namespace & Quota？]() |
 | | | | [什么是 Deployment & ReplicaSet？]() |
@@ -151,8 +151,17 @@
     NAME=World
     ...
 
+    # 查看容器日志
+    $ docker logs -f 4224b69e7ee3
+
     # 结束容器
     $ docker stop 4224b69e7ee3
+
+    # 删除容器
+    $ docker rm 4224b69e7ee3
+
+    #  删除镜像
+    $ docker rmi maodouzi/get-started:part2
     ```
 
 - [Docker 官方入门参考资料](https://docs.docker.com/get-started/)
@@ -176,9 +185,9 @@
 - K8S 和 Docker 有什么关系？参考：[Container runtimes](https://kubernetes.io/docs/setup/production-environment/container-runtimes/)
 - 为什么叫 K8S？和 Borg 有何关系？
 
-### 2.2 
+### 2.2 K8S 是为了解决什么问题？
 
-- K8S 有什么优势？适用于哪些场景？自动化编排：容错纠错，一键部署应用，自动缩放，一键升降级，备份恢复
+- K8S 有什么优势？适用于哪些场景？自动化编排：自愈，快速缩放，一键部署和升降级，备份恢复
 - 什么是 [OpenShift](https://www.openshift.com/learn/what-is-openshift-x)？和 K8S 相比，OpenShift（ 红帽最有价值的产品 ）有哪些优势？
 
     ![](../images/openshift-k8s.svg)
@@ -213,6 +222,120 @@
     - [Web UI](https://console.openshift1-aio-apps.demotheworld.com/k8s/cluster/projects)
 - 如何查文档？[K8S](https://kubernetes.io/)，[OpenShift Origin](https://www.okd.io/)
 - 其它资料：slack、cncf、quay.io
+
+### 2.3 K8S 不解决什么问题？
+
+- 用户管理
+- 限流熔断：istio
+- 监控审计：prometheus / grafana / alertmanager / elasticsearch / fluent / kibana
+
+### 2.4 K8S 的模块架构是怎样的？
+
+### 2.5 K8S 有哪些竞争产品？
+
+- OpenShift
+- VMware
+- KubeSphere
+- Ranchel
+
+### 2.6 产品会基于 K8S 做哪些改良？
+
+- 界面
+- 中间件
+- 底层云平台支持
+
+### 2.7 怎么部署出一个 K8S 群集？
+
+- kubeadm
+- Ansible
+
+### 2.8 实验：K8S 的部署
+
+1. [安装 kubeadm](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/)
+
+    ```bash
+    # iptables 看到 bridged 流量
+    cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
+    net.bridge.bridge-nf-call-ip6tables = 1
+    net.bridge.bridge-nf-call-iptables = 1
+    EOF
+    sudo sysctl --system
+
+    # Install kubeadm
+    sudo apt-get update && sudo apt-get install -y apt-transport-https curl
+    curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+    cat <<EOF | sudo tee /etc/apt/sources.list.d/kubernetes.list
+    deb https://apt.kubernetes.io/ kubernetes-xenial main
+    EOF
+    apt-get install -y kubelet kubeadm kubectl
+
+    # 重启 kubelet
+    systemctl daemon-reload
+    systemctl restart kubelet
+    ```
+1. [用 kubeadm 创建一个 k8s 群集](https://kubernetes.io/zh/docs/setup/independent/create-cluster-kubeadm/)
+
+    ```bash
+    # 拉起 k8s 群集
+    kubeadm init --pod-network-cidr 192.168.1.90/16
+
+    # 配置 kubectl 客户端
+    mkdir -p $HOME/.kube
+    sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+    sudo chown $(id -u):$(id -g) $HOME/.kube/config
+    ```
+
+1. 此时可以观察到 node 并未 ready，导致 coredns 无法调度。接下来需要：[安装网络插件](https://kubernetes.io/zh/docs/setup/independent/create-cluster-kubeadm/#Pod-network)，[插件列表](https://kubernetes.io/docs/concepts/cluster-administration/addons/)，我们选择：[Flannel](https://github.com/coreos/flannel/blob/master/Documentation/kube-flannel.yml)
+
+    ```bash
+    # 添加网络插件
+    kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+
+    # 查看 pods 和 nodes 状态
+    kubectl get pods --all-namespaces
+    kubectl get nodes
+    ```
+
+### 2.9 什么是 Pod？
+
+- Pod 和容器的关系是什么？
+- 为什么调度的基本单位是 pod 不是容器？
+
+### 2.10 启动一个 pod
+
+- [Pod YAML](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/)
+
+    ```yaml
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: nginx
+      labels:
+        env: test
+    spec:
+      containers:
+      - name: nginx
+        image: nginx
+    ```
+
+- 启动一个 Pod
+
+    ```
+     起 nginx pod
+    kubectl apply -f nginx.yaml
+
+    # 可以看到 pod 无法被调度，进行诊断
+    kubectl describe pod nginx
+
+    # 去污点、允许调度到 master
+    kubectl taint nodes cka003 node-role.kubernetes.io/master:NoSchedule-
+
+    # 查看 pods
+    kubectl get pods
+
+    # 查看容器
+    docker ps | grep nginx
+    ```
 
 ### Lab: K8S Deployment
 
@@ -260,7 +383,7 @@
           image: maodouzi/get-started:part2
           ports:
             - containerPort: 80
-    
+
     [root@cn-shanghai ~]# kubectl create -f student-wuwenxiang-test1.yaml
     pod/test1 created
     ```
@@ -412,6 +535,10 @@
 - Kubenetes Federation vs ManageIQ
 
 ### CRD & Operator
+
+### Reference
+
+- [K8S 测试](https://jimmysong.io/kubernetes-handbook/develop/testing.html)
 
 ##	Lesson 09：CKA
 
