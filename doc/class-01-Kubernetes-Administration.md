@@ -24,49 +24,50 @@
 | | 下午 | | [1.7 Docker 的网络模型](#17-docker-的网络模型) |
 | | | | [1.8 Docker 的存储模型](#18-docker-的存储模型) |
 | | | [2. Kubernetes 的快速入门](#lesson-02kubernetes-concepts) | [2.1 什么是 K8S？](#21-什么是-k8s) |
-| | | | [2.2 K8S 是为了解决什么问题？]() |
-| | | | [2.3 K8S 不解决什么问题？]() |
-| | | | [2.4 K8S 的模块架构是怎样的？]() |
-| | | | [2.5 K8S 有哪些竞争产品？]() |
-| | | | [2.6 怎么部署出一个 K8S 群集？]() |
-| | | | [2.7 实验：K8S 的部署]() |
-| | | | [2.8 什么是 Pod？]() |
-| | | | [2.9 实验：启动一个 pod ]() |
-| 第 2 天 | 上午 | [3. K8S 的概念空间](#lesson-03k8s-concepts) | [3.1 什么是 YAML？]() |
-| | | | [3.2 什么是 Namespace & Quota？]() |
-| | | | [3.3 什么是 Deployment & ReplicaSet？]() |
-| | | | [3.4 什么是 Services？]() |
-| | | | [3.5 实验：K8S Dashboard]() |
-| | | | [3.6 实验：K8S 怎么发布服务和扩缩容？]() |
-| | | | [3.7 DeamonSet & SetfulSet]() |
-| | 下午 | | [3.8 实验：ETCD 操作]() |
-| | | | [3.9 什么是静态 Pod？]() |
-| | | [4. K8S 的认证和安全](#lesson-04k8s-auth--security) | [4.1 什么是 K8S 的 3A？]() |
-| | | | [4.2 怎么配置 kubectl？]() |
-| | | | [4.3 K8S 怎么保证网络安全？]() |
-| | | | [4.4 什么是用户和角色？]() |
-| | | | [4.5 实验：添加用户 & 绑定角色]() |
-| 第 3 天 | 上午 | [5. K8S 的调度](#lesson-05-k8s-schedule) | [5.1 怎么部署一个 HA 的 K8S 群集？]() |
-| | | | [5.2 怎么把应用部署到指定的 Node？]() |
-| | | | [5.3 什么是 Taints & Toleration？]() |
-| | | | [5.4 什么是 Node Affinity？]() |
-| | | | [5.5 什么是 Pod Affinity？]() |
-| | | | [5.6 实验：Pod 调度]() |
-| | 下午 | [6. K8S 的数据持久化](#lesson-06-k8s-storage) | [6.1 什么是 ConfigMap & Secret ？]() |
-| | | | [6.2 什么是 PV / PVC？]() |
-| | | | [6.3 什么是 Storage Class？]() |
-| | | | [6.4 实验：ConfigMap / Secret / PV & PVC / StorageClass]() |
-| | | [7. 服务发布](#lesson-07-service) | [7.1 Service 在底层是怎么实现的？]() |
-| | | | [7.2 实验：发布服务]() |
-| | | | [7.3 什么是 Ingress？]() |
-| | | | [7.4 实验：对集群外发布服务]() |
-| | | [8. 其它](#lesson-08advance) | [8.1 监控、日志、排错]() |
-| | | | [8.2 什么是 HPA / CA / VA？]() |
-| | | | [8.3 什么是 Federation？]() |
-| | | | [8.4 K8S 怎么处理有状态服务？]() |
-| 第 4 天 | 上午 | [9. CKA 考试讲解](#lesson-09cka) | [9.1 考试注意事项](#) |
-| | | | [9.2 模拟题讲解](#) |
-| | 下午 | | [9.3 实验：做模拟题](#) |
+| | | | [2.2 K8S 是为了解决什么问题？](#22-k8s-是为了解决什么问题) |
+| | | | [2.3 K8S 不解决什么问题？](#23-k8s-不解决什么问题) |
+| | | | [2.4 K8S 的模块架构是怎样的？](#24-k8s-的模块架构是怎样的) |
+| | | | [2.5 K8S 有哪些竞争产品？](#25-k8s-有哪些竞争产品) |
+| | | | [2.6 怎么部署出一个 K8S 群集？](#26-怎么部署出一个-k8s-群集) |
+| | | | [2.7 实验：K8S 的部署](#27-实验k8s-的部署) |
+| | | | [2.8 什么是 Pod？](#28-什么是-pod) |
+| | | | [2.9 实验：启动一个 pod ](#29-启动一个-pod) |
+| 第 2 天 | 上午 | [3. K8S 的概念空间](#lesson-03k8s-concepts) | [3.1 什么是 YAML？](#31-什么是-yaml) |
+| | | | [3.2 什么是 Namespace & Quota？](#32-什么是-namespace--quota) |
+| | | | [3.3 什么是 Deployment & ReplicaSet？](#33-什么是-deployment--replicaset) |
+| | | | [3.4 什么是 Services？](#34-什么是-services) |
+| | | | [3.5 实验：K8S Dashboard](#35-实验k8s-dashboard) |
+| | | | [3.6 实验：K8S 怎么发布服务和扩缩容？](#36-实验k8s-怎么发布服务和扩缩容) |
+| | | | [3.7 DeamonSet & SetfulSet](#37-deamonset--setfulset) |
+| | 下午 | | [3.8 实验：ETCD 操作](#38-实验etcd-操作) |
+| | | | [3.9 什么是静态 Pod？](#39-什么是静态-pod) |
+| | | [4. K8S 的认证和安全](#lesson-04k8s-auth--security) | [4.1 什么是 K8S 的 3A？](#41-什么是-k8s-的-3a) |
+| | | | [4.2 怎么配置 kubectl？](#42-怎么配置-kubectl) |
+| | | | [4.3 K8S 怎么保证网络安全？](#43-k8s-怎么保证网络安全) |
+| | | | [4.4 什么是用户和角色？](#44-什么是用户和角色) |
+| | | | [4.5 实验：添加用户 & 绑定角色](#45-实验添加用户--绑定角色) |
+| 第 3 天 | 上午 | [5. K8S 的调度](#lesson-05-k8s-schedule) | [5.1 怎么部署一个 HA 的 K8S 群集？](#51-怎么部署一个-ha-的-k8s-群集) |
+| | | | [5.2 怎么把应用部署到指定的 Node？](#52-怎么把应用部署到指定的-node) |
+| | | | [5.3 什么是 Taints & Toleration？](#53-什么是-taints--toleration) |
+| | | | [5.4 什么是 Node Affinity？](#54-什么是-node-affinity) |
+| | | | [5.5 什么是 Pod Affinity？](#55-什么是-pod-affinity) |
+| | | | [5.6 实验：Pod 调度](#56-实验pod-调度) |
+| | 下午 | [6. K8S 的数据持久化](#lesson-06-k8s-storage) | [6.1 什么是 ConfigMap & Secret？](#61-什么是-configmap--secret) |
+| | | | [6.2 什么是 PV / PVC？](#62-什么是-pv--pvc) |
+| | | | [6.3 什么是 Storage Class？](#63-什么是-storage-class) |
+| | | | [6.4 实验：ConfigMap / Secret / PV & PVC / StorageClass](#64-实验configmap--secret--pv--pvc--storageclass) |
+| | | [7. 服务发布](#lesson-07-service) | [7.1 Service 在底层是怎么实现的？](#71-service-在底层是怎么实现的) |
+| | | | [7.2 实验：发布服务](#72-实验发布服务) |
+| | | | [7.3 什么是 Ingress？](#73-什么是-ingress) |
+| | | | [7.4 实验：对集群外发布服务](#74-实验对集群外发布服务) |
+| | | [8. 其它](#lesson-08advance) | [8.1 监控、日志、排错](#81-监控--日志--排错) |
+| | | | [8.2 什么是 HPA / CA / VA？](#82-什么是-hpa--ca--va) |
+| | | | [8.3 什么是 Federation？](#83-什么是-federation) |
+| | | | [8.4 K8S 怎么处理有状态服务？](#84-k8s-怎么处理有状态服务) |
+| | | | [8.5 其它参考](#85-其它参考) |
+| 第 4 天 | 上午 | [9. CKA 考试讲解](#lesson-09cka) | [9.1 考试注意事项](#91-考试注意事项) |
+| | | | [9.2 模拟题讲解](#92-模拟题讲解) |
+| | 下午 | | [9.3 实验：做模拟题](#93-实验做模拟题) |
 
 ## Lesson 01：LXC & Docker
 
@@ -460,7 +461,7 @@
 
 ## Lesson 06: K8S Storage
 
-### 6.1 什么是 ConfigMap & Secret ？
+### 6.1 什么是 ConfigMap & Secret？
 
 - 实验：Config Map
 - 实验：Secret
@@ -499,7 +500,7 @@
 
 ## Lesson 08：Advance
 
-### Monitor / Log / Debug
+### 8.1 监控、日志、排错
 
 - 监控：Grafana / Prometheus / AlertManager
 - 日志：ElasticSearch / Fluent ( Logstash ) / Kibana
@@ -535,7 +536,7 @@
 - StatefulSet
 - CRD & Operator
 
-### Reference
+### 8.5 其它参考
 
 - [K8S 测试](https://jimmysong.io/kubernetes-handbook/develop/testing.html)
 
