@@ -342,136 +342,81 @@
     docker ps | grep nginx
     ```
 
-### Lab: K8S Deployment
+## Lesson 03：K8S concepts
 
-- [怎么部署一个 All-In-One 和 Multi-Node 的 K8S 环境？](https://github.com/99cloud/training-kubernetes/blob/master/doc/deploy-k8s-manual.md)
+### 3.1 什么是 YAML？
 
-### YAML
+- 怎么理解 YAML？列表 / 字典 / 数字 / 字符串 / Bool
 
-- 怎么理解 YAML？列表 / 字典 / 数字 / 字符串
+### 3.2 什么是 Namespace & Quota？
 
-### Namespace & Quota
+- Namespace & 租户隔离
+- [实验：namespace & quota](https://kubernetes.io/docs/tasks/administer-cluster/manage-resources/quota-memory-cpu-namespace/)
 
-- 实验：创建一个 namespace
-- 实验：为这个 namespace 限定配额
-- 实验：创建一个 pod，并测试配额可以限制它的资源使用
+    ```bash
+    # 创建一个 namespace
+    kubectl create namespace quota-mem-cpu-example
 
-### Pod / Deployment / ReplicaSet
+    # 为这个 namespace 限定配额
+    kubectl apply -f https://k8s.io/examples/admin/resource/quota-mem-cpu.yaml --namespace=quota-mem-cpu-example
 
-- K8S 有哪些基本概念？pod（ pause container ）、deployment、replica set、daemon sets、stateful set、Node
+    # 查看配额的详细信息
+    kubectl get resourcequota mem-cpu-demo --namespace=quota-mem-cpu-example --output=yaml
 
-### Lab: K8S Dashboard
+    # 创建一个 pod，并限制它的资源使用
+    kubectl apply -f https://k8s.io/examples/admin/resource/quota-mem-cpu-pod.yaml --namespace=quota-mem-cpu-example
 
-### Lab: K8S Objects Operation
+    # 确认 pod 已经启动
+    kubectl get pod quota-mem-cpu-demo --namespace=quota-mem-cpu-example
 
-- 实验：创建一个 namespace
+    # 再次查看配额信息，检查已用部分
+    kubectl get resourcequota mem-cpu-demo --namespace=quota-mem-cpu-example --output=yaml
 
-    ```console
-    [root@cn-shanghai ~]# kubectl create namespace student-wuwenxiang
-    namespace/wuwenxiang created
+    # 尝试启动第二个 pod，因为配额原因，失败
+    kubectl apply -f https://k8s.io/examples/admin/resource/quota-mem-cpu-pod-2.yaml --namespace=quota-mem-cpu-example
+
+    # Error from server (Forbidden): error when creating "examples/admin/resource/quota-mem-cpu-pod-2.yaml":pods "quota-mem-cpu-demo-2" is forbidden: exceeded quota: mem-cpu-demo, requested: requests.memory=700Mi,used: requests.memory=600Mi, limited: requests.memory=1Gi
+
+    # 删除命名空间
+    kubectl delete namespace quota-mem-cpu-example
     ```
 
-- 实验：创建一个 pod
+### 3.3 什么是 Deployment & ReplicaSet？
 
-    ```console
-    [root@cn-shanghai ~]# cat student-wuwenxiang-test1.yaml
-    apiVersion: v1
-    kind: Pod
-    metadata:
-      name: test1
-      labels:
-        app: test1
-      namespace: student-wuwenxiang
-    spec:
-      containers:
-        - name: test1
-          image: maodouzi/get-started:part2
-          ports:
-            - containerPort: 80
+- 实验：Pod Label 和 Replica Controller
+- [实验：Deployment 相关](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/)
 
-    [root@cn-shanghai ~]# kubectl create -f student-wuwenxiang-test1.yaml
-    pod/test1 created
-    ```
+### 3.4 什么是 Services？
 
-- 实验：创建一个 Deployment
+- 基本概念：Service
+- 实验：Service
 
-    ```yaml
-    apiVersion: apps/v1
-    kind: Deployment
-    metadata:
-      name: test2
-      namespace: student-wuwenxiang
-    spec:
-      selector:
-        matchLabels:
-          app: test2
-      replicas: 3
-      template:
-        metadata:
-          labels:
-            app: test2
-        spec:
-          containers:
-            - name: test2
-              image: maodouzi/get-started:part2
-              ports:
-                - containerPort: 80
-    ```
+### 3.5 实验：K8S Dashboard
 
-- 实验：创建一个 Service
+### 3.6 实验：K8S 怎么发布服务和扩缩容？
 
-    ```yaml
-    apiVersion: v1
-    kind: Service
-    metadata:
-      name: test2
-      namespace: student-wuwenxiang
-    spec:
-      selector:
-        app: test2
-      ports:
-        - protocol: TCP
-          port: 80
-          targetPort: 80
-    ```
+### 3.7 DeamonSet & SetfulSet
 
-### DeamonSet & SetfulSet
+### 3.8 实验：ETCD 操作
 
-## Lesson 03：K8S Arch & HA
-
-### Kubernetes Arch
-
-- [K8S 有哪些组件](https://kubernetes.io/zh/docs/concepts/architecture/#)？kube proxy、api server、kube scheduler、kube dns、kubelete、kubeproxy、etcd
-
-### ETCD
-
-### Static Pod
-
-### HA 部署方案
-
-- [怎么部署一个 HA 的 K8S 环境？](https://github.com/99cloud/training-kubernetes/blob/master/doc/deploy-aws-ha-k8s-cluster.md)，参考：[penshift-container-platform-reference-architecture-implementation-guides](https://blog.openshift.com/openshift-container-platform-reference-architecture-implementation-guides/)
-
-    ![](../images/openshift-network-arch-azure.png)
-
-    ![](../images/openshift-ha-deployment.png)
-
-- 网络多平面
-
-    ![](../images/k8s-deploy-ha-multus.png)
+### 3.9 什么是静态 Pod？
 
 ## Lesson 04：K8S Auth & Security
 
-### Authentication / Authorization / Admission
+### 4.1 什么是 K8S 的 3A？
 
+- Authentication / Authorization / Admission
 - K8S 的认证过程？Authentication、Authorization（ RBRA / ABAC / WebHook ）、Admission Controller
 
-### Network Security
+### 4.2 怎么配置 kubectl？
+
+###	4.3 K8S 怎么保证网络安全？
 
 - Kubernetes 的网络选型？flannel、calico、ovs、ovn
 
-### Service Account & Role
+### 4.4 什么是用户和角色？
 
-### Lab: User & Role
+### 4.5 实验：添加用户 & 绑定角色
 
 - 实验：创建 Normal 用户使用 kubectl 工具
 - 实验：创建 Normal 用户并给予超级管理员组
@@ -481,69 +426,114 @@
 
 ### 5.1 怎么部署一个 HA 的 K8S 群集？
 
-### Labels
+- [怎么部署一个 Multi-Node 的 K8S 环境？](https://github.com/99cloud/training-kubernetes/blob/master/doc/deploy-k8s-manual.md)
+
+- [基于 AWS 部署高可用 Kubernetes 集群](https://github.com/99cloud/training-kubernetes/blob/master/doc/deploy-aws-ha-k8s-cluster.md)
+
+- [penshift-container-platform-reference-architecture-implementation-guides](https://blog.openshift.com/openshift-container-platform-reference-architecture-implementation-guides/)
+
+    ![](../images/openshift-ha-deployment.png)
+
+    ![](../images/openshift-network-arch-azure.png)
+
+- 网络多平面
+
+    ![](../images/k8s-deploy-ha-multus.png)
+
+### 5.2 怎么把应用部署到指定的 Node？
 
 - 实验：Node Label 和 Node Selector
-- 实验：Pod Label 和 Replica Controller
 
-### Taints & Toleration
+### 5.3 什么是 Taints & Toleration？
 
 - 实验：Taints 污染标签 & Toleration 容忍标签
 
-### Node Affinity
+### 5.4 什么是 Node Affinity？
 
 - 实验：Node Affinity 节点亲和
 
-### Inter-Pod Affinity / Anti
+### 5.5 什么是 Pod Affinity？
 
 - 实验：Inter-Pod Affinity / Anti，Pod 的亲和与反亲和
 
-### Lab: Pod Schedule
+### 5.6 实验：Pod 调度
 
 ## Lesson 06: K8S Storage
 
-### ConfigMap & Secret
+### 6.1 什么是 ConfigMap & Secret ？
 
 - 实验：Config Map
 - 实验：Secret
 
-### PV / PVC
+### 6.2 什么是 PV / PVC？
 
 - 基本概念：PV / PVC
 
-### Storage Class
+### 6.3 什么是 Storage Class？
 
 - 基本概念：Storage Class
 - 实验：Storage Class
 
-### Lab: ConfigMap / Secret / PV & PVC / StorageClass
+### 6.4 实验：ConfigMap / Secret / PV & PVC / StorageClass
 
 ## Lesson 07: Service
 
-### Lab: Service
+### 7.1 Service 在底层是怎么实现的？
 
-- 基本概念：Service
-- 实验：Service
+- [A Guide to the Kubernetes Networking Model](https://sookocheff.com/post/kubernetes/understanding-kubernetes-networking-model/)
 
-### Ingress
+### 7.2 实验：发布服务
+
+- Cluster IP
+- Service FQDN
+- Nodeport
+- LB Type Service
+
+### 7.3 什么是 Ingress？
 
 - 实验：Ingress / Route
 
-### Lab: Ingress Controller
+### 7.4 实验：对集群外发布服务
+
+- Lab: Ingress Controller
 
 ## Lesson 08：Advance
 
 ### Monitor / Log / Debug
 
-### HPA / CA / VA
+- 监控：Grafana / Prometheus / AlertManager
+- 日志：ElasticSearch / Fluent ( Logstash ) / Kibana
+- 排错：怎么对 pod 的网口抓包？
+
+    ```bash
+    # 查看指定 pod 运行在那个 node 上
+    kubectl describe pod <pod> -n <namespace>
+
+    # 获得容器的 pid
+    docker inspect -f {{.State.Pid}} <container>
+
+    # 进入该容器的 network namespace
+    nsenter --target <PID> -n
+
+    # 使用 tcpdump 抓包，指定 eth0 网卡
+    tcpdump -i eth0 tcp and port 80 -vvv
+
+    # 或者抓包并导出到文件
+    tcpdump -i eth0 -w ./out.cap
+    ```
+
+### 8.2 什么是 HPA / CA / VA？
 
 - 怎么理解 HPA / CA / VPA？
 
-### Federation
+### 8.3 什么是 Federation？
 
 - Kubenetes Federation vs ManageIQ
 
-### CRD & Operator
+### 8.4 K8S 怎么处理有状态服务？
+
+- StatefulSet
+- CRD & Operator
 
 ### Reference
 
@@ -551,8 +541,8 @@
 
 ##	Lesson 09：CKA
 
-### Tips
+### 9.1 考试注意事项
 
-### Quiz
+### 9.2 模拟题讲解
 
-### Lab: Quiz
+### 9.3 实验：做模拟题
