@@ -23,53 +23,50 @@
 | | | | [1.6 实验：Docker Quick Start](#16-实验docker-quick-start) |
 | | 下午 | | [1.7 Docker 的网络模型](#17-docker-的网络模型) |
 | | | | [1.8 Docker 的存储模型](#18-docker-的存储模型) |
-| | | [2. Kubernetes 的基本概念](#lesson-02kubernetes-concepts) | [2.1 什么是 K8S？](#21-什么是-k8s) |
+| | | [2. Kubernetes 的快速入门](#lesson-02kubernetes-concepts) | [2.1 什么是 K8S？](#21-什么是-k8s) |
 | | | | [2.2 K8S 是为了解决什么问题？]() |
-| | | | [2.3 K8S 不解决什么问题？]()用户管理/限流熔断/监控审计 |
+| | | | [2.3 K8S 不解决什么问题？]() |
 | | | | [2.4 K8S 的模块架构是怎样的？]() |
-| | | | [2.5 K8S 有哪些竞争产品？]()OpenShift/VMware/KubeSphere|
-| | | | [2.6 产品会基于 K8S 做哪些改良？]() 界面/中间件/云支持 |
-| | | | [2.7 怎么部署出一个 K8S 群集？]() kubeadm |
-| | | | [2.8 实验：K8S 的部署]() |
-| | | | [2.9 什么是 Pod？]()为什么调度的基本单位是 pod 不是容器？ |
-| | | | [2.10 实验：启动一个 pod ]() |
-| 第 2 天 | 上午 | | [什么是 YAML？]() |
-| | | | [什么是 Namespace & Quota？]() |
-| | | | [什么是 Deployment & ReplicaSet？]() |
-| | | | [什么是 Services？]() |
-| | | | [实验：K8S Dashboard]() |
-| | | | [实验：K8S 对象管理操作]()：Deployment/Service/Label |
-| | | | [实验：K8S 怎么发布服务和扩缩容？]() |
-| | | | [DeamonSet & SetfulSet]() |
-| | 下午 | [3. K8S 的模块解析](#lesson-03k8s-arch--ha) | [Kubernetes 的模块解析]() |
-| | | | [实验：ETCD 操作]() |
-| | | | [什么是静态 Pod？]() |
-| | | | [怎么部署一个 HA 的 K8S 群集？]() |
-| | | [4. K8S 的认证和安全](#lesson-04k8s-auth--security) | [什么是 K8S 的 3A？]()认证、 / 鉴权 / 准入 |
-| | | | [怎么配置 kubectl？]() |
-| | | | [K8S 怎么保证网络安全？]() |
-| | | | [什么是用户和角色？]() |
-| | | | [实验：添加用户 & 绑定角色]() |
-| 第 3 天 | 上午 | [5. K8S 的调度](#lesson-05-k8s-schedule) | [什么是 Labels？]() |
-| | | | [什么是 Taints & Toleration？]()污染标签 & 容忍标签 |
-| | | | [什么是 Node Affinity？]()节点亲和 / 反亲和 |
-| | | | [什么是 Pod Affinity？]()Pod 的亲和 / 反亲和 |
-| | | | [实验：Pod 调度]() |
-| | 下午 | [6. K8S 的数据持久化](#lesson-06-k8s-storage) | [什么是 ConfigMap & Secret ？]() |
-| | | | [什么是 PV / PVC？]() |
-| | | | [什么是 Storage Class？]() |
-| | | | [实验：ConfigMap / Secret / PV & PVC / StorageClass]() |
-| | | [7. 服务发布](#lesson-07-service) | [Service 在底层是怎么实现的？]() |
-| | | | [实验：发布服务]() |
-| | | | [什么是 Ingress？]() |
-| | | | [实验：对集群外发布服务]() |
-| | | [8. 其它](#lesson-08advance) | [监控、日志、排错](#) |
-| | | | [什么是 HPA / CA / VA？]() |
-| | | | [什么是 Federation？]() |
-| | | | [K8S 怎么处理有状态服务?]() CRD & Operator |
-| 第 4 天 | 上午 | [9. CKA 考试讲解](#lesson-09cka) | [考试注意事项](#) |
-| | | | [模拟题讲解](#) |
-| | 下午 | | [实验：做模拟题](#) |
+| | | | [2.5 K8S 有哪些竞争产品？]() |
+| | | | [2.6 怎么部署出一个 K8S 群集？]() |
+| | | | [2.7 实验：K8S 的部署]() |
+| | | | [2.8 什么是 Pod？]() |
+| | | | [2.9 实验：启动一个 pod ]() |
+| 第 2 天 | 上午 | [3. K8S 的概念空间](#lesson-03k8s-concepts) | [3.1 什么是 YAML？]() |
+| | | | [3.2 什么是 Namespace & Quota？]() |
+| | | | [3.3 什么是 Deployment & ReplicaSet？]() |
+| | | | [3.4 什么是 Services？]() |
+| | | | [3.5 实验：K8S Dashboard]() |
+| | | | [3.6 实验：K8S 怎么发布服务和扩缩容？]() |
+| | | | [3.7 DeamonSet & SetfulSet]() |
+| | 下午 | | [3.8 实验：ETCD 操作]() |
+| | | | [3.9 什么是静态 Pod？]() |
+| | | [4. K8S 的认证和安全](#lesson-04k8s-auth--security) | [4.1 什么是 K8S 的 3A？]() |
+| | | | [4.2 怎么配置 kubectl？]() |
+| | | | [4.3 K8S 怎么保证网络安全？]() |
+| | | | [4.4 什么是用户和角色？]() |
+| | | | [4.5 实验：添加用户 & 绑定角色]() |
+| 第 3 天 | 上午 | [5. K8S 的调度](#lesson-05-k8s-schedule) | [5.1 怎么部署一个 HA 的 K8S 群集？]() |
+| | | | [5.2 怎么把应用部署到指定的 Node？]() |
+| | | | [5.3 什么是 Taints & Toleration？]() |
+| | | | [5.4 什么是 Node Affinity？]() |
+| | | | [5.5 什么是 Pod Affinity？]() |
+| | | | [5.6 实验：Pod 调度]() |
+| | 下午 | [6. K8S 的数据持久化](#lesson-06-k8s-storage) | [6.1 什么是 ConfigMap & Secret ？]() |
+| | | | [6.2 什么是 PV / PVC？]() |
+| | | | [6.3 什么是 Storage Class？]() |
+| | | | [6.4 实验：ConfigMap / Secret / PV & PVC / StorageClass]() |
+| | | [7. 服务发布](#lesson-07-service) | [7.1 Service 在底层是怎么实现的？]() |
+| | | | [7.2 实验：发布服务]() |
+| | | | [7.3 什么是 Ingress？]() |
+| | | | [7.4 实验：对集群外发布服务]() |
+| | | [8. 其它](#lesson-08advance) | [8.1 监控、日志、排错]() |
+| | | | [8.2 什么是 HPA / CA / VA？]() |
+| | | | [8.3 什么是 Federation？]() |
+| | | | [8.4 K8S 怎么处理有状态服务？]() |
+| 第 4 天 | 上午 | [9. CKA 考试讲解](#lesson-09cka) | [9.1 考试注意事项](#) |
+| | | | [9.2 模拟题讲解](#) |
+| | 下午 | | [9.3 实验：做模拟题](#) |
 
 ## Lesson 01：LXC & Docker
 
@@ -181,45 +178,46 @@
 
 ### 2.1 什么是 K8S？
 
-- 什么是 Kubernetes？容器编排工具
+- 什么是 Kubernetes？容器编排工具。为什么叫 K8S？
 - K8S 和 Docker 有什么关系？参考：[Container runtimes](https://kubernetes.io/docs/setup/production-environment/container-runtimes/)
-- 为什么叫 K8S？和 Borg 有何关系？
+    - Orchestration API -> Container API (cri-runtime) -> Kernel API(oci-runtime)
+    - OCI：runC / Kata（ 及其前身 runV 和 Clear Containers ），gVisor，Rust railcar
+        - 容器镜像的制作标准，即 ImageSpec。大致规定：容器镜像这个压缩了的文件夹里以 xxx 结构放 xxx 文件
+        - 容器要需要能接收哪些指令，以及这些指令的行为，即 RuntimeSpec。这里面的大致内容就是“容器”要能够执行 “create”，“start”，“stop”，“delete” 这些命令，并且行为要规范。
+        - Docker 则把 libcontainer 封装了一下，变成 runC 捐献出来作为 OCI 的参考实现。
+    - CRI：Docker（ 借助 dockershim ），containerd（ 借助 CRI-containerd ），CRI-O，Frakti。是一组 gRPC 接口，[cri-api/pkg/apis/services.go](https://github.com/kubernetes/cri-api/blob/master/pkg/apis/services.go)：
+        - 一套针对容器操作的接口，包括创建，启停容器等等
+        - 一套针对镜像操作的接口，包括拉取镜像删除镜像等
+        - 一套针对 PodSandbox（容器沙箱环境）的操作接口
+    - 正常的 K8S 调用 Docker 流程
+
+        ![](../images/k8s-CRI-OCI-docker.png)
+
+    - containerd-1.0，对 CRI 的适配通过一个单独的进程 CRI-containerd 来完成
+
+        ![](../images/k8s-containerd-1-0.png)
+
+    - containerd-1.1，把适配逻辑作为插件放进了 containerd 主进程中
+
+        ![](../images/k8s-containerd-1-1.png)
+
+    - CRI-O，更为专注的 cri-runtime，非常纯粹，兼容 CRI 和 OCI，做一个 Kubernetes 专用的运行时
+
+        ![](../images/k8s-cri-o-flow.png)
+
+- [CRI-O](https://cri-o.io/) 的架构：
+
+    ![](../images/k8s-cri-o-arch-1.png)
+
+    ![](../images/k8s-cri-o-arch-2.jpg)
+
+- K8S 和 Borg 有何关系？Start from Borg, however completely different!
+
+    ![](../images/borg-arch.png)
 
 ### 2.2 K8S 是为了解决什么问题？
 
 - K8S 有什么优势？适用于哪些场景？自动化编排：自愈，快速缩放，一键部署和升降级，备份恢复
-- 什么是 [OpenShift](https://www.openshift.com/learn/what-is-openshift-x)？和 K8S 相比，OpenShift（ 红帽最有价值的产品 ）有哪些优势？
-
-    ![](../images/openshift-k8s.svg)
-
-- 怎样连接到实验环境？
-    - 命令行：
-
-        ```console
-        $ ssh root@k8slab.trystack.cn
-        root@k8slab.trystack.cn's password:
-        Last failed login: Fri Dec 20 22:05:41 CST 2019 from 218.83.103.52 on ssh:notty
-        There were 3 failed login attempts since the last successful login.
-        Last login: Fri Dec 20 22:02:39 2019 from 218.83.103.52
-
-        Welcome to Alibaba Cloud Elastic Compute Service !
-
-        [root@k8slab ~]# ssh openshift1-aio
-        Last login: Fri Dec 20 14:06:24 2019 from 139.224.215.78
-
-        [cloud-user@openshift-aio ~]$ oc get pods
-        NAME                       READY     STATUS    RESTARTS   AGE
-        docker-registry-1-pmv7w    1/1       Running   0          5h
-        registry-console-1-fjgdv   1/1       Running   0          5h
-        router-1-t46zw             1/1       Running   0          5h
-
-        [cloud-user@openshift-aio ~]$ exit
-        logout
-        Connection to openshift1-aio-master.demotheworld.com closed.
-        [root@k8slab ~]#
-        ```
-
-    - [Web UI](https://console.openshift1-aio-apps.demotheworld.com/k8s/cluster/projects)
 - 如何查文档？[K8S](https://kubernetes.io/)，[OpenShift Origin](https://www.okd.io/)
 - 其它资料：slack、cncf、quay.io
 
@@ -228,28 +226,35 @@
 - 用户管理
 - 限流熔断：istio
 - 监控审计：prometheus / grafana / alertmanager / elasticsearch / fluent / kibana
+- 用户界面
+- 中间件
+- 底层云平台支持
 
 ### 2.4 K8S 的模块架构是怎样的？
 
+- [K8S 有哪些组件](https://kubernetes.io/zh/docs/concepts/architecture/#)？api-server、kube-scheduler、kube-controller、etcd、coredns、kubelete、kubeproxy
+
+- 整体结构图
+
+    ![](../images/k8s-architecture.png)
+
 ### 2.5 K8S 有哪些竞争产品？
 
-- OpenShift
+- [OpenShift](https://www.openshift.com/learn/what-is-openshift-x)
+    - 和 K8S 相比，OpenShift（ 红帽最有价值的产品 ）有哪些优势？
+
+        ![](../images/openshift-k8s.svg)
+
 - VMware
 - KubeSphere
 - Ranchel
 
-### 2.6 产品会基于 K8S 做哪些改良？
-
-- 界面
-- 中间件
-- 底层云平台支持
-
-### 2.7 怎么部署出一个 K8S 群集？
+### 2.6 怎么部署出一个 K8S 群集？
 
 - kubeadm
 - Ansible
 
-### 2.8 实验：K8S 的部署
+### 2.7 实验：K8S 的部署
 
 1. [安装 kubeadm](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/)
 
@@ -296,12 +301,12 @@
     kubectl get nodes
     ```
 
-### 2.9 什么是 Pod？
+### 2.8 什么是 Pod？
 
 - Pod 和容器的关系是什么？
 - 为什么调度的基本单位是 pod 不是容器？
 
-### 2.10 启动一个 pod
+### 2.9 启动一个 pod
 
 - [Pod YAML](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/)
 
@@ -438,8 +443,6 @@
 
 - [K8S 有哪些组件](https://kubernetes.io/zh/docs/concepts/architecture/#)？kube proxy、api server、kube scheduler、kube dns、kubelete、kubeproxy、etcd
 
-    ![](../images/k8s-architecture.png)
-
 ### ETCD
 
 ### Static Pod
@@ -451,6 +454,10 @@
     ![](../images/openshift-network-arch-azure.png)
 
     ![](../images/openshift-ha-deployment.png)
+
+- 网络多平面
+
+    ![](../images/k8s-deploy-ha-multus.png)
 
 ## Lesson 04：K8S Auth & Security
 
@@ -471,6 +478,8 @@
 - 实验：创建 Service Account 并绑定角色
 
 ## Lesson 05: K8S Schedule
+
+### 5.1 怎么部署一个 HA 的 K8S 群集？
 
 ### Labels
 
