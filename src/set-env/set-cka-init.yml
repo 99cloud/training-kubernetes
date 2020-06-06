@@ -1,12 +1,30 @@
 ---
 - hosts: ckaservers
   tasks:
+  - name: "Config sshd"
+    lineinfile:
+        path: "/etc/ssh/sshd_config"
+        state: present
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+    loop:
+        - {regexp: '^\s*ClientAliveInterval\s+', line: 'ClientAliveInterval 120'}
+        - {regexp: '^\s*ClientAliveCountMax\s+', line: 'ClientAliveCountMax 720'}
+
+  - name: "Restart sshd"
+    systemd:
+        state: restarted
+        daemon_reload: yes
+        name: sshd
+
   - name: apt-get update
     apt:
         update_cache: yes
+
   - name: install docker.io
     apt:
         name: docker.io
+
   - name: start & enable docker
     service:
         name: docker
