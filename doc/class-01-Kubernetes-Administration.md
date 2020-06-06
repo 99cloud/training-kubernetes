@@ -421,6 +421,65 @@
 - [Static Pod](https://kubernetes.io/docs/tasks/configure-pod-container/static-pod/)
 - /etc/kubernetes/manifests
 
+    ```console
+    root@CKA003:~# ps -ef | grep kubelet
+    root     10572     1  2 09:37 ?        00:07:41 /usr/bin/kubelet --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf --config=/var/lib/kubelet/config.yaml --cgroup-driver=cgroupfs --network-plugin=cni --pod-infra-container-image=k8s.gcr.io/pause:3.2 --resolv-conf=/run/systemd/resolve/resolv.conf
+
+    root@CKA003:~# grep mani /var/lib/kubelet/config.yaml
+    staticPodPath: /etc/kubernetes/manifests
+
+    root@CKA003:~# cd /etc/kubernetes/manifests
+    root@CKA003:/etc/kubernetes/manifests# ls
+    etcd.yaml  kube-apiserver.yaml  kube-controller-manager.yaml  kube-scheduler.yaml  static-web.yaml
+
+    root@CKA003:/etc/kubernetes/manifests# cat static-web.yaml
+    apiVersion: v1
+    kind: Pod
+    metadata:
+    name: static-web
+    labels:
+        role: myrole
+    spec:
+    containers:
+        - name: web
+        image: nginx
+        ports:
+            - name: web
+            containerPort: 80
+            protocol: TCP
+
+    root@CKA003:/etc/kubernetes/manifests# kubectl get pods
+    NAME                READY   STATUS    RESTARTS   AGE
+    dnsutils            1/1     Running   4          4h17m
+    static-web          1/1     Running   0          98m
+    static-web-cka003   1/1     Running   0          98m
+    web-0               0/1     Pending   0          116m
+
+    root@CKA003:/etc/kubernetes/manifests# kubectl delete pod static-web
+    pod "static-web" deleted
+    root@CKA003:/etc/kubernetes/manifests# kubectl get pods
+    NAME                READY   STATUS    RESTARTS   AGE
+    dnsutils            1/1     Running   4          4h17m
+    static-web-cka003   1/1     Running   0          99m
+    web-0               0/1     Pending   0          117m
+
+    root@CKA003:/etc/kubernetes/manifests# kubectl delete pod static-web-cka003
+    pod "static-web-cka003" deleted
+    root@CKA003:/etc/kubernetes/manifests# kubectl get pods
+    NAME                READY   STATUS    RESTARTS   AGE
+    dnsutils            1/1     Running   4          4h18m
+    static-web-cka003   1/1     Running   0          10s
+    web-0               0/1     Pending   0          117m
+
+    root@CKA003:/etc/kubernetes/manifests# ls
+    etcd.yaml  kube-apiserver.yaml  kube-controller-manager.yaml  kube-scheduler.yaml  static-web.yaml
+    root@CKA003:/etc/kubernetes/manifests# rm -rf static-web.yaml
+    root@CKA003:/etc/kubernetes/manifests# kubectl get pods
+    NAME       READY   STATUS    RESTARTS   AGE
+    dnsutils   1/1     Running   4          4h18m
+    web-0      0/1     Pending   0          117m
+    ```
+
 ## Lesson 04：K8S Auth & Security
 
 ### 4.1 什么是 K8S 的 3A？
@@ -439,6 +498,132 @@
 ### 4.5 实验：添加用户 & 绑定角色
 
 - 实验：创建 Normal 用户使用 kubectl 工具
+
+    ```console
+    root@CKA003:~# kubectl config get-contexts
+    CURRENT   NAME                          CLUSTER      AUTHINFO           NAMESPACE
+    *         kubernetes-admin@kubernetes   kubernetes   kubernetes-admin
+
+    root@CKA003:~# kubectl create namespace ns1
+    namespace/ns1 created
+    root@CKA003:~# kubectl create namespace ns2
+    namespace/ns2 created
+
+    root@CKA003:~# useradd -m -d /home/poweruser -s /bin/bash poweruser
+    root@CKA003:~# passwd poweruser
+    Enter new UNIX password:
+    Retype new UNIX password:
+    passwd: password updated successfully
+    root@CKA003:~# cd /home/poweruser
+
+    root@CKA003:/home/poweruser# openssl genrsa -out poweruser.key 2048
+    Generating RSA private key, 2048 bit long modulus (2 primes)
+    ......................+++++
+    ..........................................................+++++
+    e is 65537 (0x010001)
+
+    root@CKA003:/home/poweruser# openssl req -new -key poweruser.key -out poweruser.csr -subj "/CN=poweruser/O=ns1"
+    Can't load /root/.rnd into RNG
+    139904427348416:error:2406F079:random number generator:RAND_load_file:Cannot open file:../crypto/rand/randfile.c:88:Filename=/root/.rnd
+
+    root@CKA003:/home/poweruser# cat poweruser.key
+    -----BEGIN RSA PRIVATE KEY-----
+    MIIEowIBAAKCAQEAt07RnBpZFkux9vEmSUDiHsVFtAu1FmJQjia0ls2A/fbMBt2T
+    ...
+    njzqykeT5cLiixwUf6x35nF2r5VydsZMHypk6dgPgC6LikTbfsL0
+    -----END RSA PRIVATE KEY-----
+
+    root@CKA003:/home/poweruser# cat poweruser.csr
+    -----BEGIN CERTIFICATE REQUEST-----
+    MIICZzCCAU8CAQAwIjESMBAGA1UEAwwJcG93ZXJ1c2VyMQwwCgYDVQQKDANuczEw
+    ...
+    O5+ia4aC6Hn/lMsRNYzeSK/ovjMuzH7gjnYEogG8QdpIVLFF1a1D2/S1kQ==
+    -----END CERTIFICATE REQUEST-----
+
+    root@CKA003:/home/poweruser# openssl x509 -req -in poweruser.csr -CA /etc/kubernetes/pki/ca.crt -CAkey /etc/kubernetes/pki/ca.key -CAcreateserial -out poweruser.crt -days 60
+    Signature ok
+    subject=CN = poweruser, O = ns1
+    Getting CA Private Key
+
+    root@CKA003:/home/poweruser# chmod 777 poweruser.*
+    root@CKA003:/home/poweruser# cd
+
+    root@CKA003:~# kubectl config set-credentials poweruser --client-certificate=/home/poweruser/poweruser.crt --client-key=/home/poweruser/poweruser.key
+    User "poweruser" set.
+    root@CKA003:~# mkdir /home/poweruser/.kube
+    root@CKA003:~# cp .kube/config /home/poweruser/.kube
+    root@CKA003:~# chown -R poweruser:poweruser /home/poweruser/.kube
+    root@CKA003:~# su poweruser
+
+    poweruser@CKA003:/root$ cd
+    poweruser@CKA003:~$ cd .kube/
+    poweruser@CKA003:~/.kube$ vi config
+
+    root@CKA003:~# diff /root/.kube/config /home/poweruser/.kube/config
+    10,12c10,12
+    <     user: kubernetes-admin
+    <   name: kubernetes-admin@kubernetes
+    < current-context: kubernetes-admin@kubernetes
+    ---
+    >     user: poweruser
+    >   name: poweruser@kubernetes
+    > current-context: poweruser@kubernetes
+
+    poweruser@CKA003:~/.kube$ kubectl get pods
+    Error from server (Forbidden): pods is forbidden: User "poweruser" cannot list resource "pods" in API group "" in the namespace "default"
+    ```
+
+    为 poweruser 用户绑定权限
+
+    ```console
+    root@CKA003:~# vi pod-read.yaml
+    root@CKA003:~# cat pod-read.yaml
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: Role
+    metadata:
+    namespace: default
+    name: pod-reader
+    rules:
+    - apiGroups: [""] # "" indicates the core API group
+    resources: ["pods"]
+    verbs: ["get", "watch", "list"]
+
+    root@CKA003:~# kubectl apply -f pod-read.yaml
+    role.rbac.authorization.k8s.io/pod-reader created
+
+    root@CKA003:~# vi role-binding.yaml
+    root@CKA003:~# cat role-binding.yaml
+    apiVersion: rbac.authorization.k8s.io/v1
+    # This role binding allows "jane" to read pods in the "default" namespace.
+    # You need to already have a Role named "pod-reader" in that namespace.
+    kind: RoleBinding
+    metadata:
+    name: read-pods
+    namespace: default
+    subjects:
+    # You can specify more than one "subject"
+    - kind: User
+    name: poweruser # "name" is case sensitive
+    apiGroup: rbac.authorization.k8s.io
+    roleRef:
+    # "roleRef" specifies the binding to a Role / ClusterRole
+    kind: Role #this must be Role or ClusterRole
+    name: pod-reader # this must match the name of the Role or ClusterRole you wish to bind to
+    apiGroup: rbac.authorization.k8s.io
+    root@CKA003:~# kubectl apply -f role-binding.yaml
+    rolebinding.rbac.authorization.k8s.io/read-pods created
+    ```
+
+    现在 poweruser 用户有 list pod 的权限了
+
+    ```console
+    poweruser@CKA003:~/.kube$ kubectl get pods
+    NAME       READY   STATUS    RESTARTS   AGE
+    dnsutils   1/1     Running   4          4h22m
+    web-0      0/1     Pending   0          122m
+    poweruser@CKA003:~/.kube$
+    ```
+
 - 实验：创建 Normal 用户并给予超级管理员组
 - 实验：创建 Service Account 并绑定角色
 
