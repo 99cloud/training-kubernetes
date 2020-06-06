@@ -1,0 +1,14 @@
+---
+- hosts: ckaservers
+  tasks:
+  - name: apt-get update
+    apt:
+        update_cache: yes
+  - name: install docker.io
+    apt:
+        name: docker.io
+  - name: start & enable docker
+    service:
+        name: docker
+        state: started
+        enabled: yes
