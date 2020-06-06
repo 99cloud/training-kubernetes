@@ -396,11 +396,30 @@
 
 ### 3.6 实验：K8S 怎么发布服务和扩缩容？
 
-### 3.7 DeamonSet & SetfulSet
+- [实验：通过 Service 发布服务](https://kubernetes.io/docs/concepts/services-networking/connect-applications-service/)
+- 实验：通过 Deployment 扩缩容
+
+### 3.7 DeamonSet & StatefulSet
+
+- [DeamonSet](https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/)
+- [StatefulSet](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/)
 
 ### 3.8 实验：ETCD 操作
 
+ - Set & Get
+
+    ```console
+    [root@cn-shanghai ~]# etcdctl2 set /firstkey trystack
+    trystack
+    [root@cn-shanghai ~]# etcdctl2 get /firstkey
+    trystack
+    [root@cn-shanghai ~]#
+    ```
+
 ### 3.9 什么是静态 Pod？
+
+- [Static Pod](https://kubernetes.io/docs/tasks/configure-pod-container/static-pod/)
+- /etc/kubernetes/manifests
 
 ## Lesson 04：K8S Auth & Security
 
