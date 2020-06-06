@@ -38,7 +38,7 @@
 | | | | [3.4 什么是 Services？](#34-什么是-services) |
 | | | | [3.5 实验：K8S Dashboard](#35-实验k8s-dashboard) |
 | | | | [3.6 实验：K8S 怎么发布服务和扩缩容？](#36-实验k8s-怎么发布服务和扩缩容) |
-| | | | [3.7 DeamonSet & SetfulSet](#37-deamonset--setfulset) |
+| | | | [3.7 DeamonSet & SetfulSet](#37-deamonset--statefulset) |
 | | 下午 | | [3.8 实验：ETCD 操作](#38-实验etcd-操作) |
 | | | | [3.9 什么是静态 Pod？](#39-什么是静态-pod) |
 | | | [4. K8S 的认证和安全](#lesson-04k8s-auth--security) | [4.1 什么是 K8S 的 3A？](#41-什么是-k8s-的-3a) |
