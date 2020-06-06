@@ -692,7 +692,7 @@
 
     ```console
     root@CKA003:~# kubectl create serviceaccount sa-cluster-admin --namespace=kube-system
-serviceaccount/sa-cluster-admin created
+    serviceaccount/sa-cluster-admin created
 
     root@CKA003:~# kubectl get secret --all-namespaces | grep sa-cluster-admin
     kube-system             sa-cluster-admin-token-k9xfp                     kubernetes.io/service-account-token   3      53s
