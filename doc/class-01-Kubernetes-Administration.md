@@ -625,7 +625,114 @@
     ```
 
 - 实验：创建 Normal 用户并给予超级管理员组
+
+    ```console
+    root@CKA003:~# openssl genrsa -out superuser.key 2048
+    Generating RSA private key, 2048 bit long modulus (2 primes)
+    ..........................+++++
+    ........................................................................................+++++
+    e is 65537 (0x010001)
+
+    root@CKA003:~# openssl req -new -key superuser.key -out superuser.csr -subj "/CN=superuser /O=system:masters"
+    Can't load /root/.rnd into RNG
+    139767359660480:error:2406F079:random number generator:RAND_load_file:Cannot open file:../crypto/rand/randfile.c:88:Filename=/root/.rnd
+
+    root@CKA003:~# openssl x509 -req -in superuser.csr -CA /etc/kubernetes/pki/ca.crt -CAkey /etc/kubernetes/pki/ca.key -CAcreateserial -out superuser.crt -days 60
+    Signature ok
+    subject=CN = "superuser ", O = system:masters
+    Getting CA Private Key
+    ```
+
+    system:masters 是默认的 [cluster-rolebinding group](https://kubernetes.io/docs/reference/access-authn-authz/rbac/#user-facing-roles)，参考：[How to view members of subject with Group kind](https://stackoverflow.com/questions/51612976/how-to-view-members-of-subject-with-group-kind)
+
+    ```console
+    root@CKA003:~# kubectl get clusterrolebindings -o go-template='{{range .items}}{{range .subjects}}{{.kind}}-{{.name}} {{end}} {{" - "}} {{.metadata.name}} {{"\n"}}{{end}}' | grep "^Group-system:masters"
+    Group-system:masters   -  cluster-admin
+    ```
+
+    设置 kubectl config
+
+    ```console
+    root@CKA003:~# kubectl config set-credentials superuser --client-certificate=superuser.crt --client-key=superuser.key
+    User "superuser" set.
+    root@CKA003:~# tail -f .kube/config
+    ...
+    - name: poweruser
+    user:
+        client-certificate: /home/poweruser/poweruser.crt
+        client-key: /home/poweruser/poweruser.key
+    - name: superuser
+    user:
+        client-certificate: /root/superuser.crt
+        client-key: /root/superuser.key
+
+    root@CKA003:~# kubectl config set-context superuser-context --cluster=kubernetes --user=superuser
+    Context "superuser-context" created.
+
+    root@CKA003:~# kubectl config get-contexts
+    CURRENT   NAME                          CLUSTER      AUTHINFO           NAMESPACE
+    *         kubernetes-admin@kubernetes   kubernetes   kubernetes-admin
+            superuser-context             kubernetes   superuser
+
+    root@CKA003:~# kubectl config use-context superuser-context
+    Switched to context "superuser-context".
+
+    root@CKA003:~# kubectl config get-contexts
+    CURRENT   NAME                          CLUSTER      AUTHINFO           NAMESPACE
+            kubernetes-admin@kubernetes   kubernetes   kubernetes-admin
+    *         superuser-context             kubernetes   superuser
+
+    root@CKA003:~# kubectl get pods
+    NAME       READY   STATUS    RESTARTS   AGE
+    dnsutils   1/1     Running   4          4h49m
+    web-0      0/1     Pending   0          149m
+    ```
+
 - 实验：创建 Service Account 并绑定角色
+
+    ```console
+    root@CKA003:~# kubectl create serviceaccount sa-cluster-admin --namespace=kube-system
+serviceaccount/sa-cluster-admin created
+
+    root@CKA003:~# kubectl get secret --all-namespaces | grep sa-cluster-admin
+    kube-system             sa-cluster-admin-token-k9xfp                     kubernetes.io/service-account-token   3      53s
+
+    root@CKA003:~# kubectl describe secret -n kube-system sa-cluster-admin-token-k9xfp
+    Name:         sa-cluster-admin-token-k9xfp
+    Namespace:    kube-system
+    Labels:       <none>
+    Annotations:  kubernetes.io/service-account.name: sa-cluster-admin
+                kubernetes.io/service-account.uid: 11deb8dd-5625-4d75-ad44-3beef1bcd995
+    Type:  kubernetes.io/service-account-token
+    Data
+    ====
+    ca.crt:     1025 bytes
+    namespace:  11 bytes
+    token:      eyJhbGciOiJSUzI1NiIsImtpZCI6InRBUkJ6bkxQMHNHSi1MejR4T2ZtYk43b1Y0S2M3MXZOMTMtQmtOaHpsbXMifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJrdWJlLXN5c3RlbSIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VjcmV0Lm5hbWUiOiJzYS1jbHVzdGVyLWFkbWluLXRva2VuLWs5eGZwIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQubmFtZSI6InNhLWNsdXN0ZXItYWRtaW4iLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC51aWQiOiIxMWRlYjhkZC01NjI1LTRkNzUtYWQ0NC0zYmVlZjFiY2Q5OTUiLCJzdWIiOiJzeXN0ZW06c2VydmljZWFjY291bnQ6a3ViZS1zeXN0ZW06c2EtY2x1c3Rlci1hZG1pbiJ9.Dr1aOVdwAXO_BPXlJAohKBjoxRhMmTWyfVy2AP3-D0V-2jzdzWKoEP_17wnAS3FP-hxuOtTr3XWN0zM4oAI8-CeXtP7AdB0sqZ9P7Wnp2s88DqDUNK0JUuYGke3js9xd44Bt5vhtRovNEMYEnLXj_NLOunW33f4g46ep4NvQpNGTd48BcgzFhiiWuXLKKGGoOZGrWlkXqyofE4li83B3D08oW-hjP4S0JBBXqmzpa0_PYi-hkPbirmn9J7F-oQd0So05uAzZROHSd7n8INlYwbJx2zRF8PKipscxu47ddEumr6R9b8qDDVolP5iawqFPeDTt9lOY7OdgEaVcL651UQ
+
+    root@CKA003:~# vi sa-cluster-admin-rolebinding.yaml
+
+    root@CKA003:~# cat sa-cluster-admin-rolebinding.yaml
+    apiVersion: rbac.authorization.k8s.io/v1
+    # This cluster role binding allows anyone in the "manager" group to read secrets in any namespace.
+    kind: ClusterRoleBinding
+    metadata:
+    name: read-secrets-global
+    subjects:
+    - kind: User
+    name: sa-cluster-admin
+    apiGroup: rbac.authorization.k8s.io
+    roleRef:
+    kind: ClusterRole
+    name: cluster-admin
+    apiGroup: rbac.authorization.k8s.io
+
+    root@CKA003:~# kubectl create -f sa-cluster-admin-rolebinding.yaml
+    clusterrolebinding.rbac.authorization.k8s.io/read-secrets-global created
+
+    root@CKA003:~# kubectl apply -f nginx-deployment.yaml --token=eyJhbGciOiJSUzI1NiIsImtpZCI6InRBUkJ6bkxQMHNHSi1MejR4T2ZtYk43b1Y0S2M3MXZOMTMtQmtOaHpsbXMifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJrdWJlLXN5c3RlbSIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VjcmV0Lm5hbWUiOiJzYS1jbHVzdGVyLWFkbWluLXRva2VuLWs5eGZwIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQubmFtZSI6InNhLWNsdXN0ZXItYWRtaW4iLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC51aWQiOiIxMWRlYjhkZC01NjI1LTRkNzUtYWQ0NC0zYmVlZjFiY2Q5OTUiLCJzdWIiOiJzeXN0ZW06c2VydmljZWFjY291bnQ6a3ViZS1zeXN0ZW06c2EtY2x1c3Rlci1hZG1pbiJ9.Dr1aOVdwAXO_BPXlJAohKBjoxRhMmTWyfVy2AP3-D0V-2jzdzWKoEP_17wnAS3FP-hxuOtTr3XWN0zM4oAI8-CeXtP7AdB0sqZ9P7Wnp2s88DqDUNK0JUuYGke3js9xd44Bt5vhtRovNEMYEnLXj_NLOunW33f4g46ep4NvQpNGTd48BcgzFhiiWuXLKKGGoOZGrWlkXqyofE4li83B3D08oW-hjP4S0JBBXqmzpa0_PYi-hkPbirmn9J7F-oQd0So05uAzZROHSd7n8INlYwbJx2zRF8PKipscxu47ddEumr6R9b8qDDVolP5iawqFPeDTt9lOY7OdgEaVcL651UQ
+    deployment.apps/nginx-deployment created
+    ```
 
 ## Lesson 05: K8S Schedule
 
