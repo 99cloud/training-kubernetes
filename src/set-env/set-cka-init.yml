@@ -96,29 +96,3 @@
 
   - name: pull images
     shell: "kubeadm config images pull"
-
-  - name: Check if the /etc/kubernetes/admin.conf exists
-    stat:
-      path: /etc/kubernetes/admin.conf
-    register: stat_result
-
-  - name: install K8S cluster
-    shell: kubeadm init --pod-network-cidr 192.168.1.90/16
-    when: not stat_result.stat.exists
-
-  - name: creates directory {{ ansible_env.HOME }}/.kube
-    file:
-      path: "{{ ansible_env.HOME }}/.kube"
-      state: directory
-
-  - name: copy /etc/kubernetes/admin.conf to {{ ansible_env.HOME }}/.kube
-    copy:
-      src: /etc/kubernetes/admin.conf
-      dest: "{{ ansible_env.HOME }}/.kube/config"
-      remote_src: yes
-
-  - name: apply kube-flannel.yml
-    shell: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
-
-  - name: untainted all nodes
-    shell: kubectl taint nodes --all node-role.kubernetes.io/master:NoSchedule- || true

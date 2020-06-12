@@ -738,19 +738,61 @@
 
 ### 5.1 怎么部署一个 HA 的 K8S 群集？
 
-- [怎么部署一个 Multi-Node 的 K8S 环境？](https://github.com/99cloud/training-kubernetes/blob/master/doc/deploy-k8s-manual.md)
+- 参考资料
+    - [怎么部署一个 Multi-Node 的 K8S 环境？](https://github.com/99cloud/training-kubernetes/blob/master/doc/deploy-k8s-manual.md)
+    - [基于 AWS 部署高可用 Kubernetes 集群](https://github.com/99cloud/training-kubernetes/blob/master/doc/deploy-aws-ha-k8s-cluster.md)
+    - [penshift-container-platform-reference-architecture-implementation-guides](https://blog.openshift.com/openshift-container-platform-reference-architecture-implementation-guides/)
 
-- [基于 AWS 部署高可用 Kubernetes 集群](https://github.com/99cloud/training-kubernetes/blob/master/doc/deploy-aws-ha-k8s-cluster.md)
+        ![](../images/openshift-ha-deployment.png)
 
-- [penshift-container-platform-reference-architecture-implementation-guides](https://blog.openshift.com/openshift-container-platform-reference-architecture-implementation-guides/)
+        ![](../images/openshift-network-arch-azure.png)
 
-    ![](../images/openshift-ha-deployment.png)
+    - 网络多平面
 
-    ![](../images/openshift-network-arch-azure.png)
+        ![](../images/k8s-deploy-ha-multus.png)
 
-- 网络多平面
+- 步骤
 
-    ![](../images/k8s-deploy-ha-multus.png)
+    1. 在 master 节点上取得 token 和 ca_hash
+
+        ```console
+        root@ckamaster003:~# kubeadm token list | grep -v TOKEN | awk '{print $1}'
+        b6k3qj.avofghaucefqe0a8
+
+        root@ckamaster003:~# openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //'
+        d7d0906ebe29f607587e404ef6c393169a51e5f6c81e22a2a48f30ef8702e12a
+
+        root@ckamaster003:~# ifconfig | grep eth0 -A 1
+        eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+                inet 172.31.43.105  netmask 255.255.240.0  broadcast 172.31.47.255
+        ```
+
+    2. 在新节点上允许 kubeadm 命令，将新节点加入 k8s cluster
+
+        ```bash
+        token=b6k3qj.avofghaucefqe0a8
+        ca_hash=d7d0906ebe29f607587e404ef6c393169a51e5f6c81e22a2a48f30ef8702e12a
+        master_ip=172.31.43.105
+
+        kubeadm join $master_ip:6443 --token $token --discovery-token-ca-cert-hash sha256:$ca_hash
+        ```
+
+    3. 在新节点上配置 kubectl
+
+        ```bash
+        mkdir -p $HOME/.kube
+        scp root@$master_ip:/etc/kubernetes/admin.conf $HOME/.kube/config
+        chown $(id -u):$(id -g) $HOME/.kube/config
+        ```
+
+    4. 然后在新节点上用 kubectl 命令可以看到 node 已经 ready
+
+        ```console
+        root@ckaslave003:~# kubectl get nodes
+        NAME           STATUS   ROLES    AGE   VERSION
+        ckamaster003   Ready    master   20m   v1.18.3
+        ckaslave003    Ready    <none>   33s   v1.18.3
+        ```
 
 ### 5.2 怎么把应用部署到指定的 Node？
 

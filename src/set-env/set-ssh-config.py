@@ -2,37 +2,22 @@ import os
 
 BASE_DIR = os.path.dirname(__file__)
 
-aStr = '''
-CKA005	8.210.52.222
-CKA008	8.210.48.169
-CKA001	8.210.50.170
-CKA004	8.210.49.73
-CKA009	8.210.48.116
-CKA011	8.210.49.118
-CKA010	8.210.50.46
-CKA006	8.210.50.244
-CKA007	8.210.51.109
-CKA003	8.210.52.179
-CKA012	8.210.51.221
-CKA002	8.210.52.145
-'''
-
-aList = [i.split() for i in aStr.split('\n') if i.strip()]
-
+aList = [i.split() for i in open(os.path.join(BASE_DIR, "cka.txt"))]
+aList = [i for i in aList if i]
 print(aList)
 
 bStr = '''
 Host %s
     HostName        %s
     User            root
-    IdentityFile    ~/.ssh/id_rsa_license
+    IdentityFile    ~/.ssh/id_rsa_common
 '''
 
 for i, j in sorted(aList):
     print(bStr % (i.lower(), j), end='')
 
-for i, j in sorted(aList):
-    os.system('ssh-copy-id root@%s' % j)
+# for i, j in sorted(aList):
+#     os.system('ssh-copy-id -i ~/.ssh/id_rsa_common.pub root@%s' % j)
 
 # ansible inventory
 ini = open(os.path.join(BASE_DIR, 'ckaservers.ini'), 'w')
