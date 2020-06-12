@@ -3,30 +3,122 @@
   tasks:
   - name: "Config sshd"
     lineinfile:
-        path: "/etc/ssh/sshd_config"
-        state: present
-        regexp: "{{ item.regexp }}"
-        line: "{{ item.line }}"
+      path: "/etc/ssh/sshd_config"
+      state: present
+      regexp: "{{ item.regexp }}"
+      line: "{{ item.line }}"
     loop:
-        - {regexp: '^\s*ClientAliveInterval\s+', line: 'ClientAliveInterval 120'}
-        - {regexp: '^\s*ClientAliveCountMax\s+', line: 'ClientAliveCountMax 720'}
+      - {regexp: '^\s*ClientAliveInterval\s+', line: 'ClientAliveInterval 120'}
+      - {regexp: '^\s*ClientAliveCountMax\s+', line: 'ClientAliveCountMax 720'}
 
   - name: "Restart sshd"
     systemd:
-        state: restarted
-        daemon_reload: yes
-        name: sshd
+      state: restarted
+      daemon_reload: yes
+      name: sshd
+
+  - name: apt-get update
+    apt:
+      update_cache: yes
+
+  - name: install docker.io
+    apt:
+      name: docker.io
+
+  - name: start & enable docker
+    service:
+      name: docker
+      state: started
+      enabled: yes
+
+  - name: touch /etc/sysctl.d/k8s.conf
+    file:
+      path: /etc/sysctl.d/k8s.conf
+      state: touch
+
+  - name: make iptables see bridged traffic
+    lineinfile:
+      path: /etc/sysctl.d/k8s.conf
+      state: present
+      regexp: "{{ item.regexp }}"
+      line: "{{ item.line }}"
+    loop:
+      - {regexp: '^\s*net.bridge.bridge-nf-call-ip6tables\s+', line: 'net.bridge.bridge-nf-call-ip6tables = 1'}
+      - {regexp: '^\s*net.bridge.bridge-nf-call-iptables\s+', line: 'net.bridge.bridge-nf-call-iptables = 1'}
+
+  - name: sysctl --system
+    shell: sysctl --system
+
+  - name: install apt-transport-https & curlInstall
+    apt:
+      name: "{{ item }}"
+      state: present
+    loop:
+      - apt-transport-https
+      - curl
+
+  - name: Add an Apt signing key from packages.cloud.google.com
+    apt_key:
+      url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+      state: present
+
+  - name: touch /etc/apt/sources.list.d/kubernetes.list
+    file:
+      path: /etc/apt/sources.list.d/kubernetes.list
+      state: touch
+
+  - name: write to /etc/apt/sources.list.d/kubernetes.list
+    lineinfile:
+      path: /etc/apt/sources.list.d/kubernetes.list
+      state: present
+      regexp: "{{ item.regexp }}"
+      line: "{{ item.line }}"
+    loop:
+      - {regexp: '^\s*deb https://apt.kubernetes.io/ kubernetes-xenial main', line: 'deb https://apt.kubernetes.io/ kubernetes-xenial main'}
 
   - name: apt-get update
     apt:
         update_cache: yes
 
-  - name: install docker.io
+  - name: install kubelet kubeadm kubectl
     apt:
-        name: docker.io
+      name: "{{ item }}"
+    loop:
+      - kubelet
+      - kubeadm
+      - kubectl
 
-  - name: start & enable docker
-    service:
-        name: docker
-        state: started
-        enabled: yes
+  - name: restart kubelet
+    shell: "{{ item }}"
+    loop:
+      - systemctl daemon-reload
+      - systemctl restart kubelet
+
+  - name: pull images
+    shell: "kubeadm config images pull"
+
+  - name: Check if the /etc/kubernetes/admin.conf exists
+    stat:
+      path: /etc/kubernetes/admin.conf
+    register: stat_result
+
+  - name: install K8S cluster
+    shell: kubeadm init --pod-network-cidr 192.168.1.90/16
+    when: not stat_result.stat.exists
+
+  - name: creates directory {{ ansible_env.HOME }}/.kube
+    file:
+      path: "{{ ansible_env.HOME }}/.kube"
+      state: directory
+
+  - name: copy /etc/kubernetes/admin.conf to {{ ansible_env.HOME }}/.kube
+    copy:
+      src: /etc/kubernetes/admin.conf
+      dest: "{{ ansible_env.HOME }}/.kube/config"
+      remote_src: yes
+
+  - name: apply kube-flannel.yml
+    shell: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+
+  - name: untainted all nodes
+    shell: kubectl taint nodes --all node-role.kubernetes.io/master:NoSchedule- || true
