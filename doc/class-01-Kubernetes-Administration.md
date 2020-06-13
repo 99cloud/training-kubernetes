@@ -976,6 +976,51 @@
 - Nodeport
 - LB Type Service
 
+```bash
+# Taint slave 节点，因为在有些环境中没有放开隧道防火墙，我们强制让 pod 都跑在 master 上
+kubectl taint node ckaslave001 key=value:NoExecute
+
+# 创建 Deployment
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/website/master/content/en/examples/service/networking/run-my-nginx.yaml
+
+# 创建 Service
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/website/master/content/en/examples/service/networking/nginx-svc.yamlservice/my-nginx unchanged
+```
+
+```console
+root@ckamaster001:~# kubectl get svc --all-namespaces -o wide
+NAMESPACE     NAME         TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)                  AGE   SELECTOR
+default       kubernetes   ClusterIP   10.96.0.1      <none>        443/TCP                  8h    <none>
+default       my-nginx     ClusterIP   10.98.172.84   <none>        80/TCP                   36m   run=my-nginx
+kube-system   kube-dns     ClusterIP   10.96.0.10     <none>        53/UDP,53/TCP,9153/TCP   8h    k8s-app=kube-dns
+
+root@ckamaster001:~# dig @10.96.0.10 my-nginx.default.svc.cluster.local
+
+; <<>> DiG 9.11.3-1ubuntu1.12-Ubuntu <<>> @10.96.0.10 my-nginx.default.svc.cluster.local
+; (1 server found)
+;; global options: +cmd
+;; Got answer:
+;; WARNING: .local is reserved for Multicast DNS
+;; You are currently testing what happens when an mDNS query is leaked to DNS
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 23475
+;; flags: qr aa rd; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 1
+;; WARNING: recursion requested but not available
+
+;; OPT PSEUDOSECTION:
+; EDNS: version: 0, flags:; udp: 4096
+; COOKIE: 2661e0af4b0ce87e (echoed)
+;; QUESTION SECTION:
+;my-nginx.default.svc.cluster.local. IN	A
+
+;; ANSWER SECTION:
+my-nginx.default.svc.cluster.local. 30 IN A	10.98.172.84
+
+;; Query time: 0 msec
+;; SERVER: 10.96.0.10#53(10.96.0.10)
+;; WHEN: Sat Jun 13 16:15:23 CST 2020
+;; MSG SIZE  rcvd: 125
+```
+
 ### 7.3 什么是 Ingress？
 
 - [Ingress Controller](https://kubernetes.io/docs/concepts/services-networking/ingress-controllers/)
