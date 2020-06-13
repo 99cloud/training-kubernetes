@@ -796,19 +796,60 @@
 
 ### 5.2 怎么把应用部署到指定的 Node？
 
-- 实验：Node Label 和 Node Selector
+- 参考：[Labels and Selectors](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/)
+
+    ```yaml
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: label-demo
+      labels:
+        environment: production
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.14.2
+        ports:
+        - containerPort: 80
+    ```
+
+    ```bash
+    # 创建一个带 label 的 pod 对象 label-pod.yaml，内容如上
+
+    kubectl apply -f label-pod.yaml
+    ```
+
+    ```console
+    root@ckatest:~# kubectl get pods -l environment=production
+    NAME         READY   STATUS    RESTARTS   AGE
+    label-demo   1/1     Running   0          4m16s
+    root@ckatest:~# kubectl get pods -l environment=production,tier=frontend
+    No resources found in default namespace.
+
+    root@ckatest:~# kubectl get pods -l 'environment in (production),tier in (frontend)'
+    No resources found in default namespace.
+    root@ckatest:~# kubectl get pods -l 'environment in (production, qa)'
+    NAME         READY   STATUS    RESTARTS   AGE
+    label-demo   1/1     Running   0          4m42s
+    root@ckatest:~# kubectl get pods -l 'environment,environment notin (frontend)'
+    NAME         READY   STATUS    RESTARTS   AGE
+    label-demo   1/1     Running   0          4m50s
+    ```
+
+- 参考：[Assigning Pods to Nodes](https://kubernetes.io/docs/tasks/configure-pod-container/assign-pods-nodes/)
 
 ### 5.3 什么是 Taints & Toleration？
 
-- 实验：Taints 污染标签 & Toleration 容忍标签
+- 参考: [Taints and Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/)
 
 ### 5.4 什么是 Node Affinity？
 
-- 实验：Node Affinity 节点亲和
+- 参考：[Assign Pods to Nodes using Node Affinity](https://kubernetes.io/docs/tasks/configure-pod-container/assign-pods-nodes-using-node-affinity/)
 
 ### 5.5 什么是 Pod Affinity？
 
-- 实验：Inter-Pod Affinity / Anti，Pod 的亲和与反亲和
+- [Inter-pod affinity and anti-affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity)
 
 ### 5.6 实验：Pod 调度
 
@@ -816,17 +857,21 @@
 
 ### 6.1 什么是 ConfigMap & Secret？
 
-- 实验：Config Map
-- 实验：Secret
+- [ConfigMap](https://kubernetes.io/docs/concepts/configuration/configmap/)
+    - 参考：[Configure a Pod to Use a ConfigMap](https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/)
+    - 参考：[Configuring Redis using a ConfigMap](https://kubernetes.io/docs/tutorials/configuration/configure-redis-using-configmap/)
+- [Secret](https://kubernetes.io/docs/concepts/configuration/secret/)
 
 ### 6.2 什么是 PV / PVC？
 
-- 基本概念：PV / PVC
+- [Persistent Volumes](https://kubernetes.io/docs/concepts/storage/persistent-volumes/)
+- [Configure a Pod to Use a Volume for Storage](https://kubernetes.io/docs/tasks/configure-pod-container/configure-volume-storage/)
+- [Configure a Pod to Use a PersistentVolume for Storage](https://kubernetes.io/docs/tasks/configure-pod-container/configure-persistent-volume-storage/)
 
 ### 6.3 什么是 Storage Class？
 
-- 基本概念：Storage Class
-- 实验：Storage Class
+- [Storage Classes](https://kubernetes.io/docs/concepts/storage/storage-classes/)
+- [Dynamic Volume Provisioning](https://kubernetes.io/docs/concepts/storage/dynamic-provisioning/)
 
 ### 6.4 实验：ConfigMap / Secret / PV & PVC / StorageClass
 
@@ -834,6 +879,8 @@
 
 ### 7.1 Service 在底层是怎么实现的？
 
+- [Service](https://kubernetes.io/docs/concepts/services-networking/service/)
+- [Connecting Applications with Services](https://kubernetes.io/docs/concepts/services-networking/connect-applications-service/)
 - [A Guide to the Kubernetes Networking Model](https://sookocheff.com/post/kubernetes/understanding-kubernetes-networking-model/)
 
 ### 7.2 实验：发布服务
@@ -845,11 +892,8 @@
 
 ### 7.3 什么是 Ingress？
 
-- 实验：Ingress / Route
-
-### 7.4 实验：对集群外发布服务
-
-- Lab: Ingress Controller
+- [Ingress Controller](https://kubernetes.io/docs/concepts/services-networking/ingress-controllers/)
+- [Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/)
 
 ## Lesson 08：Advance
 
@@ -886,7 +930,8 @@
 
 ### 8.4 K8S 怎么处理有状态服务？
 
-- StatefulSet
+- [StatefulSet](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/)
+- [StatefulSet Examples](https://kubernetes.io/docs/tutorials/stateful-application/basic-stateful-set/)
 - CRD & Operator
 
 ### 8.5 其它参考
