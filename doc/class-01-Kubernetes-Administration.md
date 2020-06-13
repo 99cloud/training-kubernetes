@@ -842,6 +842,26 @@
 ### 5.3 什么是 Taints & Toleration？
 
 - 参考: [Taints and Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/)
+- 实验
+
+    ```yaml
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: nginx5
+    spec:
+      containers:
+      - name: nginx
+        image: nginx
+        imagePullPolicy: IfNotPresent
+      nodeSelector:
+        node-role.kubernetes.io/master: ""
+      tolerations:
+      - key: "key"
+        operator: "Equal"
+        value: "value"
+        effect: "NoSchedule"
+    ```
 
 ### 5.4 什么是 Node Affinity？
 
