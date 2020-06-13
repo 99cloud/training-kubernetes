@@ -949,6 +949,7 @@
 
 ### 6.2 什么是 PV / PVC？
 
+- [Types of Volumes](https://kubernetes.io/docs/concepts/storage/volumes/#types-of-volumes)
 - [Persistent Volumes](https://kubernetes.io/docs/concepts/storage/persistent-volumes/)
 - [Configure a Pod to Use a Volume for Storage](https://kubernetes.io/docs/tasks/configure-pod-container/configure-volume-storage/)
 - [Configure a Pod to Use a PersistentVolume for Storage](https://kubernetes.io/docs/tasks/configure-pod-container/configure-persistent-volume-storage/)
