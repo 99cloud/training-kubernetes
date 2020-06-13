@@ -895,6 +895,56 @@
 - [ConfigMap](https://kubernetes.io/docs/concepts/configuration/configmap/)
     - 参考：[Configure a Pod to Use a ConfigMap](https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/)
     - 参考：[Configuring Redis using a ConfigMap](https://kubernetes.io/docs/tutorials/configuration/configure-redis-using-configmap/)
+
+    ```yaml
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: example
+    data:
+      example.property.1: hello
+      example.property.2: world
+      example.property.file: |-
+        property.1=value-1
+        property.2=value-2
+        property.3=value-3
+    ```
+
+    ```yaml
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: configmap-demo-pod
+    spec:
+      containers:
+        - name: nginx
+          image: nginx
+          env:
+            - name: TEST1
+              valueFrom:
+                configMapKeyRef:
+                  name: example
+                  key: example.property.2
+          volumeMounts:
+          - name: config
+            mountPath: "/config"
+            readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: example
+    ```
+
+    ```console
+    root@ckamaster003:~# kubectl exec -it configmap-demo-pod /bin/sh
+
+    # env | grep TEST
+    TEST1=world
+
+    # ls /config
+    example.property.1  example.property.2	example.property.file
+    ```
+
 - [Secret](https://kubernetes.io/docs/concepts/configuration/secret/)
 
 ### 6.2 什么是 PV / PVC？
