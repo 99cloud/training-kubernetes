@@ -952,7 +952,7 @@
 - [Types of Volumes](https://kubernetes.io/docs/concepts/storage/volumes/#types-of-volumes)
 - [Persistent Volumes](https://kubernetes.io/docs/concepts/storage/persistent-volumes/)
 - [Configure a Pod to Use a Volume for Storage](https://kubernetes.io/docs/tasks/configure-pod-container/configure-volume-storage/)
-- [Configure a Pod to Use a PersistentVolume for Storage](https://kubernetes.io/docs/tasks/configure-pod-container/configure-persistent-volume-storage/)
+- [Configure a Pod to Use a PersistentVolume for Storage](https://kubernetes.io/docs/tasks/configure-pod-container/configure-persistent-volume-storage/)，注意 hostpath 对应到 node 上的路径，要看好 pod 跑在哪个 node 上，最好事先 taint slave node，或者 node select 指定 pod 跑在 master 上，这样就没问题了。
 
 ### 6.3 什么是 Storage Class？
 
