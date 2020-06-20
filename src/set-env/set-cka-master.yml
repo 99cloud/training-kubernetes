@@ -25,10 +25,23 @@
   #   shell: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
 
   - name: install the Tigera Calico operator and custom resource definitions
-    shell: kubectl create -f https://docs.projectcalico.org/manifests/tigera-operator.yaml
+    shell: kubectl apply -f https://docs.projectcalico.org/manifests/tigera-operator.yaml
 
   - name: install Calico by creating the necessary custom resource
-    shell: kubectl create -f https://docs.projectcalico.org/manifests/custom-resources.yaml
+    shell: kubectl apply -f https://docs.projectcalico.org/manifests/custom-resources.yaml
 
   - name: untainted all nodes
     shell: kubectl taint nodes --all node-role.kubernetes.io/master- || true
+
+  - name: get join commands
+    shell: |
+      kubeadm token create > /dev/null 2>&1
+      master_ip=$(ifconfig | grep eth0 -A 1 | grep inet | awk '{print $2}')
+      token=$(kubeadm token list | grep -v TOKEN | awk '{print $1}' | head -n 1)
+      ca_hash=$(openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //')
+      echo kubeadm join ${master_ip}:6443 --token ${token} --discovery-token-ca-cert-hash sha256:${ca_hash}
+    register: kubeadm_join
+
+  - name: show join commands
+    debug:
+      msg: "{{ inventory_hostname }}: {{ kubeadm_join.stdout_lines }}"
