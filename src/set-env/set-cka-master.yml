@@ -1,5 +1,5 @@
 ---
-- hosts: ckaservers
+- hosts: ckamasters
   tasks:
   - name: Check if the /etc/kubernetes/admin.conf exists
     stat:
@@ -21,8 +21,14 @@
       dest: "{{ ansible_env.HOME }}/.kube/config"
       remote_src: yes
 
-  - name: apply kube-flannel.yml
-    shell: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+  # - name: install flannel
+  #   shell: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+
+  - name: install the Tigera Calico operator and custom resource definitions
+    shell: kubectl create -f https://docs.projectcalico.org/manifests/tigera-operator.yaml
+
+  - name: install Calico by creating the necessary custom resource
+    shell: kubectl create -f https://docs.projectcalico.org/manifests/custom-resources.yaml
 
   - name: untainted all nodes
-    shell: kubectl taint nodes --all node-role.kubernetes.io/master:NoSchedule- || true
+    shell: kubectl taint nodes --all node-role.kubernetes.io/master- || true

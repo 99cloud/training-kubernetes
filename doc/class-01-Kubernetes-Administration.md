@@ -291,11 +291,14 @@
     sudo chown $(id -u):$(id -g) $HOME/.kube/config
     ```
 
-1. 此时可以观察到 node 并未 ready，导致 coredns 无法调度。接下来需要：[安装网络插件](https://kubernetes.io/zh/docs/setup/independent/create-cluster-kubeadm/#Pod-network)，[插件列表](https://kubernetes.io/docs/concepts/cluster-administration/addons/)，我们选择：[Flannel](https://github.com/coreos/flannel/blob/master/Documentation/kube-flannel.yml)
+1. 此时可以观察到 node 并未 ready，导致 coredns 无法调度。接下来需要：[安装网络插件](https://kubernetes.io/zh/docs/setup/independent/create-cluster-kubeadm/#Pod-network)，[插件列表](https://kubernetes.io/docs/concepts/cluster-administration/addons/)，这里我们用 [Calico](https://docs.projectcalico.org/getting-started/kubernetes/quickstart)。
 
     ```bash
     # 添加网络插件
-    kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+    # Install the Tigera Calico operator and custom resource definitions
+    kubectl create -f https://docs.projectcalico.org/manifests/tigera-operator.yaml
+    # Install Calico by creating the necessary custom resource
+    kubectl create -f https://docs.projectcalico.org/manifests/custom-resources.yaml
 
     # 查看 pods 和 nodes 状态
     kubectl get pods --all-namespaces
@@ -756,7 +759,10 @@
     1. 在 master 节点上取得 token 和 ca_hash
 
         ```console
-        root@ckamaster003:~# kubeadm token list | grep -v TOKEN | awk '{print $1}'
+        root@ckamaster003:~# kubeadm token create
+        b6k3qj.avofghaucefqe0a8
+
+        root@ckamaster003:~# kubeadm token list | grep -v TOKEN | awk '{print $1}' | head -n -1
         b6k3qj.avofghaucefqe0a8
 
         root@ckamaster003:~# openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //'
@@ -770,10 +776,12 @@
     2. 在新节点上允许 kubeadm 命令，将新节点加入 k8s cluster
 
         ```bash
-        token=b6k3qj.avofghaucefqe0a8
-        ca_hash=d7d0906ebe29f607587e404ef6c393169a51e5f6c81e22a2a48f30ef8702e12a
-        master_ip=172.31.43.105
+        kubeadm token create
+        master_ip=$(ifconfig | grep eth0 -A 1 | grep inet | awk '{print $2}')
+        token=$(kubeadm token list | grep -v TOKEN | awk '{print $1}' | head -n -1)
+        ca_hash=$(openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //')
 
+        echo kubeadm join $master_ip:6443 --token $token --discovery-token-ca-cert-hash sha256:$ca_hash
         kubeadm join $master_ip:6443 --token $token --discovery-token-ca-cert-hash sha256:$ca_hash
         ```
 
@@ -1032,24 +1040,61 @@ my-nginx.default.svc.cluster.local. 30 IN A	10.98.172.84
 
 - 监控：Grafana / Prometheus / AlertManager
 - 日志：ElasticSearch / Fluent ( Logstash ) / Kibana
-- 排错：怎么对 pod 的网口抓包？
+- 排错：
+    - 怎么对 pod 的网口抓包？
 
-    ```bash
-    # 查看指定 pod 运行在那个 node 上
-    kubectl describe pod <pod> -n <namespace>
+        ```bash
+        # 查看指定 pod 运行在那个 node 上
+        kubectl describe pod <pod> -n <namespace>
 
-    # 获得容器的 pid
-    docker inspect -f {{.State.Pid}} <container>
+        # 获得容器的 pid
+        docker inspect -f {{.State.Pid}} <container>
 
-    # 进入该容器的 network namespace
-    nsenter --target <PID> -n
+        # 进入该容器的 network namespace
+        nsenter --target <PID> -n
 
-    # 使用 tcpdump 抓包，指定 eth0 网卡
-    tcpdump -i eth0 tcp and port 80 -vvv
+        # 使用 tcpdump 抓包，指定 eth0 网卡
+        tcpdump -i eth0 tcp and port 80 -vvv
 
-    # 或者抓包并导出到文件
-    tcpdump -i eth0 -w ./out.cap
-    ```
+        # 或者抓包并导出到文件
+        tcpdump -i eth0 -w ./out.cap
+        ```
+
+    - Debug tools
+
+        ```bash
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          name: demo-pod
+          labels:
+            app: demo-pod
+        spec:
+          containers:
+            - name: nginx
+              image: nginx
+              ports:
+                - containerPort: 80
+              env:
+                - name: DEMO_GREETING
+                  value: "Hello from the environment"
+                - name: DEMO_FAREWELL
+                  value: "Such a sweet sorrow"
+            - name: busybox
+              image: busybox
+              args:
+                - sleep
+                - "1000000"
+        ```
+
+        ```console
+        root@ckatest001:~# kubectl exec -it demo-pod -c busybox -- /bin/sh
+        / # ping 192.168.123.133
+        PING 192.168.123.133 (192.168.123.133): 56 data bytes
+        64 bytes from 192.168.123.133: seq=0 ttl=63 time=0.099 ms
+        64 bytes from 192.168.123.133: seq=1 ttl=63 time=0.093 ms
+        64 bytes from 192.168.123.133: seq=2 ttl=63 time=0.089 ms
+        ```
 
 ### 8.2 什么是 HPA / CA / VA？
 
