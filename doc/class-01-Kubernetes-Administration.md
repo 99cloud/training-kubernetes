@@ -1089,11 +1089,76 @@ my-nginx.default.svc.cluster.local. 30 IN A	10.98.172.84
 
         ```console
         root@ckatest001:~# kubectl exec -it demo-pod -c busybox -- /bin/sh
-        / # ping 192.168.123.133
-        PING 192.168.123.133 (192.168.123.133): 56 data bytes
-        64 bytes from 192.168.123.133: seq=0 ttl=63 time=0.099 ms
-        64 bytes from 192.168.123.133: seq=1 ttl=63 time=0.093 ms
-        64 bytes from 192.168.123.133: seq=2 ttl=63 time=0.089 ms
+        / # ping 192.168.209.193
+        PING 192.168.209.193 (192.168.209.193): 56 data bytes
+        64 bytes from 192.168.209.193: seq=0 ttl=63 time=0.099 ms
+        64 bytes from 192.168.209.193: seq=1 ttl=63 time=0.093 ms
+        64 bytes from 192.168.209.193: seq=2 ttl=63 time=0.089 ms
+        ```
+
+        ```console
+        root@ckalab001:~# tcpdump -i eth0 udp
+        12:34:10.972395 IP 45.77.183.254.vultr.com.42125 > 45.32.33.135.vultr.com.4789: VXLAN, flags [I] (0x08), vni 4096
+        IP 192.168.208.4 > 192.168.209.193: ICMP echo request, id 3072, seq 0, length 64
+        12:34:10.972753 IP 45.32.33.135.vultr.com.41062 > 45.77.183.254.vultr.com.4789: VXLAN, flags [I] (0x08), vni 4096
+        IP 192.168.209.193 > 192.168.208.4: ICMP echo reply, id 3072, seq 0, length 64
+        12:34:11.972537 IP 45.77.183.254.vultr.com.42125 > 45.32.33.135.vultr.com.4789: VXLAN, flags [I] (0x08), vni 4096
+        IP 192.168.208.4 > 192.168.209.193: ICMP echo request, id 3072, seq 1, length 64
+        ```
+
+        在阿里云上比较特别，阿里云把 calico / flannel 的 vxlan 魔改成路由协议了，因此需要在 VPC 上加路由才行，每个节点一条路由协议。该节点的 pod 网段都发给该节点的 node ip。这篇 KB 非常含糊其辞，翻译一下就是不支持 vxlan，魔改 vxlan，底层用路由协议实现，所以需要在 VPC 上加路由。
+
+        正常的 vxlan，
+        ```console
+        root@ckalab001:~# ip r
+        default via 45.77.182.1 dev ens3 proto dhcp src 45.77.183.254 metric 100 
+        192.168.208.1 dev cali65a032ad3e5 scope link 
+        192.168.209.192/26 via 192.168.209.192 dev vxlan.calico onlink 
+
+        root@ckalab001:~# ip a
+        2: ens3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP group default qlen 1000
+            link/ether 56:00:02:d8:35:5a brd ff:ff:ff:ff:ff:ff
+            inet 45.77.183.254/23 brd 45.77.183.255 scope global dynamic ens3
+              valid_lft 73639sec preferred_lft 73639sec
+            inet6 fe80::5400:2ff:fed8:355a/64 scope link 
+              valid_lft forever preferred_lft forever
+        4: cali65a032ad3e5@if3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1410 qdisc noqueue state UP group default 
+            link/ether ee:ee:ee:ee:ee:ee brd ff:ff:ff:ff:ff:ff link-netnsid 0
+            inet6 fe80::ecee:eeff:feee:eeee/64 scope link 
+              valid_lft forever preferred_lft forever
+        9: vxlan.calico: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1410 qdisc noqueue state UNKNOWN group default 
+            link/ether 66:f1:80:3e:ea:c6 brd ff:ff:ff:ff:ff:ff
+            inet 192.168.208.0/32 brd 192.168.208.0 scope global vxlan.calico
+              valid_lft forever preferred_lft forever
+            inet6 fe80::64f1:80ff:fe3e:eac6/64 scope link 
+              valid_lft forever preferred_lft forever
+        ```
+
+        阿里云魔改的 vxlan：`192.168.209.192/26 via 172.31.43.146 dev eth0 proto 80 onlink`，80 是 IGRP 网关间路由协议。所以跨 node 的 pod 间发 ping 包时，tcpdump 抓 tcp 包抓不到，抓 icmp 包可以抓到。
+
+        ```console
+        root@ckalab001:~# ip r
+        default via 172.31.47.253 dev eth0 proto dhcp src 172.31.43.145 metric 100
+        192.168.208.1 dev cali77bffbebec8 scope link 
+        192.168.209.192/26 via 172.31.43.146 dev eth0 proto 80 onlink
+
+        root@ckalab001:~# ip a
+        2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP group default qlen 1000
+            link/ether 00:16:3e:08:2e:5f brd ff:ff:ff:ff:ff:ff
+            inet 172.31.43.145/20 brd 172.31.47.255 scope global dynamic eth0
+              valid_lft 315356000sec preferred_lft 315356000sec
+            inet6 fe80::216:3eff:fe08:2e5f/64 scope link 
+              valid_lft forever preferred_lft forever
+        4: cali77bffbebec8@if3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1410 qdisc noqueue state UP group default 
+            link/ether ee:ee:ee:ee:ee:ee brd ff:ff:ff:ff:ff:ff link-netnsid 0
+            inet6 fe80::ecee:eeff:feee:eeee/64 scope link 
+              valid_lft forever preferred_lft forever
+        8: vxlan.calico: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1410 qdisc noqueue state UNKNOWN group default 
+            link/ether 66:f1:80:3e:ea:c6 brd ff:ff:ff:ff:ff:ff
+            inet 192.168.208.0/32 brd 192.168.208.0 scope global vxlan.calico
+              valid_lft forever preferred_lft forever
+            inet6 fe80::64f1:80ff:fe3e:eac6/64 scope link 
+              valid_lft forever preferred_lft forever
         ```
 
 ### 8.2 什么是 HPA / CA / VA？
