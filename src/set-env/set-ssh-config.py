@@ -24,3 +24,11 @@ ini = open(os.path.join(BASE_DIR, 'ckaservers.ini'), 'w')
 ini.write('[ckaservers]\n')
 for i, j in sorted(aList):
     ini.write('%s\n' % i.lower())
+
+ini.write('\n[ckamasters]\n')
+for i, j in enumerate(x for x, y in sorted(aList) if "master" in x):
+    ini.write('%s cidr=192.168.%d.0/16\n' % (j.lower(), i + 1))
+
+ini.write('\n[ckaslaves]\n')
+for i, j in enumerate(x for x, y in sorted(aList) if "slave" in x):
+    ini.write('%s\n' % j.lower())

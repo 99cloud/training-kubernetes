@@ -1106,7 +1106,7 @@ my-nginx.default.svc.cluster.local. 30 IN A	10.98.172.84
         IP 192.168.208.4 > 192.168.209.193: ICMP echo request, id 3072, seq 1, length 64
         ```
 
-        在阿里云上比较特别，阿里云把 calico / flannel 的 vxlan 魔改成路由协议了，因此需要在 VPC 上加路由才行，每个节点一条路由协议。该节点的 pod 网段都发给该节点的 node ip。这篇 KB 非常含糊其辞，翻译一下就是不支持 vxlan，魔改 vxlan，底层用路由协议实现，所以需要在 VPC 上加路由。
+        在阿里云上比较特别，阿里云把 calico / flannel 的 vxlan 魔改成路由协议了，因此需要在 VPC 上加路由才行，每个节点一条路由协议。该节点的 pod 网段都发给该节点的 node ip。[这篇 KB](https://yq.aliyun.com/articles/704175) 非常含糊其辞，翻译一下就是不支持 vxlan，魔改 vxlan，底层用路由协议实现，所以需要在 VPC 上加路由。
 
         正常的 vxlan，
         ```console
