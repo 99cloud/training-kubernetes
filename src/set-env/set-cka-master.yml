@@ -50,11 +50,3 @@
   - name: show join commands
     debug:
       msg: "{{ inventory_hostname }}: {{ kubeadm_join.stdout_lines }}"
-
-  - name: get cidr
-    shell: ifconfig | grep vxlan.calico -A 1 | grep inet | awk '{print $2}'
-    register: cidr
-
-  - name: show cidr
-    debug:
-      msg: "{{ inventory_hostname }}: {{ kubeadm_join.stdout_lines }}"

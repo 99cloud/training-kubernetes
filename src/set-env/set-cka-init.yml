@@ -96,3 +96,11 @@
 
   - name: pull images
     shell: "kubeadm config images pull"
+
+  - name: get vxlan.calico
+    shell: ifconfig | grep vxlan.calico -A 1 | grep inet | awk '{print $2}'
+    register: vxlan
+
+  - name: show vxlan.calico
+    debug:
+      msg: "{{ inventory_hostname }}: {{ vxlan.stdout_lines }}"
