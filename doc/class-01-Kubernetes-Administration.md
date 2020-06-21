@@ -778,7 +778,7 @@
         ```bash
         kubeadm token create
         master_ip=$(ifconfig | grep eth0 -A 1 | grep inet | awk '{print $2}')
-        token=$(kubeadm token list | grep -v TOKEN | awk '{print $1}' | head -n -1)
+        token=$(kubeadm token list | grep -v TOKEN | awk '{print $1}' | head -n 1)
         ca_hash=$(openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //')
 
         echo kubeadm join $master_ip:6443 --token $token --discovery-token-ca-cert-hash sha256:$ca_hash
