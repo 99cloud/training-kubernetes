@@ -363,11 +363,16 @@
 
             ```python
             from flask import Flask
+            import os
+            import socket
+
             app = Flask(__name__)
 
             @app.route("/")
             def hello():
-                return "Hello from Python!"
+                html = "<h3>Hello {name}!</h3>" \
+                       "<b>Hostname:</b> {hostname}<br/>"
+                return html.format(name=os.getenv("NAME", "world"), hostname=socket.gethostname())
 
             if __name__ == "__main__":
                 app.run(host='0.0.0.0')
@@ -415,14 +420,16 @@
           - protocol: "TCP"
             port: 6000
             targetPort: 5000
-          type: LoadBalancer
 
         ---
-        apiVersion: apps/v1beta1
+        apiVersion: apps/v1
         kind: Deployment
         metadata:
           name: hello-python
         spec:
+          selector:
+            matchLabels:
+              app: hello-python
           replicas: 4
           template:
             metadata:
