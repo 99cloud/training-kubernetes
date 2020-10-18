@@ -346,6 +346,102 @@
     docker ps | grep nginx
     ```
 
+- 在容器平台上发布 Python 应用
+    - 我们将要做什么？
+        - 下载应用代码，并且在本地跑起来
+        - 为应用构建一个 Docker 镜像，然后启动一个 Docker 容器来运行此应用
+        - 创建一个 Deployment 对象，将应用运行在 K8S 平台上
+        - 参考：[https://kubernetes.io/blog/2019/07/23/get-started-with-kubernetes-using-python/](https://kubernetes.io/blog/2019/07/23/get-started-with-kubernetes-using-python/)
+    - 预置条件有哪些？
+        - 本地具备 Python 3.6+ 的运行环境
+        - 安装了 Git（非必须）
+        - 安装了 Docker
+        - 一个 Kubernetes 平台
+    - 获取代码：`git clone https://github.com/JasonHaley/hello-python.git`，在 hello-python/app 目录下有两个文件：
+        - 其中 `requirements.txt` 里只有一行：Flask，是依赖包列表文件
+        - 另一个文件是 `main.py`，是应用的逻辑代码
+
+            ```python
+            from flask import Flask
+            app = Flask(__name__)
+
+            @app.route("/")
+            def hello():
+                return "Hello from Python!"
+
+            if __name__ == "__main__":
+                app.run(host='0.0.0.0')
+            ```
+
+    - 本地运行：
+        - 安装依赖：`pip install -r requirements.txt`
+        - 本地运行：`python main.py`，会在本地启动一个用于开发的 web 服务器。
+        - 你可以打开浏览器，访问 `http://localhost:5000` 端口
+    - Docker 镜像构建文件，在 hello-python/docker 目录下有一个 Dockerfile 文件
+
+        ```dockerfile
+        FROM python:3.7
+
+        RUN mkdir /app
+        WORKDIR /app
+        ADD . /app/
+        RUN pip install -r requirements.txt
+
+        EXPOSE 5000
+        CMD ["python", "/app/main.py"]
+        ```
+
+    - 构建 Docker 镜像并运行
+        - 将 Dockerfile 文件复制到 hello-python/app 目录中
+        - 运行命令构建镜像：`docker build -f Dockerfile -t hello-python:latest .`
+        - 构建完成后，可以通过 `docker image ls` 看到刚才构建的镜像
+        - 然后运行此镜像：`docker run -p 5001:5000 hello-python`
+        - 然后访问 `http://localhost:5001`，同样可以看到 `Hello form Python!` 字符串
+    - 确定 Kubernetes 和 kubectl 运行正常
+        - 运行命令：`kubectl version`，如果该命令不报错，就说明 kubectl 安装完成。
+        - 运行命令：`kubectl get nodes`，如果返回节点信息，说明 K8S 运行正常，kubectl 配置正常。
+    - K8S deployment YAML 文件：[https://github.com/JasonHaley/hello-python/blob/master/kubernetes/deployment.yaml
+](https://github.com/JasonHaley/hello-python/blob/master/kubernetes/deployment.yaml)
+
+        ```yaml
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: hello-python-service
+        spec:
+          selector:
+            app: hello-python
+          ports:
+          - protocol: "TCP"
+            port: 6000
+            targetPort: 5000
+          type: LoadBalancer
+
+        ---
+        apiVersion: apps/v1beta1
+        kind: Deployment
+        metadata:
+          name: hello-python
+        spec:
+          replicas: 4
+          template:
+            metadata:
+              labels:
+                app: hello-python
+            spec:
+              containers:
+              - name: hello-python
+                image: hello-python:latest
+                imagePullPolicy: Never
+                ports:
+                - containerPort: 5000
+        ```
+
+    - 将 Deployment 部署到 K8S 平台
+        - 运行命令：`kubectl apply -f deployment.yaml`
+        - 运行命令：`kubectl get pods，检查 pods`
+        - 然后可以打开浏览器，在 `http://localhost:6000` 看到 `Hello form Python!` 信息
+
 ## Lesson 03：K8S concepts
 
 ### 3.1 什么是 YAML？
