@@ -842,12 +842,12 @@
 
 ## Lesson 05: K8S Schedule
 
-### 5.1 怎么部署一个 HA 的 K8S 群集？
+### 5.1 怎么部署一个多节点的 K8S 群集？
 
 - 参考资料
     - [怎么部署一个 Multi-Node 的 K8S 环境？](https://github.com/99cloud/training-kubernetes/blob/master/doc/deploy-k8s-manual.md)
     - [基于 AWS 部署高可用 Kubernetes 集群](https://github.com/99cloud/training-kubernetes/blob/master/doc/deploy-aws-ha-k8s-cluster.md)
-    - [penshift-container-platform-reference-architecture-implementation-guides](https://blog.openshift.com/openshift-container-platform-reference-architecture-implementation-guides/)
+    - [openshift-container-platform-reference-architecture-implementation-guides](https://blog.openshift.com/openshift-container-platform-reference-architecture-implementation-guides/)
 
         ![](../images/openshift-ha-deployment.png)
 
