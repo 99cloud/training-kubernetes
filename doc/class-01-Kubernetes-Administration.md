@@ -414,12 +414,14 @@
         metadata:
           name: hello-python-service
         spec:
+          type: NodePort
           selector:
             app: hello-python
           ports:
           - protocol: "TCP"
             port: 6000
             targetPort: 5000
+            nodePort: 31000
 
         ---
         apiVersion: apps/v1
