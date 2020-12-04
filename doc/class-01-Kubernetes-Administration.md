@@ -1178,6 +1178,28 @@ my-nginx.default.svc.cluster.local. 30 IN A	10.98.172.84
 ### 8.5 其它参考
 
 - [K8S 测试](https://jimmysong.io/kubernetes-handbook/develop/testing.html)
+- 搭建 OpenStack 测试环境
+  - [vultr](https://www.vultr.com/) 开 Ubuntu 18.04 / 20.4 Bare Metal 服务器
+  - [安装 DevStack](https://docs.openstack.org/devstack/latest/)
+  - [下载云镜像](https://docs.openstack.org/image-guide/obtain-images.html)
+
+      ```bash
+      wget http://cloud.centos.org/centos/7/images/CentOS-7-x86_64-GenericCloud-2009.qcow2
+      wget https://cloud-images.ubuntu.com/bionic/current/bionic-server-cloudimg-amd64.img
+      wget https://cloud-images.ubuntu.com/focal/current/focal-server-cloudimg-amd64.img
+      ```
+
+  - [上传云镜像](https://docs.openstack.org/murano/pike/reference/appendix/articles/image_builders/upload.html)
+
+      ```bash
+      openstack image create --public --disk-format qcow2 --file focal-server-cloudimg-amd64.img ubuntu-20.04
+      openstack image create --public --disk-format qcow2 --file bionic-server-cloudimg-amd64.img ubuntu-18.04
+      openstack image create --public --disk-format qcow2 --file CentOS-7-x86_64-GenericCloud-2009.qcow2 centos-7.8
+      ```
+
+  - [启用 ipip](https://www.infoq.cn/article/mqluyhvsdw8xopdwp17v)
+- [k3s 环境搭建](https://github.com/k3s-io/k3s#quick-start---install-script)
+- [KubeEdge Demo](https://kubeedge.io/zh/blog/kubeedge-deployment-manual/)
 
 ##	Lesson 09：CKA
 
