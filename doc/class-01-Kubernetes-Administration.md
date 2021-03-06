@@ -379,8 +379,8 @@
             ```
 
     - 本地运行：
-        - 安装依赖：`pip install -r requirements.txt`
-        - 本地运行：`python main.py`，会在本地启动一个用于开发的 web 服务器。
+        - 安装依赖：`pip install -r requirements.txt`（pip 如果没有，改成 pip3）
+        - 本地运行：`python main.py`（python 如果没有，改成 python3），会在本地启动一个用于开发的 web 服务器。
         - 你可以打开浏览器，访问 `http://localhost:5000` 端口
     - Docker 镜像构建文件，在 hello-python/docker 目录下有一个 Dockerfile 文件
 
