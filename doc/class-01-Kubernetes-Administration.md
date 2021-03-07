@@ -449,7 +449,7 @@
     - 将 Deployment 部署到 K8S 平台
         - 运行命令：`kubectl apply -f deployment.yaml`
         - 运行命令：`kubectl get pods，检查 pods`
-        - 然后可以打开浏览器，在 `http://localhost:6000` 看到 `Hello form Python!` 信息
+        - 然后可以打开浏览器，在 `http://localhost:31000` 看到 `Hello form Python!` 信息
 
 ## Lesson 03：K8S concepts
 
