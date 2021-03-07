@@ -1,0 +1,10 @@
+[all:vars]
+
+[bastion]
+cka-bastion
+cka-fq
+cka-fq2
+
+[server]
+# cka001
+# cka002
