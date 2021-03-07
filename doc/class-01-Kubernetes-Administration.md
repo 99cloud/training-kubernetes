@@ -580,8 +580,8 @@
     spec:
     containers:
         - name: web
-        image: nginx
-        ports:
+          image: nginx
+          ports:
             - name: web
             containerPort: 80
             protocol: TCP
