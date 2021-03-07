@@ -856,15 +856,15 @@
     # This cluster role binding allows anyone in the "manager" group to read secrets in any namespace.
     kind: ClusterRoleBinding
     metadata:
-    name: read-secrets-global
+      name: read-secrets-global
     subjects:
     - kind: User
-    name: sa-cluster-admin
-    apiGroup: rbac.authorization.k8s.io
+      name: sa-cluster-admin
+      apiGroup: rbac.authorization.k8s.io
     roleRef:
-    kind: ClusterRole
-    name: cluster-admin
-    apiGroup: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: cluster-admin
+      apiGroup: rbac.authorization.k8s.io
 
     root@CKA003:~# kubectl create -f sa-cluster-admin-rolebinding.yaml
     clusterrolebinding.rbac.authorization.k8s.io/read-secrets-global created
