@@ -5,7 +5,7 @@
 ```bash
 ssh root@106.15.4.212
 ssh apple@13.70.46.16
-ssh cka0XX-ip
+ssh root@cka0XX-ip
 ```
 
 # 免密码登陆步骤
