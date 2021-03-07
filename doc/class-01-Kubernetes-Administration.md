@@ -719,12 +719,12 @@
     apiVersion: rbac.authorization.k8s.io/v1
     kind: Role
     metadata:
-    namespace: default
-    name: pod-reader
+      namespace: default
+      name: pod-reader
     rules:
     - apiGroups: [""] # "" indicates the core API group
-    resources: ["pods"]
-    verbs: ["get", "watch", "list"]
+      resources: ["pods"]
+      verbs: ["get", "watch", "list"]
 
     root@CKA003:~# kubectl apply -f pod-read.yaml
     role.rbac.authorization.k8s.io/pod-reader created
@@ -736,18 +736,19 @@
     # You need to already have a Role named "pod-reader" in that namespace.
     kind: RoleBinding
     metadata:
-    name: read-pods
-    namespace: default
+      name: read-pods
+      namespace: default
     subjects:
     # You can specify more than one "subject"
     - kind: User
-    name: poweruser # "name" is case sensitive
-    apiGroup: rbac.authorization.k8s.io
+      name: poweruser # "name" is case sensitive
+      apiGroup: rbac.authorization.k8s.io
     roleRef:
     # "roleRef" specifies the binding to a Role / ClusterRole
-    kind: Role #this must be Role or ClusterRole
-    name: pod-reader # this must match the name of the Role or ClusterRole you wish to bind to
-    apiGroup: rbac.authorization.k8s.io
+      kind: Role #this must be Role or ClusterRole
+      name: pod-reader # this must match the name of the Role or ClusterRole you wish to bind to
+      apiGroup: rbac.authorization.k8s.io
+
     root@CKA003:~# kubectl apply -f role-binding.yaml
     rolebinding.rbac.authorization.k8s.io/read-pods created
     ```
