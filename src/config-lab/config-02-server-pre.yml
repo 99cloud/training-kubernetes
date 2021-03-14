@@ -1,0 +1,89 @@
+- hosts: server
+  tasks:
+  - name: apt-get update
+    apt:
+      update_cache: yes
+
+  - name: install docker.io
+    apt:
+      name: docker.io
+
+  - name: start & enable docker
+    service:
+      name: docker
+      state: started
+      enabled: yes
+
+  - name: touch /etc/sysctl.d/k8s.conf
+    file:
+      path: /etc/sysctl.d/k8s.conf
+      state: touch
+
+  - name: make iptables see bridged traffic
+    lineinfile:
+      path: /etc/sysctl.d/k8s.conf
+      state: present
+      regexp: "{{ item.regexp }}"
+      line: "{{ item.line }}"
+    loop:
+      - {regexp: '^\s*net.bridge.bridge-nf-call-ip6tables\s+', line: 'net.bridge.bridge-nf-call-ip6tables = 1'}
+      - {regexp: '^\s*net.bridge.bridge-nf-call-iptables\s+', line: 'net.bridge.bridge-nf-call-iptables = 1'}
+
+  - name: sysctl --system
+    shell: sysctl --system
+
+  - name: install apt-transport-https & curlInstall
+    apt:
+      name: "{{ item }}"
+      state: present
+    loop:
+      - apt-transport-https
+      - curl
+
+  - name: Add an Apt signing key from packages.cloud.google.com
+    apt_key:
+      url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+      state: present
+
+  - name: touch /etc/apt/sources.list.d/kubernetes.list
+    file:
+      path: /etc/apt/sources.list.d/kubernetes.list
+      state: touch
+
+  - name: write to /etc/apt/sources.list.d/kubernetes.list
+    lineinfile:
+      path: /etc/apt/sources.list.d/kubernetes.list
+      state: present
+      regexp: "{{ item.regexp }}"
+      line: "{{ item.line }}"
+    loop:
+      - {regexp: '^\s*deb https://apt.kubernetes.io/ kubernetes-xenial main', line: 'deb https://apt.kubernetes.io/ kubernetes-xenial main'}
+
+  - name: apt-get update
+    apt:
+        update_cache: yes
+
+  - name: install kubelet kubeadm kubectl
+    apt:
+      name: "{{ item }}"
+    loop:
+      - kubelet
+      - kubeadm
+      - kubectl
+
+  - name: restart kubelet
+    shell: "{{ item }}"
+    loop:
+      - systemctl daemon-reload
+      - systemctl restart kubelet
+
+  - name: pull images
+    shell: "kubeadm config images pull"
+
+  - name: get vxlan.calico
+    shell: ifconfig | grep vxlan.calico -A 1 | grep inet | awk '{print $2}'
+    register: vxlan
+
+  - name: show vxlan.calico
+    debug:
+      msg: "{{ inventory_hostname }}: {{ vxlan.stdout_lines }}"

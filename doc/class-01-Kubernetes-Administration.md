@@ -285,10 +285,10 @@
     systemctl daemon-reload
     systemctl restart kubelet
 
-    # 检查 kubelet 状态
+    # 检查 kubelet 状态，在加入 k8s 集群之前，kubelet 状态会一直处于 activating 状态
     systemctl status kubelet
     ```
-1. [用 kubeadm 创建一个 k8s 群集](https://kubernetes.io/zh/docs/setup/independent/create-cluster-kubeadm/)
+1. [用 kubeadm 创建一个 k8s 群集](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/)
 
     ```bash
     # 拉起 k8s 群集
@@ -300,7 +300,7 @@
     sudo chown $(id -u):$(id -g) $HOME/.kube/config
     ```
 
-1. 此时可以观察到 node 并未 ready，导致 coredns 无法调度。接下来需要：[安装网络插件](https://kubernetes.io/zh/docs/setup/independent/create-cluster-kubeadm/#Pod-network)，[插件列表](https://kubernetes.io/docs/concepts/cluster-administration/addons/)，这里我们用 [Calico](https://docs.projectcalico.org/getting-started/kubernetes/quickstart)。
+1. 此时可以观察到 node 并未 ready，导致 coredns 无法调度。接下来需要：[安装网络插件](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/#pod-network)，[插件列表](https://kubernetes.io/docs/concepts/cluster-administration/addons/)，这里我们用 [Calico](https://docs.projectcalico.org/getting-started/kubernetes/quickstart)。
 
     ```bash
     # 添加网络插件
@@ -910,7 +910,7 @@
                 inet 172.31.43.105  netmask 255.255.240.0  broadcast 172.31.47.255
         ```
 
-    2. 在新节点上允许 kubeadm 命令，将新节点加入 k8s cluster
+    2. 可以用 kubeadm 命令将新节点加入 k8s cluster，先在 master 节点上生成命令
 
         ```bash
         kubeadm token create
@@ -919,10 +919,14 @@
         ca_hash=$(openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //')
 
         echo kubeadm join $master_ip:6443 --token $token --discovery-token-ca-cert-hash sha256:$ca_hash
-        kubeadm join $master_ip:6443 --token $token --discovery-token-ca-cert-hash sha256:$ca_hash
         ```
 
-    3. 在新节点上配置 kubectl
+    3. 然后将生成的命令复制到 worker 节点上执行，**执行之前，worker 节点上应该先安装 docker 和 kubeadm**
+      - 参考 1.6 节，[在 Ubuntu 18.04 上配置 Docker](#16-实验docker-quick-start)
+      - 参考 2.7 节，[安装 kubeadm](#27-实验k8s-的部署)
+      - 然后将之前在 master 上生成的命令复制到 worker 节点上执行：`kubeadm join $master_ip:6443 --token $token --discovery-token-ca-cert-hash sha256:$ca_hash`
+
+    4. 在新节点上配置 kubectl
 
         ```bash
         mkdir -p $HOME/.kube
@@ -930,7 +934,7 @@
         chown $(id -u):$(id -g) $HOME/.kube/config
         ```
 
-    4. 然后在新节点上用 kubectl 命令可以看到 node 已经 ready
+    5. 然后在新节点上用 kubectl 命令可以看到 node 已经 ready
 
         ```console
         root@ckaslave003:~# kubectl get nodes

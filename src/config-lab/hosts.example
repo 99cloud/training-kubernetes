@@ -1,4 +1,5 @@
 [all:vars]
+cidr=192.168.1.0/16
 
 [bastion]
 cka-bastion
@@ -6,5 +7,9 @@ cka-fq
 cka-fq2
 
 [server]
-# cka001
-# cka002
+# cka-master001
+# cka-master002
+
+[client]
+# cka-worker001
+# cka-worker002
