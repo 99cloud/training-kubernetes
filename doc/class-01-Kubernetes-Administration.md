@@ -1173,6 +1173,7 @@ my-nginx.default.svc.cluster.local. 30 IN A	10.98.172.84
 ### 7.3 什么是 Ingress？
 
 - [Ingress Controller](https://kubernetes.io/docs/concepts/services-networking/ingress-controllers/)
+  - [安装 Nginx Ingress Controller](https://kubernetes.github.io/ingress-nginx/deploy/#bare-metal)：`kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v0.44.0/deploy/static/provider/baremetal/deploy.yaml`
 - [Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/)
 
 ## Lesson 08：Advance
