@@ -2,6 +2,18 @@
 
 ## 广告位（招租）
 
+应届生/社招简历请发到：<wu.wenxiang@99cloud.net>
+
+- **K8S 研发工程师（上海/无锡）**：
+    - 基础项：golang / docker
+    - 加分项：kubernetes
+- **OpenStack 研发工程师（上海/无锡）**：
+    - 基础项：python
+    - 加分项：openstack
+- **前端研发工程师（上海/无锡）**：
+    - 基础项：javascript
+    - 加分项：react
+
 实习生简历请发到：<nie.linjing@99cloud.net>
 
 - **[实习生]OpenStack 运维工程师（上海）**：
