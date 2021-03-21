@@ -1,4 +1,4 @@
-- hosts: server
+- hosts: nodes
   tasks:
   - name: apt-get update
     apt:

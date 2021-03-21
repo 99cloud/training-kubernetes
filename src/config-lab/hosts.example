@@ -6,6 +6,10 @@ cka-bastion
 cka-fq
 cka-fq2
 
+[nodes:children]
+server
+client
+
 [server]
 # cka-master001
 # cka-master002
