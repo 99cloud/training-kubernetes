@@ -320,6 +320,8 @@ ssh root@cka0XX-ip
 
 参考 <https://kubesphere.io/docs/quick-start/minimal-kubesphere-on-k8s/>
 
+准备检查：<https://kubesphere.io/docs/installing-on-kubernetes/introduction/prerequisites/>
+
 ```bash
 kubectl apply -f https://github.com/kubesphere/ks-installer/releases/download/v3.0.0/kubesphere-installer.yaml   
 kubectl apply -f https://github.com/kubesphere/ks-installer/releases/download/v3.0.0/cluster-configuration.yaml
@@ -343,6 +345,8 @@ kubectl logs ks-controller-manager-65bc754ff7-ft2p7 -n kubesphere-system
 
 如果登陆不了，可以看下是不是 K8S 版本太高了。<https://kubesphere.com.cn/forum/d/2217-account-is-not-active>
 安装特定版本的 K8S，参考：<https://stackoverflow.com/questions/49721708/how-to-install-specific-version-of-kubernetes>
+
+KubeSphere
 
 ```bash
 curl -s https://packages.cloud.google.com/apt/dists/kubernetes-xenial/main/binary-amd64/Packages | grep Version | awk '{print $2}'
