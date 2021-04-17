@@ -332,6 +332,9 @@ kubectl logs -n kubesphere-system $(kubectl get pod -n kubesphere-system -l app=
 
 kubectl get pods --all-namespaces
 kubectl get svc/ks-console -n kubesphere-system
+
+kubectl logs ks-controller-manager-65bc754ff7-ft2p7 -n kubesphere-system
+# user_controller.go:221] Successfully synced key:admin
 ```
 
 ## 4.3 访问 Dashboard
@@ -343,7 +346,7 @@ kubectl get svc/ks-console -n kubesphere-system
 
 ```bash
 curl -s https://packages.cloud.google.com/apt/dists/kubernetes-xenial/main/binary-amd64/Packages | grep Version | awk '{print $2}'
-sudo apt-get install -qy kubelet=1.9.6-00 kubectl=1.9.6-00 kubeadm=1.9.6-00
+sudo apt-get install -qy kubelet=1.18.18-00 kubectl=1.18.18-00 kubeadm=1.18.18-00
 ```
 
 ## 4.4 清除 KubeSphere

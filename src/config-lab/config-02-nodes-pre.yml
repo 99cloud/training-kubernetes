@@ -67,9 +67,9 @@
     apt:
       name: "{{ item }}"
     loop:
-      - kubelet
-      - kubeadm
-      - kubectl
+      - kubectl=1.18.18-00
+      - kubelet=1.18.18-00
+      - kubeadm=1.18.18-00
 
   - name: install nfs-common to support nfs client for NFS-StorageClass
     apt:
