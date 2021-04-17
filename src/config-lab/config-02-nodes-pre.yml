@@ -71,6 +71,12 @@
       - kubeadm
       - kubectl
 
+  - name: install nfs-common to support nfs client for NFS-StorageClass
+    apt:
+      name: "{{ item }}"
+    loop:
+      - nfs-common
+
   - name: restart kubelet
     shell: "{{ item }}"
     loop:
