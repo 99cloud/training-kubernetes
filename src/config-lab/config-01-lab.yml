@@ -10,6 +10,7 @@
       - {regexp: '^\s*ClientAliveInterval\s+', line: 'ClientAliveInterval 120'}
       - {regexp: '^\s*ClientAliveCountMax\s+', line: 'ClientAliveCountMax 720'}
       - {regexp: '^\s*GSSAPIAuthentication\s+', line: 'GSSAPIAuthentication no'}
+      - {regexp: '^\s*UseDNS\s+', line: 'UseDNS no'}
     become: yes
 
   - name: "Restart sshd"
