@@ -33,4 +33,5 @@
 同步镜像：<https://gitee.com/dev-99cloud/training-kubernetes>
 
 - [课程 01: Kubernetes-Administration](doc/class-01-Kubernetes-Administration.md)
+- [课程 02: Kubernetes-Development](doc/class-02-Kubernetes-Development.md)
 
