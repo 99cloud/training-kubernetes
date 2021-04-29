@@ -11,9 +11,6 @@
 
 ## 2. Catalog
 
-K8s开发实战案例1套 K8S，编写一个服务，侦听 Informer 消息，如果有 namespace 创建和删除，就调用 K8S API 为 namespace 动态创建和删除 / 绑定和解绑该租户的 admin 用户，设定初始密码。
-Iaas/K8s案例 3. OpenStack / K8S 都可以用的，一个简单的消息中心服务，提供消息分发服务，提供一组 API 对消息发送对象和消息本身的 CRUD，底层以 driver 机制提供邮件和站内信两种对接。
-
 | Date | Time | Title | Content |
 | ---- | ---- | ----- | ------- |
 | 第 1 天 | 上午 | [1. K8S 开发基础]() | [1.1 K8S API 基础]() |
