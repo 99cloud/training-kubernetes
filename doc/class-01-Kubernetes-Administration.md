@@ -349,6 +349,65 @@
 
 - [K8S 有哪些组件](https://kubernetes.io/zh/docs/concepts/architecture/#)？api-server、kube-scheduler、kube-controller、etcd、coredns、kubelete、kubeproxy
 
+1. kube-apiserver: 提供集群管理的 REST API 接口，包括认证授权、数据校验以及集群状态变更等, 提供其他模块之间的数据交互和通信的枢纽（其他模块通过 API Server 查询或修改数据，只有 API Server 才直接操作 etcd）
+
+	```console
+    $ kubectl api-versions
+    admissionregistration.k8s.io/v1beta1
+    apiextensions.k8s.io/v1beta1
+    apiregistration.k8s.io/v1
+    apiregistration.k8s.io/v1beta1
+    ```
+
+	```console
+    $ kubectl api-resources --api-group=storage.k8s.io
+    NAME                SHORTNAMES   APIGROUP         NAMESPACED   KIND
+    storageclasses      sc           storage.k8s.io   false        StorageClass
+    ```
+
+1. kube-scheduler: kube-scheduler 负责分配调度 Pod 到集群内的节点上，它监听 kube-apiserver，查询还未分配 Node 的 Pod，然后根据调度策略为这些 Pod 分配节点（更新 Pod 的 NodeName 字段）。
+
+    - 公平调度
+    - 资源高效利用
+    - QoS
+    - affinity 和 anti-affinity
+
+1. kube-controller-manager: Controller Manager 由 kube-controller-manager 和 cloud-controller-manager 组成，是 Kubernetes 的大脑，它通过 apiserver 监控整个集群的状态，并确保集群处于预期的工作状态。
+
+    ```console
+    Replication Controller
+    Node Controller
+    CronJob Controller
+    Daemon Controller
+    Deployment Controller
+    Endpoint Controller
+    Garbage Collector
+    Namespace Controller
+    Job Controller
+	````
+
+1. kubelet: 每个Node节点上都运行一个 Kubelet 服务进程，默认监听 10250 端口，接收并执行 Master 发来的指令，管理 Pod 及 Pod 中的容器。每个 Kubelet 进程会在 API Server 上注册所在Node节点的信息，定期向 Master 节点汇报该节点的资源使用情况，并通过 cAdvisor 监控节点和容器的资源。
+
+    - 获取 Pod 清单
+    - 容器健康检查 (livenessProbe/ReadinessProbe)
+
+1. kube-proxy: 每台机器上都运行一个 kube-proxy 服务，它监听 API server 中 service 和 endpoint 的变化情况，并通过 iptables 等来为服务配置负载均衡（仅支持 TCP 和 UDP）
+
+    - userspace
+    - iptables: 目前推荐的方案，完全以 iptables 规则的方式来实现 service 负载均衡。该方式最主要的问题是在服务多的时候产生太多的 iptables 规则，非增量式更新会引入一定的时延，大规模情况下有明显的性能问题
+    - ipvs: 为解决 iptables 模式的性能问题，v1.11 新增了 ipvs 模式（v1.8 开始支持测试版，并在 v1.11 GA），采用增量式更新，并可以保证 service 更新期间连接保持不断开
+
+        ![](../images/itablesipvs.png)
+
+1. core-dns (origin: kube-dns): CoreDNS 是一个灵活可扩展的 DNS server 使用 go 语言编程 有 apache 2 lincense 可以作为 Kubernetes 集群 DNS  CoreDNS 项目由 CNCF 托管
+
+    - Fast and flexible
+    - Service discovery
+    - Plugin
+    - simplicity
+
+1. etcd: etcd 是一个开源的分布式的键值对 (key value) 数据库, 他的优点是高并发 (10,000 写入/秒)、TLS 安全访问 (https)、分布式算法 (Raft consensusn )
+
 - 整体结构图
 
     ![](../images/k8s-architecture.png)
