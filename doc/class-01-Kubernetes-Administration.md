@@ -217,6 +217,9 @@
     # 查看容器日志
     $ docker logs -f 4224b69e7ee3
 
+    # 创建镜像
+	$ docker commit 4224b69e7ee3 cka_test:v1
+
     # 结束容器
     $ docker stop 4224b69e7ee3
 
@@ -357,9 +360,11 @@
 
         ![](../images/openshift-k8s.svg)
 
-- VMware
+### 2.5.1 K8S 有名的集成应用？
+
 - KubeSphere
-- Ranchel
+- Rancher
+- Animbus CaaS
 
 ### 2.6 怎么部署出一个 K8S 群集？
 
