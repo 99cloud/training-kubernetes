@@ -79,17 +79,35 @@
 
 - 虚拟化是为了解决什么问题？资源隔离 & 资源限制
 - 什么是 Linux 容器？namespace & cgroup
-- 什么是 lxc namespace？
+
+1. Linux 容器是与 Linux 系统其他部分隔离开的一系列进程
+
+    ![](../images/linux-conatiner.png)
+
+- 什么是 Namespace？
+
+1. namespace: Limit what you can see. 命名空間以一種抽象的形式包裝了全局系統資源，這使它在命名空間中的進程看來具有它們自己的隔離的全局資源實例。全局資源的更改對於名稱空間成員的其他進程可見，但對其他進程不可見
 
     ![](../images/kernel-user-mode.png)
 
 - 什么是 CGroup？
+
+1. cgroup: Limits how much you can use. 一種 Linux 內核功能，該功能允許將進程組織為分層組，然後可以限制和監視各種資源的使用。內核的 cgroup 接口通過稱為 cgroupfs 的偽文件系統提供
+
 - Mac 和 Win 上 有容器技术么？
 
 ### 1.2 容器和虚拟机有何区别？
 
 - 原理
-- 应用场景
+
+    ![](../images/container-arch.png)
+
+- 应用场景/比较
+
+1. 虚拟化允许单个硬件系统上运行多个Linux OS不同内核, 容器则可共享同一个操作系统内核，将应用进程与系统其他部分隔离
+1. 尽管可以在容器里通过 Mount Namespace 单独挂载其他不同版本的操作系统文件，但这并不能改变共享宿主机内核的事实。这意味着，在低版本的 Linux 宿主机上运行高版本的 Linux 容器是行不通的(很艰难的)。
+
+    ![](../images/vmvcconatiner.png)
 
 ### 1.3 Docker 和容器技术有什么关系？
 
@@ -98,7 +116,48 @@
     ![](../images/docker-undertech.png)
 
 - Docker 和容器有什么关系（ why Linus don't care docker ）？
+- Docker 特色
+
+1. 弹性: 即使最複雜的應用程序也可以容器化
+
+1. 輕量級: 容器利用並共享主機內核，在系統資源方面比虛擬機更有效
+
+1. 可移植: 在本地構建，部署到雲中並在任何地方運行
+
+1. 鬆耦合: 容器是高度自給自足並封裝的容器，使您可以在不破壞其他容器的情況下更換或升級它們
+
+1. 可擴展: 您可以在數據中心內增加並自動分佈容器副本
+
+1. 安全:  容器將積極的約束和隔離應用於流程，而無需用戶方面的任何配置
+
+- 为什么要学docker ?
+
+    ![](../images/dockertrend.png)
+
 - Docker 有哪些竞争产品？[CRI-O ？](https://zhuanlan.zhihu.com/p/30667806)
+
+- 属性: 
+
+1. 镜像 (Image): Docker镜像是一个 root 文件系统.比如官方镜像 ubuntu:16.04 就包含了完整的一套 Ubuntu16.04 最小系统的 root 文件系统.
+
+    ![](../images/copyonwrite.png)
+
+1. 容器 (Container): 镜像和容器的关系, 就像是面向对象程序设计中的类和实例一样, 镜像是静态的定义, 容器是镜像运行时的实体. 容器可以被创建, 启动, 停止, 删除, 暂停等.
+
+1. 仓库 (Repositor):
+
+    ```console
+    $ cat /etc/docker/daemon.json
+      {
+          "registry-mirrors": ["https://registry.docker-cn.com"]
+      }
+    $ systemctl daemon-reload
+    $ systemctl restart docker
+    ```
+
+1. 网络 (1.7):
+
+1. 存储 (1.8):
 
 ### 1.4 Docker 的架构和概念空间是怎样的？
 
@@ -158,6 +217,9 @@
     # 查看容器日志
     $ docker logs -f 4224b69e7ee3
 
+    # 创建镜像
+	$ docker commit 4224b69e7ee3 cka_test:v1
+
     # 结束容器
     $ docker stop 4224b69e7ee3
 
@@ -176,10 +238,56 @@
 - Host 模式
 - CNM
 
+    ```console
+	#none
+    $   docker run -itd --network=none  httpd
+
+    #host (端口映射)
+    $   docker run -itd --network=host  httpd
+
+    #bridge(default) (docker network inspect bridge)
+    #   默认docker0 172.17.0.0/16 也可以自己新建docker network create -d bridge --subnet 172.16.180.0/24 --gateway 172.16.180.1 cbridge
+    $    -p  [宿主机网络]:[容器网络]   90:80
+	
+    #macvlan(expect to be connected to nic directly)
+    #assign a MAC address to each container’s virtual network interface, making it appear to be a physical network interface directly connected to the physical network.
+    $docker network create -d macvlan \
+       --subnet=172.16.86.0/24 \
+       --gateway=172.16.86.1 \
+       -o parent=eth0 pub_net
+       overlay(multi Docker daemon host)
+	```
+
 ### 1.8 Docker 的存储模型
 
-- Mount 模式
-- Volumn 模式
+- Mount 模式: 将宿主机中的文件、目录mount挂载到容器上，依赖宿主机
+- Volumn 模式: volume由docker管理，比如创建、删除什么的。默认volume的存储空间/var/lib/docker/volumes/创建的卷名称，volume是官方推荐的持久化方案
+
+
+    ```console
+    $ docker volume create myvol
+    $ docker volume inspect myvol
+      [ 
+       { 
+       "CreatedAt": "2018-03-28T07:36:04Z", 
+       "Driver": "local",
+       "Labels": {}, 
+       "Mountpoint": "/var/lib/docker/volumes/myvol/_data", 
+       "Name": "myvol", 
+       "Options": {}, 
+       "Scope": "local" 
+       } 
+      ]
+
+    $ vi /var/lib/docker/volumes/myvol/_data/index.html
+       <html>  
+           <body> 
+               hi guys put your hands up :)   
+           </body> 
+       </html>
+
+    $ docker run --name demo2 --mount source=myvol,target=/var/www -d -P demoweb
+	```
 
 ## Lesson 02：Kubernetes Concepts
 
@@ -241,6 +349,65 @@
 
 - [K8S 有哪些组件](https://kubernetes.io/zh/docs/concepts/architecture/#)？api-server、kube-scheduler、kube-controller、etcd、coredns、kubelete、kubeproxy
 
+1. kube-apiserver: 提供集群管理的 REST API 接口，包括认证授权、数据校验以及集群状态变更等, 提供其他模块之间的数据交互和通信的枢纽（其他模块通过 API Server 查询或修改数据，只有 API Server 才直接操作 etcd）
+
+	```console
+    $ kubectl api-versions
+    admissionregistration.k8s.io/v1beta1
+    apiextensions.k8s.io/v1beta1
+    apiregistration.k8s.io/v1
+    apiregistration.k8s.io/v1beta1
+    ```
+
+	```console
+    $ kubectl api-resources --api-group=storage.k8s.io
+    NAME                SHORTNAMES   APIGROUP         NAMESPACED   KIND
+    storageclasses      sc           storage.k8s.io   false        StorageClass
+    ```
+
+1. kube-scheduler: kube-scheduler 负责分配调度 Pod 到集群内的节点上，它监听 kube-apiserver，查询还未分配 Node 的 Pod，然后根据调度策略为这些 Pod 分配节点（更新 Pod 的 NodeName 字段）。
+
+    - 公平调度
+    - 资源高效利用
+    - QoS
+    - affinity 和 anti-affinity
+
+1. kube-controller-manager: Controller Manager 由 kube-controller-manager 和 cloud-controller-manager 组成，是 Kubernetes 的大脑，它通过 apiserver 监控整个集群的状态，并确保集群处于预期的工作状态。
+
+    ```console
+    Replication Controller
+    Node Controller
+    CronJob Controller
+    Daemon Controller
+    Deployment Controller
+    Endpoint Controller
+    Garbage Collector
+    Namespace Controller
+    Job Controller
+	````
+
+1. kubelet: 每个Node节点上都运行一个 Kubelet 服务进程，默认监听 10250 端口，接收并执行 Master 发来的指令，管理 Pod 及 Pod 中的容器。每个 Kubelet 进程会在 API Server 上注册所在Node节点的信息，定期向 Master 节点汇报该节点的资源使用情况，并通过 cAdvisor 监控节点和容器的资源。
+
+    - 获取 Pod 清单
+    - 容器健康检查 (livenessProbe/ReadinessProbe)
+
+1. kube-proxy: 每台机器上都运行一个 kube-proxy 服务，它监听 API server 中 service 和 endpoint 的变化情况，并通过 iptables 等来为服务配置负载均衡（仅支持 TCP 和 UDP）
+
+    - userspace
+    - iptables: 目前推荐的方案，完全以 iptables 规则的方式来实现 service 负载均衡。该方式最主要的问题是在服务多的时候产生太多的 iptables 规则，非增量式更新会引入一定的时延，大规模情况下有明显的性能问题
+    - ipvs: 为解决 iptables 模式的性能问题，v1.11 新增了 ipvs 模式（v1.8 开始支持测试版，并在 v1.11 GA），采用增量式更新，并可以保证 service 更新期间连接保持不断开
+
+        ![](../images/itablesipvs.png)
+
+1. core-dns (origin: kube-dns): CoreDNS 是一个灵活可扩展的 DNS server 使用 go 语言编程 有 apache 2 lincense 可以作为 Kubernetes 集群 DNS  CoreDNS 项目由 CNCF 托管
+
+    - Fast and flexible
+    - Service discovery
+    - Plugin
+    - simplicity
+
+1. etcd: etcd 是一个开源的分布式的键值对 (key value) 数据库, 他的优点是高并发 (10,000 写入/秒)、TLS 安全访问 (https)、分布式算法 (Raft consensusn )
+
 - 整体结构图
 
     ![](../images/k8s-architecture.png)
@@ -252,14 +419,120 @@
 
         ![](../images/openshift-k8s.svg)
 
-- VMware
+### 2.5.1 K8S 有名的集成应用？
+
 - KubeSphere
-- Ranchel
+- Rancher
+- Animbus CaaS
 
 ### 2.6 怎么部署出一个 K8S 群集？
 
 - kubeadm
 - Ansible
+- 学员 k8s 环境搭建
+
+	```console
+    # k8s master
+    # ============
+	
+    #开机k8s_master
+    $ virsh start  k8s_master  
+	
+    #复制安装包到k8s_master (密码trystack)
+    $ scp -r /home/required_packages/1_19_3 trystack@10.0.0.100:/tmp 
+	
+    #新增一个 iptables rule 让kvm instance 可以ping 外网
+    $ iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+	
+    #ssh远程登入k8s_master
+    $ ssh trystack@10.0.0.100
+	
+    #复制到预设路径
+    $ mv /tmp/1_19_3  /home/trystack
+	
+    #更变使用者为超级使用者 (密码trystack)
+    $ sudo su
+	
+    #修改dns路径(可选)
+    $ sed -i "s#114.114.114.114#8.8.8.8#g" /etc/resolv.conf
+	
+    #更换ubuntu软件仓库
+    $ sudo cp -a /etc/apt/sources.list /etc/apt/sources.list.bak
+    $ sudo sed -i "s@http://.*archive.ubuntu.com@http://mirrors.huaweicloud.com@g" /etc/apt/sources.list
+    $ sudo sed -i "s@http://.*security.ubuntu.com@http://mirrors.huaweicloud.com@g" /etc/apt/sources.list
+    $ sudo apt-get update
+	
+    #安装docker(国内)
+    $ sudo apt-get install apt-transport-https ca-certificates curl gnupg2 software-properties-common -y
+    $ curl -fsSL https://mirrors.huaweicloud.com/docker-ce/linux/ubuntu/gpg | sudo apt-key add -
+    $ sudo add-apt-repository "deb [arch=amd64] https://mirrors.huaweicloud.com/docker-ce/linux/ubuntu $(lsb_release -cs) stable"
+    $ sudo apt-get update
+    $ sudo apt-get install docker-ce -y
+	
+    #安装kubernetes(离线)
+    $ cd /home/trystack/1_19_3/
+    $ bash dpkg_install.sh
+    $ bash k8s_images.sh
+    $ swapoff -a && sed -i '/swap/d' /etc/fstab
+    $ kubeadm init --pod-network-cidr 172.25.0.0/16 --kubernetes-version "v1.19.3"
+    $ exit
+    $ cd ~ 
+    $ mkdir .kube
+    $ sudo cp -i /etc/kubernetes/admin.conf   /home/trystack/.kube/config
+    $ sudo chown $(id -u):$(id -g) /home/trystack/.kube/config
+    $ cd /home/trystack/1_19_3/
+    $ kubectl create -f kube_flannel_v0130.yaml
+    $ kubectl  get pods -n kube-system
+	
+    # k8s slave
+    # ============	
+	
+    #开机k8s_slave1
+    $ virsh start  k8s_slave1  
+
+    #复制安装包到k8s_slave1 (密码trystack)
+    $ scp -r /home/required_packages/1_19_3 trystack@10.0.0.110:/tmp 
+
+    #ssh远程登入k8s_master
+    $ ssh trystack@10.0.0.110
+
+    #复制到预设路径
+    $ mv /tmp/1_19_3  /home/trystack
+
+    #更变使用者为超级使用者 (密码trystack)
+    $ sudo su
+
+    #修改dns路径(可选)
+    $ sed -i "s#114.114.114.114#8.8.8.8#g" /etc/resolv.conf
+
+    #更换ubuntu软件仓库
+    $ sudo cp -a /etc/apt/sources.list /etc/apt/sources.list.bak
+    $ sudo sed -i "s@http://.*archive.ubuntu.com@http://mirrors.huaweicloud.com@g" /etc/apt/sources.list
+    $ sudo sed -i "s@http://.*security.ubuntu.com@http://mirrors.huaweicloud.com@g" /etc/apt/sources.list
+    $ sudo apt-get update
+
+    #安装docker(国内)
+    $ sudo apt-get install apt-transport-https ca-certificates curl gnupg2 software-properties-common -y
+    $ curl -fsSL https://mirrors.huaweicloud.com/docker-ce/linux/ubuntu/gpg | sudo apt-key add -
+    $ sudo add-apt-repository "deb [arch=amd64] https://mirrors.huaweicloud.com/docker-ce/linux/ubuntu $(lsb_release -cs) stable"
+    $ sudo apt-get update
+    $ sudo apt-get install docker-ce -y
+
+    #安装kubernetes(离线)
+    $ cd /home/trystack/1_19_3/
+    $ bash dpkg_install.sh
+    $ bash k8s_images.sh
+    $ swapoff -a && sed -i '/swap/d' /etc/fstab
+    $ kubeadm join 10.0.0.100:6443 --token  [tokenX] --discovery-token-ca-cert-hash sha256:[hashY]
+		
+	#[tokenX]
+    $ @k8s_master
+    $ kubeadm token list 
+	
+    #[hashY]
+    $ @k8s_master
+    $ openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //'
+	```
 
 ### 2.7 实验：K8S 的部署
 
