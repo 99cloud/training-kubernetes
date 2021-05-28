@@ -374,26 +374,35 @@
 
 	```console
     # k8s master
-	# ============
-	#开机k8s_master
+    # ============
+	
+    #开机k8s_master
     $ virsh start  k8s_master  
+	
     #复制安装包到k8s_master (密码trystack)
     $ scp -r /home/required_packages/1_19_3 trystack@10.0.0.100:/tmp 
+	
     #新增一个 iptables rule 让kvm instance 可以ping 外网
     $ iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+	
     #ssh远程登入k8s_master
     $ ssh trystack@10.0.0.100
+	
     #复制到预设路径
     $ mv /tmp/1_19_3  /home/trystack
+	
     #更变使用者为超级使用者 (密码trystack)
     $ sudo su
+	
     #修改dns路径(可选)
     $ sed -i "s#114.114.114.114#8.8.8.8#g" /etc/resolv.conf
+	
     #更换ubuntu软件仓库
     $ sudo cp -a /etc/apt/sources.list /etc/apt/sources.list.bak
     $ sudo sed -i "s@http://.*archive.ubuntu.com@http://mirrors.huaweicloud.com@g" /etc/apt/sources.list
     $ sudo sed -i "s@http://.*security.ubuntu.com@http://mirrors.huaweicloud.com@g" /etc/apt/sources.list
     $ sudo apt-get update
+	
     #安装docker(国内)
     $ sudo apt-get install apt-transport-https ca-certificates curl gnupg2 software-properties-common -y
     $ curl -fsSL https://mirrors.huaweicloud.com/docker-ce/linux/ubuntu/gpg | sudo apt-key add -
@@ -417,25 +426,31 @@
     $ kubectl  get pods -n kube-system
 	
     # k8s slave
-	# ============	
+    # ============	
+	
     #开机k8s_slave1
     $ virsh start  k8s_slave1  
+
     #复制安装包到k8s_slave1 (密码trystack)
     $ scp -r /home/required_packages/1_19_3 trystack@10.0.0.110:/tmp 
+
     #ssh远程登入k8s_master
     $ ssh trystack@10.0.0.110
+
     #复制到预设路径
     $ mv /tmp/1_19_3  /home/trystack
+
     #更变使用者为超级使用者 (密码trystack)
     $ sudo su
+
     #修改dns路径(可选)
     $ sed -i "s#114.114.114.114#8.8.8.8#g" /etc/resolv.conf
+
     #更换ubuntu软件仓库
     $ sudo cp -a /etc/apt/sources.list /etc/apt/sources.list.bak
     $ sudo sed -i "s@http://.*archive.ubuntu.com@http://mirrors.huaweicloud.com@g" /etc/apt/sources.list
     $ sudo sed -i "s@http://.*security.ubuntu.com@http://mirrors.huaweicloud.com@g" /etc/apt/sources.list
     $ sudo apt-get update
-
 
     #安装docker(国内)
     $ sudo apt-get install apt-transport-https ca-certificates curl gnupg2 software-properties-common -y
@@ -444,19 +459,17 @@
     $ sudo apt-get update
     $ sudo apt-get install docker-ce -y
 
-
     #安装kubernetes(离线)
     $ cd /home/trystack/1_19_3/
     $ bash dpkg_install.sh
     $ bash k8s_images.sh
     $ swapoff -a && sed -i '/swap/d' /etc/fstab
     $ kubeadm join 10.0.0.100:6443 --token  [tokenX] --discovery-token-ca-cert-hash sha256:[hashY]
-	
-	
+		
 	#[tokenX]
     $ @k8s_master
     $ kubeadm token list 
-
+	
     #[hashY]
     $ @k8s_master
     $ openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //'
