@@ -134,7 +134,6 @@
     systemctl status docker
 
     # 需要把 docker 的 cgroup driver 改成 systemd
-
     vi /etc/docker/daemon.json
 
     {
