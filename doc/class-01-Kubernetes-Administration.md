@@ -130,12 +130,34 @@
     systemctl enable docker
     systemctl start docker
 
-    ## 检查 docker 服务状态
+    # 检查 docker 服务状态
     systemctl status docker
 
-    ## run hello-world
+    # 需要把 docker 的 cgroup driver 改成 systemd
+
+    vi /etc/docker/daemon.json
+
+    {
+      "exec-opts": ["native.cgroupdriver=systemd"]
+    }
+
+    systemctl restart docker
+
+    # run hello-world
     docker run hello-world
     ```
+
+  >Note：2021 年 7 月之后，ubuntu 环境 kubeadmin 默认都是 1.22+ 版本，因此需要将 docker 的 cgroup driver 改成 systemd（原来是 cgroup）。如果不改，后续 kubeadm init 时，会报错：`[kubelet-check] The HTTP call equal to 'curl -sSL http://localhost:10248/healthz' failed with error: Get "http://localhost:10248/healthz": dial tcp [::1]:10248: connect: connection refused.`
+  >
+  >检查 journalctl -x -u kubelet，可以看到：`Aug 07 15:10:45 ckalab2 kubelet[11394]: E0807 15:10:45.179485   11394 server.go:294] "Failed to run kubelet" err="failed to run Kubelet: misconfiguration: kubelet cgroup driver: \"systemd\" is different from docker cgroup driver: \"cgroupfs\""`
+  >
+  >看官方文档：<https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/configure-cgroup-driver/>：`In v1.22, if the user is not setting the cgroupDriver field under KubeletConfiguration, kubeadm will default it to systemd.`
+  >
+  > 所以我们需要把 docker 的 cgroup driver 改成 systemd
+  >
+  > 修改步骤参考：<https://stackoverflow.com/questions/43794169/docker-change-cgroup-driver-to-systemd>
+  >
+  > 修改完成后，检查一下 docker cgroup，确保事跑在 systemd 了：`sudo docker info | grep -i cgroup`
 
 - [如何创建一个镜像？如何启动和调试容器？](https://github.com/99cloud/lab-openstack/tree/master/src/docker-quickstart)
 
