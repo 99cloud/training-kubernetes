@@ -284,6 +284,8 @@
 
 ### 2.7 实验：K8S 的部署
 
+Ubuntu 18.04 / 20.04
+
 1. [安装 kubeadm](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/)
 
     ```bash
@@ -333,6 +335,78 @@
     # 查看 pods 和 nodes 状态
     kubectl get pods --all-namespaces
     kubectl get nodes
+    ```
+
+1. 如果希望在不翻墙的环境中安装 K8S，步骤如下（CentOS 7）：
+
+    ```bash
+    # 3. 关闭防火墙
+    systemctl stop firewalld.service
+    systemctl disable firewalld.service
+
+    # 4. 关闭selinux
+    vi /etc/selinux/config
+    # 将 SELINUX=enforcing 改为 SELINUX=disabled
+
+    # 5. 关闭 swap
+    swapoff /dev/sda2
+    vi /etc/fstab
+    # 在 swap 分区这行前加 # 禁用掉，保存退出
+    reboot
+
+    # 6. 配置系统相关属性
+    cat <<EOF > /etc/sysctl.d/k8s.conf
+    net.bridge.bridge-nf-call-ip6tables = 1
+    net.bridge.bridge-nf-call-iptables = 1
+    net.ipv4.ip_forward = 1
+    EOF
+
+    sysctl -p
+
+    # 7. 配置yum源
+    cat <<EOF > /etc/yum.repos.d/kubernetes.repo
+    [kubernetes]
+    name=Kubernetes
+    baseurl=http://mirrors.aliyun.com/kubernetes/yum/repos/kubernetes-el7-x86_64
+    enabled=1
+    gpgcheck=0
+    repo_gpgcheck=0
+    gpgkey=http://mirrors.aliyun.com/kubernetes/yum/doc/yum-key.gpg
+            http://mirrors.aliyun.com/kubernetes/yum/doc/rpm-package-key.gpg
+    EOF
+
+    # 8. 安装 docker
+    yum install docker -y
+    systemctl enable docker --now
+
+    # 9. 修改 docker 镜像仓库
+    vim /etc/docker/daemon.json
+    {
+    "registry-mirrors": ["http://hub-mirror.c.163.com"]
+    }
+
+    systemctl daemon-reload
+    systemctl restart docker
+
+    # 10. 下载 kubernetes
+    yum install -y kubelet-1.20.1-0 kubeadm-1.20.1-0 kubectl-1.20.1-0  --disableexcludes=kubernetes
+
+    # 11. 启动 kubectl
+    systemctl restart kubelet
+    systemctl enable kubelet
+
+    # 12. 安装 kubeadm
+    kubeadm init --image-repository registry.aliyuncs.com/google_containers --kubernetes-version=v1.20.1 --pod-network-cidr=10.244.0.0/16
+
+    # 13. 配置 .kube/config 用于使用 kubectl
+    mkdir -p $HOME/.kube
+    cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+    chown $(id -u):$(id -g) $HOME/.kube/config
+
+    # 15.安装 calico
+    kubectl appliy -f https://gitee.com/dev-99cloud/lab-openstack/raw/master/src/ansible-cloudlab-env/playbooks/roles/init03-prek8s/files/calico_v3.10.yaml
+
+    kubectl run xx --image=nginx
     ```
 
 ### 2.8 什么是 Pod？
