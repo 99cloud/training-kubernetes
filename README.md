@@ -34,4 +34,5 @@
 
 - [课程 01: Kubernetes-Administration](doc/class-01-Kubernetes-Administration.md)
 - [课程 02: Kubernetes-Development](doc/class-02-Kubernetes-Development.md)
+- [课程 02: Kubernetes-Testing](doc/class-03-Kubernetes-Testing.md)
 
