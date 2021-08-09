@@ -119,7 +119,7 @@
 
 ### 1.6 实验：Docker Quick Start
 
-- 在 Ubuntu 18.04 上配置 Docker
+- 在 Ubuntu 18.04 / 20.04 上配置 Docker
 
     ```bash
     # 更新依赖仓库
@@ -158,17 +158,25 @@
   >
   > 修改完成后，检查一下 docker cgroup，确保事跑在 systemd 了：`sudo docker info | grep -i cgroup`
 
-- [如何创建一个镜像？如何启动和调试容器？](https://github.com/99cloud/lab-openstack/tree/master/src/docker-quickstart)
+- 如果是 CentOS 7
+
+  ```bash
+  yum update -y
+  yum install docker -y
+  systemctl enable docker --now
+  ```
+
+- 如何创建一个镜像？如何启动和调试容器？[Github](https://github.com/99cloud/lab-openstack/tree/master/src/docker-quickstart) 或 [Gitee](https://gitee.com/dev-99cloud/lab-openstack/tree/master/src/docker-quickstart)
 
     ```console
     $ python app.py
      * Running on http://0.0.0.0:80/ (Press CTRL+C to quit)
 
-    $ docker run -p 4000:80 maodouzi/get-started:part2
+    $ docker run -p 4000:80 --name=testFlask maodouzi/get-started:part2
      * Running on http://0.0.0.0:80/ (Press CTRL+C to quit)
 
     # 进入容器调试
-    $ docker exec -it 4224b69e7ee3 /bin/bash
+    $ docker exec -it testFlask /bin/bash
     root@4224b69e7ee3:/app# env
     HOSTNAME=4224b69e7ee3
     PWD=/app
@@ -177,15 +185,15 @@
     ...
 
     # 查看容器日志
-    $ docker logs -f 4224b69e7ee3
+    $ docker logs -f testFlask
 
     # 结束容器
-    $ docker stop 4224b69e7ee3
+    $ docker stop testFlask
 
     # 删除容器
-    $ docker rm 4224b69e7ee3
+    $ docker rm testFlask
 
-    #  删除镜像
+    # 删除镜像
     $ docker rmi maodouzi/get-started:part2
     ```
 
