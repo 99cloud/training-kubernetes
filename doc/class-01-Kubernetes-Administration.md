@@ -255,7 +255,7 @@
     devtest (id: 2)
     testNew (id: 1)
 
-    # 进入对应的 namespaces，看 ip
+    # 进入对应的 namespaces，看 ip，pod namespace 里虚拟网卡的 link-netnsid 始终等于 0
     [root@cloud025 ns]# ip netns exec testNew ip a
     ...
     44: eth0@if45: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default 
@@ -265,7 +265,7 @@
         inet6 fe80::42:acff:fe11:3/64 scope link 
           valid_lft forever preferred_lft forever
 
-    # 在 root namespaces 中 ip a，可以看到 link-netnsid = 1
+    # 在 root namespaces 中 ip a，可以看到 link-netnsid = 1，1 是前面 ip netns list 里的 namespaces id
     [root@cloud025 ns]# ip a
     45: vethb6d08be@if44: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master docker0 state UP group default 
         link/ether 0e:d9:14:d1:86:98 brd ff:ff:ff:ff:ff:ff link-netnsid 1
@@ -421,19 +421,19 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
 1. 如果希望在不翻墙的环境中安装 K8S，步骤如下（环境是 CentOS 7）：
 
     ```bash
-    # 3. 关闭防火墙（默认就是关闭的）
-    systemctl stop firewalld.service
-    systemctl disable firewalld.service
+    # 3. 关闭防火墙（默认就是关闭的，不用做）
+    # systemctl stop firewalld.service
+    # systemctl disable firewalld.service
 
-    # 4. 关闭 selinux（默认就是关闭的）
-    vi /etc/selinux/config
+    # 4. 关闭 selinux（默认就是关闭的，不用做）
+    # vi /etc/selinux/config
     # 将 SELINUX=enforcing 改为 SELINUX=disabled
 
-    # 5. 关闭 swap（默认就是关闭的）
-    swapoff /dev/sda2
-    vi /etc/fstab
+    # 5. 关闭 swap（默认就是关闭的，不用做）
+    # swapoff /dev/sda2
+    # vi /etc/fstab
     # 在 swap 分区这行前加 # 禁用掉，保存退出
-    reboot
+    # reboot
 
     # 6. 配置系统相关属性
     cat <<EOF > /etc/sysctl.d/k8s.conf
@@ -487,15 +487,35 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
     # 15. 安装 calico
     kubectl apply -f https://gitee.com/dev-99cloud/lab-openstack/raw/master/src/ansible-cloudlab-env/playbooks/roles/init03-prek8s/files/calico_v3.10.yaml
 
-    # 16. 去污点、允许 pod 调度到 master
-    kubectl taint nodes $(hostname) node-role.kubernetes.io/master:NoSchedule-
-
-    kubectl run xx --image=nginx
+    # 看到 node Ready 就 OK
+    kubectl get nodes
     ```
 
 ### 2.8 什么是 Pod？
 
 - Pod 和容器的关系是什么？
+
+    ```bash
+    # pod 里的 pause 容器和业务容器共享 ipc / net / user namespaces
+    [root@cloud025 ~]# ll /proc/10982/ns/
+    total 0
+    lrwxrwxrwx 1 root root 0 Aug 10 16:14 ipc -> ipc:[4026532513]
+    lrwxrwxrwx 1 root root 0 Aug 10 15:33 mnt -> mnt:[4026532592]
+    lrwxrwxrwx 1 root root 0 Aug 10 15:33 net -> net:[4026532516]
+    lrwxrwxrwx 1 root root 0 Aug 10 15:33 pid -> pid:[4026532594]
+    lrwxrwxrwx 1 root root 0 Aug 10 16:14 user -> user:[4026531837]
+    lrwxrwxrwx 1 root root 0 Aug 10 16:14 uts -> uts:[4026532593]
+
+    [root@cloud025 ~]# ll /proc/10893/ns/
+    total 0
+    lrwxrwxrwx 1 root root 0 Aug 10 15:33 ipc -> ipc:[4026532513]
+    lrwxrwxrwx 1 root root 0 Aug 10 15:33 mnt -> mnt:[4026532511]
+    lrwxrwxrwx 1 root root 0 Aug 10 15:33 net -> net:[4026532516]
+    lrwxrwxrwx 1 root root 0 Aug 10 16:15 pid -> pid:[4026532514]
+    lrwxrwxrwx 1 root root 0 Aug 10 16:15 user -> user:[4026531837]
+    lrwxrwxrwx 1 root root 0 Aug 10 16:15 uts -> uts:[4026532512]
+    ```
+
 - 为什么调度的基本单位是 pod 不是容器？
 
 ### 2.9 启动一个 pod
@@ -539,14 +559,15 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
         - 下载应用代码，并且在本地跑起来
         - 为应用构建一个 Docker 镜像，然后启动一个 Docker 容器来运行此应用
         - 创建一个 Deployment 对象，将应用运行在 K8S 平台上
-        - 参考：[https://kubernetes.io/blog/2019/07/23/get-started-with-kubernetes-using-python/](https://kubernetes.io/blog/2019/07/23/get-started-with-kubernetes-using-python/)
+        - 参考：<https://kubernetes.io/blog/2019/07/23/get-started-with-kubernetes-using-python/>
+        - 对应的原始代码在：<https://github.com/JasonHaley/hello-python>
     - 预置条件有哪些？
         - 本地具备 Python 3.6+ 的运行环境
         - 安装了 Git（非必须）
         - 安装了 Docker
         - 一个 Kubernetes 平台
-    - 获取代码：`git clone https://github.com/JasonHaley/hello-python.git`，在 hello-python/app 目录下有两个文件：
-        - 其中 `requirements.txt` 里只有一行：Flask，是依赖包列表文件
+    - [代码](src/hello-python)
+        - 其中 `requirements.txt` 里只有一行：flask，是依赖包列表文件
         - 另一个文件是 `main.py`，是应用的逻辑代码
 
             ```python
@@ -566,11 +587,23 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
                 app.run(host='0.0.0.0')
             ```
 
+    - 下载代码
+
+        ```bash
+        mkdir ~/test-hello-world
+        cd ~/test-hello-world/
+
+        wget https://gitee.com/dev-99cloud/training-kubernetes/raw/master/src/hello-python/main.py
+        wget https://gitee.com/dev-99cloud/training-kubernetes/raw/master/src/hello-python/requirements.txt
+        wget https://gitee.com/dev-99cloud/training-kubernetes/raw/master/src/hello-python/Dockerfile
+        wget https://gitee.com/dev-99cloud/training-kubernetes/raw/master/src/hello-python/deployment.yaml
+        ```
+
     - 本地运行：
-        - 安装依赖：`pip install -r requirements.txt`（pip 如果没有，改成 pip3）
-        - 本地运行：`python main.py`（python 如果没有，改成 python3），会在本地启动一个用于开发的 web 服务器。
+        - 安装依赖：`pip3 install -r requirements.txt`
+        - 本地运行：`python3 main.py`，会在本地启动一个用于开发的 web 服务器。
         - 你可以打开浏览器，访问 `http://localhost:5000` 端口
-    - Docker 镜像构建文件，在 hello-python/docker 目录下有一个 Dockerfile 文件
+    - Docker 镜像构建文件，目录下有一个 Dockerfile 文件
 
         ```dockerfile
         FROM python:3.7
@@ -585,7 +618,6 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
         ```
 
     - 构建 Docker 镜像并运行
-        - 将 Dockerfile 文件复制到 hello-python/app 目录中
         - 运行命令构建镜像：`docker build -f Dockerfile -t hello-python:latest .`
         - 构建完成后，可以通过 `docker image ls` 看到刚才构建的镜像
         - 然后运行此镜像：`docker run -p 5001:5000 hello-python`
@@ -593,8 +625,7 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
     - 确定 Kubernetes 和 kubectl 运行正常
         - 运行命令：`kubectl version`，如果该命令不报错，就说明 kubectl 安装完成。
         - 运行命令：`kubectl get nodes`，如果返回节点信息，说明 K8S 运行正常，kubectl 配置正常。
-    - K8S deployment YAML 文件：[https://github.com/JasonHaley/hello-python/blob/master/kubernetes/deployment.yaml
-](https://github.com/JasonHaley/hello-python/blob/master/kubernetes/deployment.yaml)
+    - K8S deployment YAML 文件：
 
         ```yaml
         apiVersion: v1
@@ -638,6 +669,24 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
         - 运行命令：`kubectl apply -f deployment.yaml`
         - 运行命令：`kubectl get pods，检查 pods`
         - 然后可以打开浏览器，在 `http://localhost:31000` 看到 `Hello form Python!` 信息
+
+    - 实验
+
+        ```bash
+        # 观察 service / deployment 和 pod 的关系，通过 label 关联
+        kubectl get pods -l app=hello-python
+        kubectl get deploy
+        kubectl get deployment
+
+        kubectl get svc
+        kubectl get service
+        kubectl get pods -l app=hello-python -o wide
+
+        # 访问应用
+        curl http://<pod-ip>:5000
+        curl http://<cluster-ip>:6000
+        curl http://localhost:31000
+        ```
 
 ## Lesson 03：K8S concepts
 
@@ -1379,6 +1428,9 @@ my-nginx.default.svc.cluster.local. 30 IN A	10.98.172.84
 
         # 或者抓包并导出到文件
         tcpdump -i eth0 -w ./out.cap
+
+        # 退出 nsenter，要记得退出！！
+        exit
         ```
 
     - Debug tools

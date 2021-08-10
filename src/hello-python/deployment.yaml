@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-python-service
+spec:
+  type: NodePort
+  selector:
+    app: hello-python
+  ports:
+  - protocol: "TCP"
+    port: 6000
+    targetPort: 5000
+    nodePort: 31000
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-python
+spec:
+  selector:
+    matchLabels:
+      app: hello-python
+  replicas: 4
+  template:
+    metadata:
+      labels:
+        app: hello-python
+    spec:
+      containers:
+      - name: hello-python
+        image: hello-python:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 5000
