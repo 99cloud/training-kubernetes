@@ -248,6 +248,7 @@
                 "Pid": 1159,
                 "PidMode": "",
                 "PidsLimit": 0,
+    [root@cloud025 ns]# mkdir -p /var/run/netns
     [root@cloud025 ns]# ln -s /proc/1159/ns/net /var/run/netns/testFlask
     [root@cloud025 ns]# ip netns list
     testFlask (id: 0)
