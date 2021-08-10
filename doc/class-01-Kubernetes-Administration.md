@@ -161,11 +161,29 @@
 - 如何创建一个镜像？如何启动和调试容器？[Github](https://github.com/99cloud/lab-openstack/tree/master/src/docker-quickstart) 或 [Gitee](https://gitee.com/dev-99cloud/lab-openstack/tree/master/src/docker-quickstart)
 
     ```console
-    $ python app.py
+    $ mkdir ~/test
+    $ cd ~/test
+    $ wget https://gitee.com/dev-99cloud/lab-openstack/raw/master/src/docker-quickstart/app.py
+    $ wget https://gitee.com/dev-99cloud/lab-openstack/raw/master/src/docker-quickstart/requirements.txt
+    $ wget https://gitee.com/dev-99cloud/lab-openstack/raw/master/src/docker-quickstart/Dockerfile
+
+    $ pip3 install -r requirements.txt
+
+    $ python3 app.py
      * Running on http://0.0.0.0:80/ (Press CTRL+C to quit)
 
-    $ docker run -p 4000:80 --name=testFlask maodouzi/get-started:part2
+    # 此时可以从浏览器访问 http://<ip>/
+
+    $ docker build --tag=friendlyhello .
+
+    # 可以看一下本地镜像列表
+    $ docker images
+
+    $ docker rm testFlask
+    $ docker run -p 4000:80 --name=testFlask 99cloud/friendlyhello:3.9.6
      * Running on http://0.0.0.0:80/ (Press CTRL+C to quit)
+
+    # 此时可以从浏览器访问 http://<ip>:4000
 
     # 进入容器调试
     $ docker exec -it testFlask /bin/bash
@@ -176,11 +194,20 @@
     NAME=World
     ...
 
+    root@4224b69e7ee3:/app# ps -ef
+
     # 查看容器日志
     $ docker logs -f testFlask
 
     # 结束容器
     $ docker stop testFlask
+
+    # 启动容器
+    $ docker start testFlask
+
+    # 从容器生成新的镜像
+    $ docker stop testFlask
+    $ docker commit testFlask test-new
 
     # 删除容器
     $ docker rm testFlask
@@ -194,12 +221,65 @@
 ### 1.7 Docker 的网络模型
 
 - Bridge 模式
+
+    ```bash
+    # docker 容器实现没有把 network namespaces 放到标准路径 `/var/run/netns` 下，所以 `ip netns list` 命令看不到
+
+    # 但是可以看 `ll /proc/<pid>/ns`，两个进程的 namespaces id 相同说明在同一个 namespaces
+
+    [root@cloud025 ns]# ll /proc/2179/ns/
+    total 0
+    lrwxrwxrwx 1 root root 0 Aug 10 11:58 ipc -> ipc:[4026531839]
+    lrwxrwxrwx 1 root root 0 Aug 10 11:58 mnt -> mnt:[4026531840]
+    lrwxrwxrwx 1 root root 0 Aug 10 11:58 net -> net:[4026531956]
+    lrwxrwxrwx 1 root root 0 Aug 10 11:58 pid -> pid:[4026531836]
+    lrwxrwxrwx 1 root root 0 Aug 10 11:58 user -> user:[4026531837]
+    lrwxrwxrwx 1 root root 0 Aug 10 11:58 uts -> uts:[4026531838]
+
+    # 做个软链接，就可以看到 netns 了 
+
+    [root@cloud025 ns]# docker ps
+    CONTAINER ID        IMAGE                         COMMAND                  CREATED             STATUS              PORTS                  NAMES
+    07297a3ac7ea        nginx:latest                  "/docker-entrypoin..."   29 minutes ago      Up 29 minutes       80/tcp                 devtest
+    0935b08509a4        test-new                      "python app.py"          35 minutes ago      Up 35 minutes       0.0.0.0:5000->80/tcp   testNew
+    c23c76dd779c        99cloud/friendlyhello:3.9.6   "python app.py"          37 minutes ago      Up 36 minutes       0.0.0.0:4000->80/tcp   testFlask
+
+    [root@cloud025 ns]# docker inspect testFlask | grep -i pid
+                "Pid": 1159,
+                "PidMode": "",
+                "PidsLimit": 0,
+    [root@cloud025 ns]# ln -s /proc/1159/ns/net /var/run/netns/testFlask
+    [root@cloud025 ns]# ip netns list
+    testFlask (id: 0)
+    devtest (id: 2)
+    testNew (id: 1)
+
+    # 进入对应的 namespaces，看 ip
+    [root@cloud025 ns]# ip netns exec testNew ip a
+    ...
+    44: eth0@if45: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default 
+        link/ether 02:42:ac:11:00:03 brd ff:ff:ff:ff:ff:ff link-netnsid 0
+        inet 172.17.0.3/16 scope global eth0
+          valid_lft forever preferred_lft forever
+        inet6 fe80::42:acff:fe11:3/64 scope link 
+          valid_lft forever preferred_lft forever
+
+    # 在 root namespaces 中 ip a，可以看到 link-netnsid = 1
+    [root@cloud025 ns]# ip a
+    45: vethb6d08be@if44: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master docker0 state UP group default 
+        link/ether 0e:d9:14:d1:86:98 brd ff:ff:ff:ff:ff:ff link-netnsid 1
+        inet6 fe80::cd9:14ff:fed1:8698/64 scope link 
+          valid_lft forever preferred_lft forever
+
+    # 这是一对 veth pair，看他们的序号和 if 可以发现
+    ```
+
 - Host 模式
 - CNM
 
 ### 1.8 Docker 的存储模型
 
-- Mount 模式
+- [Mount 模式](https://docs.docker.com/storage/)
 - Volumn 模式
 
 ## Lesson 02：Kubernetes Concepts
