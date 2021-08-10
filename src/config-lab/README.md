@@ -296,7 +296,7 @@ ssh root@cka0XX-ip
     spec:
       containers:
       - name: test-pod
-        image: gcr.io/google_containers/busybox:1.24
+        image: 99cloud/busybox:1.24
         command:
           - "/bin/sh"
         args:
@@ -312,7 +312,7 @@ ssh root@cka0XX-ip
             claimName: test-pvc
     ```
 
-    > 其中 gcr.io/google_containers/busybox:1.24 换成任意的镜像即可。
+    > 其中 `99cloud/busybox:1.24` 是 `gcr.io/google_containers/busybox:1.24`，可以换成任意的镜像。
 
 # 4 安装 KubeSphere
 
