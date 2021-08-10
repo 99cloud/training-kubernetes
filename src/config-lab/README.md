@@ -49,7 +49,7 @@ ssh root@cka0XX-ip
     1. 下载相关包，并启动相关服务
 
         ```bash
-        yum install nfs-utils -y
+        apt-get install nfs-common -y || yum install nfs-utils -y
         ```
 
     1. 创建 NFS 数据路径
@@ -204,7 +204,7 @@ ssh root@cka0XX-ip
           serviceAccountName: nfs-client-provisioner
           containers:
             - name: nfs-client-provisioner
-              image: quay.io/external_storage/nfs-client-provisioner:latest
+              image: 99cloud/nfs-subdir-external-provisioner:v4.0.0
               volumeMounts:
                 - name: nfs-client-root
                   mountPath: /persistentvolumes
@@ -212,17 +212,17 @@ ssh root@cka0XX-ip
                 - name: PROVISIONER_NAME
                   value: fuseim.pri/ifs
                 - name: NFS_SERVER
-                  value: ${NODE_IP}
+                  value: localhost
                 - name: NFS_PATH
                   value: /nfs/data
           volumes:
             - name: nfs-client-root
               nfs:
-                server: ${NODE_IP}
+                server: localhost
                 path: /nfs/data
     ```
 
-    > 其中 ${NODE_IP} 请替换成 NFS Server 的地址
+    > 其中 localhost 请替换成 NFS Server 的地址
 
     如果 driver 起不来，多半是 client 端没有安装 nfs-common(ubuntu) 或者 nfs-utils(centos)
 

@@ -119,21 +119,21 @@
 
 ### 1.6 实验：Docker Quick Start
 
-- 在 Ubuntu 18.04 / 20.04 上配置 Docker
+- 在 Ubuntu 18.04 / Ubuntu 20.04 / CentOS 7 上配置 Docker
 
     ```bash
     # 更新依赖仓库
-    apt-get update -y
+    apt-get update -y || yum update -y
 
     # 安装 Docker
-    apt-get install docker.io -y
+    apt-get install docker.io -y || yum install docker -y
     systemctl enable docker
     systemctl start docker
 
     # 检查 docker 服务状态
     systemctl status docker
 
-    # 需要把 docker 的 cgroup driver 改成 systemd
+    # ubuntu 中需要把 docker 的 cgroup driver 改成 systemd，centos 默认就是 systemd
     vi /etc/docker/daemon.json
 
     {
@@ -156,15 +156,7 @@
   >
   > 修改步骤参考：<https://stackoverflow.com/questions/43794169/docker-change-cgroup-driver-to-systemd>
   >
-  > 修改完成后，检查一下 docker cgroup，确保事跑在 systemd 了：`sudo docker info | grep -i cgroup`
-
-- 如果是 CentOS 7
-
-  ```bash
-  yum update -y
-  yum install docker -y
-  systemctl enable docker --now
-  ```
+  > 修改完成后，检查一下 docker cgroup，确保 docker cgroup 是 systemd 了：`sudo docker info | grep -i cgroup`
 
 - 如何创建一个镜像？如何启动和调试容器？[Github](https://github.com/99cloud/lab-openstack/tree/master/src/docker-quickstart) 或 [Gitee](https://gitee.com/dev-99cloud/lab-openstack/tree/master/src/docker-quickstart)
 
@@ -292,7 +284,7 @@
 
 ### 2.7 实验：K8S 的部署
 
-Ubuntu 18.04 / 20.04
+Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
 
 1. [安装 kubeadm](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/)
 
@@ -345,18 +337,18 @@ Ubuntu 18.04 / 20.04
     kubectl get nodes
     ```
 
-1. 如果希望在不翻墙的环境中安装 K8S，步骤如下（CentOS 7）：
+1. 如果希望在不翻墙的环境中安装 K8S，步骤如下（环境是 CentOS 7）：
 
     ```bash
-    # 3. 关闭防火墙
+    # 3. 关闭防火墙（默认就是关闭的）
     systemctl stop firewalld.service
     systemctl disable firewalld.service
 
-    # 4. 关闭selinux
+    # 4. 关闭 selinux（默认就是关闭的）
     vi /etc/selinux/config
     # 将 SELINUX=enforcing 改为 SELINUX=disabled
 
-    # 5. 关闭 swap
+    # 5. 关闭 swap（默认就是关闭的）
     swapoff /dev/sda2
     vi /etc/fstab
     # 在 swap 分区这行前加 # 禁用掉，保存退出
@@ -390,7 +382,7 @@ Ubuntu 18.04 / 20.04
     # 9. 修改 docker 镜像仓库
     vim /etc/docker/daemon.json
     {
-    "registry-mirrors": ["http://hub-mirror.c.163.com"]
+      "registry-mirrors": ["http://hub-mirror.c.163.com"]
     }
 
     systemctl daemon-reload
@@ -411,8 +403,11 @@ Ubuntu 18.04 / 20.04
     cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
     chown $(id -u):$(id -g) $HOME/.kube/config
 
-    # 15.安装 calico
-    kubectl appliy -f https://gitee.com/dev-99cloud/lab-openstack/raw/master/src/ansible-cloudlab-env/playbooks/roles/init03-prek8s/files/calico_v3.10.yaml
+    # 15. 安装 calico
+    kubectl apply -f https://gitee.com/dev-99cloud/lab-openstack/raw/master/src/ansible-cloudlab-env/playbooks/roles/init03-prek8s/files/calico_v3.10.yaml
+
+    # 16. 去污点、允许 pod 调度到 master
+    kubectl taint nodes $(hostname) node-role.kubernetes.io/master:NoSchedule-
 
     kubectl run xx --image=nginx
     ```
@@ -448,8 +443,8 @@ Ubuntu 18.04 / 20.04
     # 可以看到 pod 无法被调度，进行诊断
     kubectl describe pod nginx
 
-    # 去污点、允许调度到 master
-    kubectl taint nodes cka003 node-role.kubernetes.io/master:NoSchedule-
+    # 去污点、允许 pod 调度到 master
+    kubectl taint nodes $(hostname) node-role.kubernetes.io/master:NoSchedule-
 
     # 查看 pods
     kubectl get pods
