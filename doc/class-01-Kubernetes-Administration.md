@@ -493,7 +493,7 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
     chown $(id -u):$(id -g) $HOME/.kube/config
 
     # 15. 安装 calico
-    kubectl apply -f https://gitee.com/dev-99cloud/lab-openstack/raw/master/src/ansible-cloudlab-env/playbooks/roles/init03-prek8s/files/calico_v3.10.yaml
+    kubectl apply -f https://gitee.com/dev-99cloud/lab-openstack/raw/master/src/ansible-cloudlab-centos/playbooks/roles/init04-prek8s/files/calico_v3.10.yaml
 
     # 看到 node Ready 就 OK
     kubectl get nodes
