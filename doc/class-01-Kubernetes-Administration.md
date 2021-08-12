@@ -222,7 +222,7 @@
 
 - Bridge 模式
 
-    ```bash
+    ```console
     # docker 容器实现没有把 network namespaces 放到标准路径 `/var/run/netns` 下，所以 `ip netns list` 命令看不到
 
     # 但是可以看 `ll /proc/<pid>/ns`，两个进程的 namespaces id 相同说明在同一个 namespaces
@@ -236,7 +236,7 @@
     lrwxrwxrwx 1 root root 0 Aug 10 11:58 user -> user:[4026531837]
     lrwxrwxrwx 1 root root 0 Aug 10 11:58 uts -> uts:[4026531838]
 
-    # 做个软链接，就可以看到 netns 了 
+    # 做个软链接，就可以看到 netns 了
 
     [root@cloud025 ns]# docker ps
     CONTAINER ID        IMAGE                         COMMAND                  CREATED             STATUS              PORTS                  NAMES
@@ -258,22 +258,30 @@
     # 进入对应的 namespaces，看 ip，pod namespace 里虚拟网卡的 link-netnsid 始终等于 0
     [root@cloud025 ns]# ip netns exec testNew ip a
     ...
-    44: eth0@if45: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default 
+    44: eth0@if45: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default
         link/ether 02:42:ac:11:00:03 brd ff:ff:ff:ff:ff:ff link-netnsid 0
         inet 172.17.0.3/16 scope global eth0
           valid_lft forever preferred_lft forever
-        inet6 fe80::42:acff:fe11:3/64 scope link 
+        inet6 fe80::42:acff:fe11:3/64 scope link
           valid_lft forever preferred_lft forever
 
     # 在 root namespaces 中 ip a，可以看到 link-netnsid = 1，1 是前面 ip netns list 里的 namespaces id
     [root@cloud025 ns]# ip a
-    45: vethb6d08be@if44: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master docker0 state UP group default 
+    45: vethb6d08be@if44: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master docker0 state UP group default
         link/ether 0e:d9:14:d1:86:98 brd ff:ff:ff:ff:ff:ff link-netnsid 1
-        inet6 fe80::cd9:14ff:fed1:8698/64 scope link 
+        inet6 fe80::cd9:14ff:fed1:8698/64 scope link
           valid_lft forever preferred_lft forever
 
     # 这是一对 veth pair，看他们的序号和 if 可以发现
+
+    # 看网桥，可以看到这个 root namespaces 的虚拟网卡绑在 docker0 网桥上
+    [root@cloud025 ~]# brctl show
+    bridge name	bridge id		STP enabled	interfaces
+    docker0		8000.02428c25c112	no		vethb6d08be
+    virbr0		8000.525400d583b9	yes		virbr0-nic
     ```
+
+    [可以尝试对虚拟网卡抓包，看进出容器的流量](#81-监控日志排错)
 
 - Host 模式
 - CNM
@@ -732,10 +740,42 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
 - 实验：Pod Label 和 Replica Controller
 - [实验：Deployment 相关](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/)
 
+    ```bash
+    kubectl apply -f https://k8s.io/examples/controllers/nginx-deployment.yaml
+    kubectl get pods
+    kubectl get deployments
+
+    kubectl set image deployment/nginx-deployment nginx=nginx:1.16.1 --record
+    kubectl get pods
+
+    kubectl set image deployment.v1.apps/nginx-deployment nginx=nginx:1.161 --record=true
+    kubectl get pods
+
+    kubectl rollout history deployment.v1.apps/nginx-deployment
+    kubectl rollout history deployment.v1.apps/nginx-deployment --revision=2
+    kubectl rollout undo deployment.v1.apps/nginx-deployment --to-revision=2
+    kubectl get pods
+    # 如果原来的 ErrorImagePull 的 pod 一直失败，可以 kuctl delete pod <pod-name> 删除掉
+
+    kubectl scale deployment.v1.apps/nginx-deployment --replicas=10
+    kubectl get pods
+    ```
+
 ### 3.4 什么是 Services？
 
 - 基本概念：Service
 - 实验：Service
+
+    ```console
+    # 建好 services 后，可以看 iptables
+    $ iptables -t nat -n -L -v
+
+    # 能看到如下字样，进入 service IP 的请求按比例分给各个 pod
+    Chain KUBE-SVC-C5I534CP62HG2LN3 (2 references)
+    pkts bytes target     prot opt in     out     source               destination
+        0     0 KUBE-SEP-FBKE4RDEE4U4O7NI  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* default/hello-python-service */ statistic mode random probability 0.50000000000
+        0     0 KUBE-SEP-ZIK7TOCY5OVWTBMA  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* default/hello-python-service */
+    ```
 
 ### 3.5 实验：K8S Dashboard
 
@@ -780,7 +820,7 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
     etcdctl --cert="/etc/kubernetes/pki/apiserver-etcd-client.crt" --key="/etc/kubernetes/pki/apiserver-etcd-client.key" --cacert="/etc/kubernetes/pki/etcd/ca.crt" --endpoints=https://127.0.0.1:2379 get --prefix ""
 
     # backup & restore
-    etcdctl --cert="/etc/kubernetes/pki/apiserver-etcd-client.crt" --key="/etc/kubernetes/pki/apiserver-etcd-client.key" --cacert="/etc/kubernetes/pki/etcd/ca.crt" --endpoints=https://127.0.0.1:2379 snapshot restore a.txt 
+    etcdctl --cert="/etc/kubernetes/pki/apiserver-etcd-client.crt" --key="/etc/kubernetes/pki/apiserver-etcd-client.key" --cacert="/etc/kubernetes/pki/etcd/ca.crt" --endpoints=https://127.0.0.1:2379 snapshot restore a.txt
     # etcdctl --cert="/etc/kubernetes/pki/apiserver-etcd-client.crt" --key="/etc/kubernetes/pki/apiserver-etcd-client.key" --cacert="/etc/kubernetes/pki/etcd/ca.crt" --endpoints=https://127.0.0.1:2379 snapshot save a.txt
     ```
 
@@ -1105,7 +1145,7 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
 
 ## Lesson 05: K8S Schedule
 
-### 5.1 怎么部署多节点的 k8s 集群？ 
+### 5.1 怎么部署多节点的 k8s 集群？
 
 - 参考资料
     - [怎么部署一个 Multi-Node 的 K8S 环境？](deploy-k8s-manual.md)
@@ -1486,26 +1526,26 @@ my-nginx.default.svc.cluster.local. 30 IN A	10.98.172.84
         正常的 vxlan，
         ```console
         root@ckalab001:~# ip r
-        default via 45.77.182.1 dev ens3 proto dhcp src 45.77.183.254 metric 100 
-        192.168.208.1 dev cali65a032ad3e5 scope link 
-        192.168.209.192/26 via 192.168.209.192 dev vxlan.calico onlink 
+        default via 45.77.182.1 dev ens3 proto dhcp src 45.77.183.254 metric 100
+        192.168.208.1 dev cali65a032ad3e5 scope link
+        192.168.209.192/26 via 192.168.209.192 dev vxlan.calico onlink
 
         root@ckalab001:~# ip a
         2: ens3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP group default qlen 1000
             link/ether 56:00:02:d8:35:5a brd ff:ff:ff:ff:ff:ff
             inet 45.77.183.254/23 brd 45.77.183.255 scope global dynamic ens3
               valid_lft 73639sec preferred_lft 73639sec
-            inet6 fe80::5400:2ff:fed8:355a/64 scope link 
+            inet6 fe80::5400:2ff:fed8:355a/64 scope link
               valid_lft forever preferred_lft forever
-        4: cali65a032ad3e5@if3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1410 qdisc noqueue state UP group default 
+        4: cali65a032ad3e5@if3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1410 qdisc noqueue state UP group default
             link/ether ee:ee:ee:ee:ee:ee brd ff:ff:ff:ff:ff:ff link-netnsid 0
-            inet6 fe80::ecee:eeff:feee:eeee/64 scope link 
+            inet6 fe80::ecee:eeff:feee:eeee/64 scope link
               valid_lft forever preferred_lft forever
-        9: vxlan.calico: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1410 qdisc noqueue state UNKNOWN group default 
+        9: vxlan.calico: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1410 qdisc noqueue state UNKNOWN group default
             link/ether 66:f1:80:3e:ea:c6 brd ff:ff:ff:ff:ff:ff
             inet 192.168.208.0/32 brd 192.168.208.0 scope global vxlan.calico
               valid_lft forever preferred_lft forever
-            inet6 fe80::64f1:80ff:fe3e:eac6/64 scope link 
+            inet6 fe80::64f1:80ff:fe3e:eac6/64 scope link
               valid_lft forever preferred_lft forever
         ```
 
@@ -1514,7 +1554,7 @@ my-nginx.default.svc.cluster.local. 30 IN A	10.98.172.84
         ```console
         root@ckalab001:~# ip r
         default via 172.31.47.253 dev eth0 proto dhcp src 172.31.43.145 metric 100
-        192.168.208.1 dev cali77bffbebec8 scope link 
+        192.168.208.1 dev cali77bffbebec8 scope link
         192.168.209.192/26 via 172.31.43.146 dev eth0 proto 80 onlink
 
         root@ckalab001:~# ip a
@@ -1522,17 +1562,17 @@ my-nginx.default.svc.cluster.local. 30 IN A	10.98.172.84
             link/ether 00:16:3e:08:2e:5f brd ff:ff:ff:ff:ff:ff
             inet 172.31.43.145/20 brd 172.31.47.255 scope global dynamic eth0
               valid_lft 315356000sec preferred_lft 315356000sec
-            inet6 fe80::216:3eff:fe08:2e5f/64 scope link 
+            inet6 fe80::216:3eff:fe08:2e5f/64 scope link
               valid_lft forever preferred_lft forever
-        4: cali77bffbebec8@if3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1410 qdisc noqueue state UP group default 
+        4: cali77bffbebec8@if3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1410 qdisc noqueue state UP group default
             link/ether ee:ee:ee:ee:ee:ee brd ff:ff:ff:ff:ff:ff link-netnsid 0
-            inet6 fe80::ecee:eeff:feee:eeee/64 scope link 
+            inet6 fe80::ecee:eeff:feee:eeee/64 scope link
               valid_lft forever preferred_lft forever
-        8: vxlan.calico: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1410 qdisc noqueue state UNKNOWN group default 
+        8: vxlan.calico: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1410 qdisc noqueue state UNKNOWN group default
             link/ether 66:f1:80:3e:ea:c6 brd ff:ff:ff:ff:ff:ff
             inet 192.168.208.0/32 brd 192.168.208.0 scope global vxlan.calico
               valid_lft forever preferred_lft forever
-            inet6 fe80::64f1:80ff:fe3e:eac6/64 scope link 
+            inet6 fe80::64f1:80ff:fe3e:eac6/64 scope link
               valid_lft forever preferred_lft forever
         ```
 
