@@ -59,7 +59,7 @@ ssh root@cka0XX-ip
         chmod -R 777 /nfs/data
         ```
 
-    1. 格式化磁盘并挂载（建议添加一块磁盘作为 NFS 数据盘），比如 vdb
+    1. 如果有额外挂单独的数据盘给 NFS 用，需要格式化这块磁盘并挂载，比如 vdb。如果没有额外挂盘请忽略这一步
 
         ```bash
         mkfs.xfs /dev/vdb

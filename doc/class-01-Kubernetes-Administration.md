@@ -775,7 +775,17 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
     pkts bytes target     prot opt in     out     source               destination
         0     0 KUBE-SEP-FBKE4RDEE4U4O7NI  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* default/hello-python-service */ statistic mode random probability 0.50000000000
         0     0 KUBE-SEP-ZIK7TOCY5OVWTBMA  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* default/hello-python-service */
+
+    kubectl get pods -o wide
+    kubectl run curl --image=radial/busyboxplus:curl -i --tty
+
+    nslookup hello-python-service
+    curl http://hello-python-service.default.svc.cluster.local:6000
+
+    # 在不同的 namespaces 或者宿主机节点上，需要 FQDN 长名
+    nslookup hello-python-service.default.svc.cluster.local 10.96.0.10
     ```
+- LB 类型的 Service：[metallb](https://metallb.universe.tf/)
 
 ### 3.5 实验：K8S Dashboard
 
@@ -789,14 +799,63 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
 - [DeamonSet](https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/)
 - [StatefulSet](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/)
 
+    ```yaml
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: nginx
+      labels:
+        app: nginx
+    spec:
+      ports:
+      - port: 80
+        name: web
+      clusterIP: None
+      selector:
+        app: nginx
+    ---
+    apiVersion: apps/v1
+    kind: StatefulSet
+    metadata:
+      name: web
+    spec:
+      selector:
+        matchLabels:
+          app: nginx # has to match .spec.template.metadata.labels
+      serviceName: "nginx"
+      replicas: 3 # by default is 1
+      template:
+        metadata:
+          labels:
+            app: nginx # has to match .spec.selector.matchLabels
+        spec:
+          terminationGracePeriodSeconds: 10
+          containers:
+          - name: nginx
+            image: nginx
+            ports:
+            - containerPort: 80
+              name: web
+    ```
+
+    ```bash
+    kubectl apply -f test-statefulset.yaml
+    kubectl get pods
+
+    # headless 服务，没有 service IP
+    kubectl run curl --image=radial/busyboxplus:curl -i --tty
+    nslookup nginx
+    ```
+
 ### 3.8 实验：ETCD 操作
 
  - Set & Get
 
     ```console
+    # Ubuntu 环境上用 apt-get 安装
     root@ckalab001:~# apt install etcd-client
 
-    # 或者直接 https://github.com/etcd-io/etcd/releases 下载二进制文件
+    # 其它环境直接 https://github.com/etcd-io/etcd/releases 下载二进制文件
 
     root@ckalab001:~# ps -ef | grep api | grep -i etcd
     root       24761   24743  3 10:17 ?        00:06:53 kube-apiserver --advertise-address=172.31.43.206 --allow-privileged=true --authorization-mode=Node,RBAC --client-ca-file=/etc/kubernetes/pki/ca.crt --enable-admission-plugins=NodeRestriction --enable-bootstrap-token-auth=true --etcd-cafile=/etc/kubernetes/pki/etcd/ca.crt --etcd-certfile=/etc/kubernetes/pki/apiserver-etcd-client.crt --etcd-keyfile=/etc/kubernetes/pki/apiserver-etcd-client.key --etcd-servers=https://127.0.0.1:2379 --insecure-port=0 --kubelet-client-certificate=/etc/kubernetes/pki/apiserver-kubelet-client.crt --kubelet-client-key=/etc/kubernetes/pki/apiserver-kubelet-client.key --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname --proxy-client-cert-file=/etc/kubernetes/pki/front-proxy-client.crt --proxy-client-key-file=/etc/kubernetes/pki/front-proxy-client.key --requestheader-allowed-names=front-proxy-client --requestheader-client-ca-file=/etc/kubernetes/pki/front-proxy-ca.crt --requestheader-extra-headers-prefix=X-Remote-Extra- --requestheader-group-headers=X-Remote-Group --requestheader-username-headers=X-Remote-User --secure-port=6443 --service-account-issuer=https://kubernetes.default.svc.cluster.local --service-account-key-file=/etc/kubernetes/pki/sa.pub --service-account-signing-key-file=/etc/kubernetes/pki/sa.key --service-cluster-ip-range=10.96.0.0/12 --tls-cert-file=/etc/kubernetes/pki/apiserver.crt --tls-private-key-file=/etc/kubernetes/pki/apiserver.key
@@ -1377,6 +1436,7 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
 
 - [Storage Classes](https://kubernetes.io/docs/concepts/storage/storage-classes/)
 - [Dynamic Volume Provisioning](https://kubernetes.io/docs/concepts/storage/dynamic-provisioning/)
+    - [NFS](../src/config-lab/README.md#3-集成-nfs-存储) storage class
 
 ### 6.4 实验：ConfigMap / Secret / PV & PVC / StorageClass
 
