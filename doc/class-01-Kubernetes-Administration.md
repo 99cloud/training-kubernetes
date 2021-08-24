@@ -133,7 +133,8 @@
     # 检查 docker 服务状态
     systemctl status docker
 
-    # ubuntu 中需要把 docker 的 cgroup driver 改成 systemd，centos 默认就是 systemd
+    # ubuntu 中需要把 docker 的 cgroup driver 改成 systemd
+    # !! centos 默认就是 systemd，不要修改这个文件，改了 docker 会起不来，保持 {} 就好
     vi /etc/docker/daemon.json
 
     {
