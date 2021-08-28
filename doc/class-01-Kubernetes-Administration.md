@@ -407,7 +407,7 @@
 
 - VMware
 - KubeSphere
-- Ranchel
+- Rancher
 
 ### 2.6 怎么部署出一个 K8S 群集？
 
