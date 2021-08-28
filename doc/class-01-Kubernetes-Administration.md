@@ -191,7 +191,7 @@
     # 此时可以从浏览器访问 http://<ip>:4000
 
     # 如果要跑在后台，可以加 -d 参数
-    $ docker run -d --rm -p 4000:80 --name=testFlask 99cloud/friendlyhello:3.9.6
+    $ docker run -d --rm -p 4000:80 --name=testNew 99cloud/friendlyhello:3.9.6
 
     # 进入容器调试
     $ docker exec -it testFlask /bin/bash
@@ -229,6 +229,8 @@
 ### 1.7 Docker 的网络模型
 
 - Bridge 模式
+
+    ![](images/bridge_network.jpeg)
 
     ```console
     # docker 容器实现没有把 network namespaces 放到标准路径 `/var/run/netns` 下，所以 `ip netns list` 命令看不到
