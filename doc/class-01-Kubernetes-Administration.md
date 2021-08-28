@@ -494,6 +494,7 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
     EOF
 
     sysctl -p
+    sysctl --system
 
     # 7. 配置yum源
     cat <<EOF > /etc/yum.repos.d/kubernetes.repo
