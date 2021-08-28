@@ -300,6 +300,38 @@
 ### 1.8 Docker 的存储模型
 
 - [Mount 模式](https://docs.docker.com/storage/)
+
+    ```console
+    [root@cka-studenta-1 ~]# mkdir testhaha
+    [root@cka-studenta-1 ~]# docker run -d -it --name devtest -v "$(pwd)"/testhaha:/app nginx:latest
+    Unable to find image 'nginx:latest' locally
+    Trying to pull repository docker.io/library/nginx ...
+    latest: Pulling from docker.io/library/nginx
+    ...
+    7897813b7065a0390db335656443782895155655f263de6ee8264a6f2185fe16
+
+    [root@cka-studenta-1 ~]# docker ps
+    CONTAINER ID        IMAGE                         COMMAND                  CREATED             STATUS              PORTS                  NAMES
+    7897813b7065        nginx:latest                  "/docker-entrypoin..."   6 seconds ago       Up 4 seconds        80/tcp                 devtest
+    b667b8e2f90b        99cloud/friendlyhello:3.9.6   "python app.py"          3 hours ago         Up 3 hours          0.0.0.0:4000->80/tcp   testFlask
+    [root@cka-studenta-1 ~]# docker exec -it 7897813b7065 /bin/sh
+
+    # ls
+    app  bin  boot  dev  docker-entrypoint.d  docker-entrypoint.sh  etc  home  lib  lib64  media  mnt  opt  proc  root  run  sbin  srv  sys  tmp  usr  var
+    # cd app
+    # ls
+    # echo fsdfasfdasdfsa > xxxxxxxx.txt
+    # exit
+
+    [root@cka-studenta-1 ~]# ls
+    test  testhaha
+    [root@cka-studenta-1 ~]# cd testhaha/
+    [root@cka-studenta-1 testhaha]# ls
+    xxxxxxxx.txt
+    [root@cka-studenta-1 testhaha]# cat xxxxxxxx.txt
+    fsdfasfdasdfsa
+    ```
+
 - Volumn 模式
 
 ## Lesson 02：Kubernetes Concepts
