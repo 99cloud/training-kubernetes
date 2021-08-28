@@ -190,6 +190,9 @@
 
     # 此时可以从浏览器访问 http://<ip>:4000
 
+    # 如果要跑在后台，可以加 -d 参数
+    $ docker run -d --rm -p 4000:80 --name=testFlask 99cloud/friendlyhello:3.9.6
+
     # 进入容器调试
     $ docker exec -it testFlask /bin/bash
     root@4224b69e7ee3:/app# env
@@ -280,6 +283,7 @@
     # 这是一对 veth pair，看他们的序号和 if 可以发现
 
     # 看网桥，可以看到这个 root namespaces 的虚拟网卡绑在 docker0 网桥上
+    # 在 CentOS 上，需要安装一下：yum install bridge-utils
     [root@cloud025 ~]# brctl show
     bridge name	bridge id		STP enabled	interfaces
     docker0		8000.02428c25c112	no		vethb6d08be
