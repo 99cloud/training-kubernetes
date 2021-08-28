@@ -185,7 +185,7 @@
     $ docker images
 
     $ docker rm testFlask
-    $ docker rm testFlask || docker run -p 4000:80 --name=testFlask 99cloud/friendlyhello:3.9.6
+    $ docker run --rm -p 4000:80 --name=testFlask 99cloud/friendlyhello:3.9.6
      * Running on http://0.0.0.0:80/ (Press CTRL+C to quit)
 
     # 此时可以从浏览器访问 http://<ip>:4000
