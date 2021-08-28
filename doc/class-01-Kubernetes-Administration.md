@@ -168,7 +168,11 @@
     $ wget https://gitee.com/dev-99cloud/lab-openstack/raw/master/src/docker-quickstart/requirements.txt
     $ wget https://gitee.com/dev-99cloud/lab-openstack/raw/master/src/docker-quickstart/Dockerfile
 
-    $ pip3 install -r requirements.txt
+    # 如果是 CentOS 7.x 需要安装下 python3
+    $ yum install python3 python3-pip
+
+    # pip3 install -r requirements.txt
+    $ pip3 install -i https://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt
 
     $ python3 app.py
      * Running on http://0.0.0.0:80/ (Press CTRL+C to quit)
@@ -181,7 +185,7 @@
     $ docker images
 
     $ docker rm testFlask
-    $ docker run -p 4000:80 --name=testFlask 99cloud/friendlyhello:3.9.6
+    $ docker rm testFlask || docker run -p 4000:80 --name=testFlask 99cloud/friendlyhello:3.9.6
      * Running on http://0.0.0.0:80/ (Press CTRL+C to quit)
 
     # 此时可以从浏览器访问 http://<ip>:4000
