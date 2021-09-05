@@ -422,7 +422,7 @@ $ cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 
 ```console
 # 在 master1 节点上运行命令
-$ vim calico.yaml
+$ vi calico.yaml
 # 并输入以下内容,注意如果你之前修改了`--pod-network-cidr`请相应修改`CALICO_IPV4POOL_CIDR 和 CALICO_IPV4POOL_CIDR`
 ```
 

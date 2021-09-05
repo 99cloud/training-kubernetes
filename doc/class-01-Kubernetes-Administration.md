@@ -6,7 +6,7 @@
     - 上午：9:30 至 12:00
     - 下午：13:30 至 16:00
 - Prerequisite
-    - vim 基础操作 -- 编辑、修改、保存文件
+    - vi 基础操作 -- 编辑、修改、保存文件
     - 网络基础知识 -- 网段 cidr、vlan、vxlan、配置 linux 网卡等等
     - 基础的 linux 知识 -- 权限、文件系统、服务
     - systemd 的基础操作 -- 重启、关闭、启动、重载、查看 systemd 的服务
@@ -469,7 +469,7 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
     systemctl enable docker --now
 
     # 9. 修改 docker 镜像仓库
-    vim /etc/docker/daemon.json
+    vi /etc/docker/daemon.json
     {
       "registry-mirrors": ["http://hub-mirror.c.163.com"]
     }
