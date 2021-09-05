@@ -133,7 +133,8 @@
     # 检查 docker 服务状态
     systemctl status docker
 
-    # ubuntu 中需要把 docker 的 cgroup driver 改成 systemd，centos 默认就是 systemd
+    # ubuntu 中需要把 docker 的 cgroup driver 改成 systemd
+    # !! centos 默认就是 systemd，不要修改这个文件，改了 docker 会起不来，保持 {} 就好
     vi /etc/docker/daemon.json
 
     {
@@ -167,7 +168,11 @@
     $ wget https://gitee.com/dev-99cloud/lab-openstack/raw/master/src/docker-quickstart/requirements.txt
     $ wget https://gitee.com/dev-99cloud/lab-openstack/raw/master/src/docker-quickstart/Dockerfile
 
-    $ pip3 install -r requirements.txt
+    # 如果是 CentOS 7.x 需要安装下 python3
+    $ yum install python3 python3-pip
+
+    # pip3 install -r requirements.txt
+    $ pip3 install -i https://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt
 
     $ python3 app.py
      * Running on http://0.0.0.0:80/ (Press CTRL+C to quit)
@@ -180,10 +185,13 @@
     $ docker images
 
     $ docker rm testFlask
-    $ docker run -p 4000:80 --name=testFlask 99cloud/friendlyhello:3.9.6
+    $ docker run --rm -p 4000:80 --name=testFlask 99cloud/friendlyhello:3.9.6
      * Running on http://0.0.0.0:80/ (Press CTRL+C to quit)
 
     # 此时可以从浏览器访问 http://<ip>:4000
+
+    # 如果要跑在后台，可以加 -d 参数
+    $ docker run -d --rm -p 4000:80 --name=testNew 99cloud/friendlyhello:3.9.6
 
     # 进入容器调试
     $ docker exec -it testFlask /bin/bash
@@ -221,6 +229,8 @@
 ### 1.7 Docker 的网络模型
 
 - Bridge 模式
+
+    ![](images/bridge_network.jpeg)
 
     ```console
     # docker 容器实现没有把 network namespaces 放到标准路径 `/var/run/netns` 下，所以 `ip netns list` 命令看不到
@@ -275,6 +285,7 @@
     # 这是一对 veth pair，看他们的序号和 if 可以发现
 
     # 看网桥，可以看到这个 root namespaces 的虚拟网卡绑在 docker0 网桥上
+    # 在 CentOS 上，需要安装一下：yum install bridge-utils
     [root@cloud025 ~]# brctl show
     bridge name	bridge id		STP enabled	interfaces
     docker0		8000.02428c25c112	no		vethb6d08be
@@ -289,6 +300,38 @@
 ### 1.8 Docker 的存储模型
 
 - [Mount 模式](https://docs.docker.com/storage/)
+
+    ```console
+    [root@cka-studenta-1 ~]# mkdir testhaha
+    [root@cka-studenta-1 ~]# docker run -d -it --name devtest -v "$(pwd)"/testhaha:/app nginx:latest
+    Unable to find image 'nginx:latest' locally
+    Trying to pull repository docker.io/library/nginx ...
+    latest: Pulling from docker.io/library/nginx
+    ...
+    7897813b7065a0390db335656443782895155655f263de6ee8264a6f2185fe16
+
+    [root@cka-studenta-1 ~]# docker ps
+    CONTAINER ID        IMAGE                         COMMAND                  CREATED             STATUS              PORTS                  NAMES
+    7897813b7065        nginx:latest                  "/docker-entrypoin..."   6 seconds ago       Up 4 seconds        80/tcp                 devtest
+    b667b8e2f90b        99cloud/friendlyhello:3.9.6   "python app.py"          3 hours ago         Up 3 hours          0.0.0.0:4000->80/tcp   testFlask
+    [root@cka-studenta-1 ~]# docker exec -it 7897813b7065 /bin/sh
+
+    # ls
+    app  bin  boot  dev  docker-entrypoint.d  docker-entrypoint.sh  etc  home  lib  lib64  media  mnt  opt  proc  root  run  sbin  srv  sys  tmp  usr  var
+    # cd app
+    # ls
+    # echo fsdfasfdasdfsa > xxxxxxxx.txt
+    # exit
+
+    [root@cka-studenta-1 ~]# ls
+    test  testhaha
+    [root@cka-studenta-1 ~]# cd testhaha/
+    [root@cka-studenta-1 testhaha]# ls
+    xxxxxxxx.txt
+    [root@cka-studenta-1 testhaha]# cat xxxxxxxx.txt
+    fsdfasfdasdfsa
+    ```
+
 - Volumn 模式
 
 ## Lesson 02：Kubernetes Concepts
@@ -364,7 +407,7 @@
 
 - VMware
 - KubeSphere
-- Ranchel
+- Rancher
 
 ### 2.6 怎么部署出一个 K8S 群集？
 
@@ -451,6 +494,7 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
     EOF
 
     sysctl -p
+    sysctl --system
 
     # 7. 配置yum源
     cat <<EOF > /etc/yum.repos.d/kubernetes.repo
