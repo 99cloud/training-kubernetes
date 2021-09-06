@@ -947,17 +947,17 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
     apiVersion: v1
     kind: Pod
     metadata:
-    name: static-web
+      name: static-web
     labels:
-        role: myrole
+      role: myrole
     spec:
-    containers:
-        - name: web
-          image: nginx
-          ports:
-            - name: web
-              containerPort: 80
-              protocol: TCP
+      containers:
+      - name: web
+        image: nginx
+        ports:
+          - name: web
+            containerPort: 80
+            protocol: TCP
 
     root@CKA003:/etc/kubernetes/manifests# kubectl get pods
     NAME                READY   STATUS    RESTARTS   AGE
@@ -1070,16 +1070,16 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
     poweruser@CKA003:~$ cd .kube/
     poweruser@CKA003:~/.kube$ vi config
 
-    root@CKA003:~# diff /root/.kube/config /home/poweruser/.kube/config
-    10,12c10,12
-    <     user: kubernetes-admin
-    <   name: kubernetes-admin@kubernetes
-    < current-context: kubernetes-admin@kubernetes
-    ---
-    >     user: poweruser
-    >   name: poweruser@kubernetes
-    > current-context: poweruser@kubernetes
+    # 打开并编辑 /home/poweruser/.kube/config 文件
+    # 删除用户: kubernetes-admin 和他的证书，包括
+    root@CKA003:~# vi /home/poweruser/.kube/config
+    # 删除以下内容
+    #- name: kubernetes-admin
+    #  user:
+    #    client-certificate-data: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUM4akNDQWRxZ0F3SUJBZ0lJS2xBVjZ0SGg0R3d3RFFZSktvWklodmNOQVFFTEJRQXdGVEVUTUJFR0ExVUUKQXhNS2EzVmlaWEp1WlhSbGN6QWVGdzB5TVRBNE1Ea3dOREkyTVRaYUZ3MHlNakE0TURrd05ESTJNVGhhTURReApGekFWQmdOVkJBb1REbk41YzNSbGJUcHRZWE4wWlhKek1Sa3dGd1lEVlFRREV4QnJkV0psY201bGRHVnpMV0ZrCmJXbHVNSUlCSWpBTkJna3Foa2lHOXcwQkFRRUZBQU9DQVE4QU1JSUJDZ0tDQVFFQTNQT2J2Ly9JK2FrQkFzR3YKeERPRlpEYnF6c1AwWCtTOExRa1dmMGhCKzBOc3dySHhQR0VTcmw0OXhhbUI4RVVod0NQTG9BTTVWZkRxOVNXWApsV1A0ZE1qM1cyclFFdmp4ZnlZZDhjbWdReTNVWndJSE1tUCtRS0NJNVdwV0tRcldlTE8rTXZUd1hjM0wwcWUyClRiMEhlQ0FjMy9FdWlZcFVvRjFrVndESGl5N3BpQTVTSVpsbGhub1Q1NjAyb3RDV0RYWDg1L09UOGRtWEViQTAKSlpkeDdhM2krT3I5dVdHQk1aaldEQms2dk02U3QxQm00MGhIcGM4VGpQSERZOVdwcldoVXZOUXpuNEtTSDdYQQpJQ1h1d3VmVVRVQXpGVWdobm5yZXc5MzFXd3NXejJpUlN6dldzUGdDOE8xMllNQmZQWGhoeXRRazFMSTdQaUVHCm1qbGw2UUlEQVFBQm95Y3dKVEFPQmdOVkhROEJBZjhFQkFNQ0JhQXdFd1lEVlIwbEJBd3dDZ1lJS3dZQkJRVUgKQXdJd0RRWUpLb1pJaHZjTkFRRUxCUUFEZ2dFQkFGN3hOdWs5eEhtUDUydjh6REU3Uk9MTEU5cVlTMVhrd3I5Zgp2eTEvMVZKTklXV2Jlc3hQMUsvTm1JMTVJUS9TWWtoKzVoMWE4eGppRkc4dk5ia3BMNDAxUVpKTy93SEJYWU5WCkdXR0V4ZXRpdG5KSlpSam81NWN2NHpwTUNSOWZadmIvaGc3RzBCQmw2RW84MHNzSDJYdG5Ca04vV0VPY0VoZk8KQ2pFYkNGREVmbzFMRG9aTDZjZGwxU3dnTFlWZ3l6ZlQrcjdJVmNaZEVuWXZjMDhZNThLKzVPL3dMZnBaSjQxdwpVbWtQdzE3R0sxUjVUQUJrWHBRRFE5M3pwTnZ6M1k3ZUZlQTM5V2ZocGthZU4yRUpTQ3ZwdzdNaGQyTCtVUHFYCkdOSVpkNVYyOGF3d21GUUhURm9DdlZ0SUszMEFYMWQyTTkvNkpwMEUvNDdNZE1meWFNWT0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+    #    client-key-data: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFb2dJQkFBS0NBUUVBM1BPYnYvL0krYWtCQXNHdnhET0ZaRGJxenNQMFgrUzhMUWtXZjBoQiswTnN3ckh4ClBHRVNybDQ5eGFtQjhFVWh3Q1BMb0FNNVZmRHE5U1dYbFdQNGRNajNXMnJRRXZqeGZ5WWQ4Y21nUXkzVVp3SUgKTW1QK1FLQ0k1V3BXS1FyV2VMTytNdlR3WGMzTDBxZTJUYjBIZUNBYzMvRXVpWXBVb0Yxa1Z3REhpeTdwaUE1UwpJWmxsaG5vVDU2MDJvdENXRFhYODUvT1Q4ZG1YRWJBMEpaZHg3YTNpK09yOXVXR0JNWmpXREJrNnZNNlN0MUJtCjQwaEhwYzhUalBIRFk5V3ByV2hVdk5Rem40S1NIN1hBSUNYdXd1ZlVUVUF6RlVnaG5ucmV3OTMxV3dzV3oyaVIKU3p2V3NQZ0M4TzEyWU1CZlBYaGh5dFFrMUxJN1BpRUdtamxsNlFJREFRQUJBb0lCQUYvUmtYaTVMMm45dmI5NQpTWVUzcHFCb0pIb1lockRUWER2WGxoY0t1ZnFDS2ZkZy9iSG1reGhsTERxOUlPbVd3V1UyNE1aNnYzR2lzZkl3CkpFV1gvaFovVks0amF5cmZKTE8wVHdZZEgxQWkzdHJ4Q1RmMEh6M2RvS0NFOWVxRWxhL3dtd28wS00wMVF6QU8KcFVPZk4wOEQ5aUd6MFMrNmVxcTA5Wis1YWMvVWNLQWgyczNzL2hjSHlEUk9yeFpCd1JDY3RoTXlGdU03SklIaQp3dXZKTEJqZkdXVnhGNGdkWWRiMXdIMFdNZ2txanhkVDEvcWthSEE2TmtNTEZrRnZNdzRSTDdpbUdmMmcrVDBGCnB1WVorRW9oRGVtTEpCVGF5ZTM3ZjlST3pRRTBtTFNEa1E5WnRmZDBMOE5telJ2eUIzTTdXV0FtVXhaM2FuTk4KSE5RV0k1VUNnWUVBM3RNZVNUcEhyMU1YcmhzdTZ6SlNwUEh6a3hQVE95VlE3NjY5cjJ6ay9UeDNVUUFzSktoSAovNFlTWUNyTzh6Q09HY09va1EzWUNCQlJBU2dlNmp5ekR3L0duRmxzT3o4MVdIYWp0NlRjKzVzVFh3dk9EUkxrCmxCSDBHblhIbHJ0M2FzV1JBRS9xVVlzeVJhUEs4a0tzRHRidlk4RllnbzB0NHFCYnBTelo2VHNDZ1lFQS9ka1oKSGtNZG5OWHFYTk9jTnJ0YzlDaGRjeUpXR2ppMEpPQ3dSVVNyNzMxMGFhcm1JU2tOR0Q1NTNUSlhnRlBRb2t3QQpRaWNVQ2VUY0t3SkM0VUUrWEVYaEZKU3RwNmR4VDJlR1AyU2ZtMUxENUp2cWZiU2xuOU81Ni9MTTY1Ym9BbVJCCmtjMVl1M0ZjZ1BiYlRIMXI4K2FqK1IxUG5NdTBsT2ZRNUJHeUd5c0NnWUJ2MTZvSStXN0h5cjVGRHJIakxmUWIKaExKTXJaUEZ5VG94eEJURHU3WElnaFFsblIrTEdzaGdzbXdBeHh2dkp2ejhZNS8xaHV4YlI4MVE5bEZtSXllQgpOTnJzMlZtZzkxNFFWQ1JpNWlaaFIvcFdKN2U2Q2pTZk9jKzdoRWkxR00yYzB5T3Y4MnphbHpLWmo5Z3E5MW9qCmJMRGw4a001N0NFTzhveHRnUEN6eHdLQmdCQXZ6c1U2UEdJcTFkWHpmR3VWQ1BsY3RaREk2THFsVVA5bEFIaDYKUjRodTlJUmtiR1pDNnQzWDVnZHYxVnFPZmFoTHRseUJoMnFXR0YvNXRmQU5LLy9RU09qNkRoUzV2YVQxa2Y3cQoySzZiMlhmelpVRjh5bTdsbmw1b1RoN2JzWkd0ZU96bUxqbE5vanRyQWxMZlVJbnQ5QmpIZ0xNYjNqajhpenB2CjBtNmZBb0dBUGtqY0lhWE93dnhXdFhReCttWEVQWkQxUEoyeElWN240am9hNHJ4L0pqNmx6dmRhQ2xmZzlSYjEKVC81QjREcWViNC9udlA0WUpBSTR4RUxCTVI0N1EvbVBHVkFldXc0SmgyZ3RBdmx3S0RDOGliaTg0NzlKSi9qOQo2T2gzNkR1UVpoeU56QU1namxCZG5oNEk0UitYYmZZcEo2UjNSUE5jM2dWT1cvVkFPc009Ci0tLS0tRU5EIFJTQSBQUklWQVRFIEtFWS0tLS0tCg==
 
+    # 尝试获取 pod, 会失败因为我们没有给他设置 rbac 的权限
     poweruser@CKA003:~/.kube$ kubectl get pods
     Error from server (Forbidden): pods is forbidden: User "poweruser" cannot list resource "pods" in API group "" in the namespace "default"
     ```
@@ -1092,7 +1092,7 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
     apiVersion: rbac.authorization.k8s.io/v1
     kind: Role
     metadata:
-      namespace: default
+      namespace: ns1
       name: pod-reader
     rules:
     - apiGroups: [""] # "" indicates the core API group
@@ -1110,7 +1110,7 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
     kind: RoleBinding
     metadata:
       name: read-pods
-      namespace: default
+      namespace: ns1
     subjects:
     # You can specify more than one "subject"
     - kind: User
@@ -1126,14 +1126,15 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
     rolebinding.rbac.authorization.k8s.io/read-pods created
     ```
 
-    现在 poweruser 用户有 list pod 的权限了
+    现在 poweruser 在默认的 default namespace 下获取 pod 列表会出现错误的情况
 
     ```console
+    # 错误--没有 default namespace 下获取 pod 列表的权限,这是我们所希望得到的结果
     poweruser@CKA003:~/.kube$ kubectl get pods
-    NAME       READY   STATUS    RESTARTS   AGE
-    dnsutils   1/1     Running   4          4h22m
-    web-0      0/1     Pending   0          122m
-    poweruser@CKA003:~/.kube$
+    # 返回: Error from server (Forbidden): pods is forbidden: User "poweruser" cannot list resource "pods" in API group "" in the namespace "default"
+
+    # ok
+    poweruser@CKA003:~/.kube$ kubectl get pods -n ns1
     ```
 
 - 实验：创建 Normal 用户并给予超级管理员组
