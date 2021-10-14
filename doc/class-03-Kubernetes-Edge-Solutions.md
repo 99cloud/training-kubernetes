@@ -780,13 +780,492 @@ WantedBy=multi-user.target
 
 ### 3.1 KubeEdge 基本概念
 
-### 3.2 KubeEdge 的部署
+文档部分内容节选自 [KubeEdge 官网](https://kubeedge.io/zh/docs)，更多详细内容可参阅
+[KubeEdge 官方文档](https://kubeedge.io/zh/docs/_index_zh/)
 
-### 3.3 KubeEdge 边缘计算案例剖析
+#### 3.1.1 什么是 KubeEdge
 
-### 3.4 CloudCore 原理和应用
+KubeEdge 是一个开源系统，将原生的容器化应用程序编排功能扩展到边缘节点。可将本机容器化应用编排和管理扩展到边缘端设备。
 
-### 3.5 EdgeCore 原理和应用
+它基于 Kubernetes 构建，为网络和应用程序提供核心基础架构支持，并在云端和边缘端部署应用，同步元数据。KubeEdge 还支持 MQTT 协议，允许开发人员编写客户逻辑，并在边缘端启用设备通信的资源约束。KubeEdge 包含云端和边缘端两部分。
+
+#### 3.1.2 KubeEdge 的优势
+
+1. **边缘计算**
+
+    通过在边缘端运行业务逻辑，可以在本地保护和处理大量数据。KubeEdge 减少了边和云之间的带宽请求，加快响应速度，并保护客户数据隐私。
+
+2. **简化开发**
+
+    开发人员可以编写常规的基于 http 或 mqtt 的应用程序，容器化并在边缘或云端任何地方运行。
+
+3. **Kubernetes 原生支持**
+
+    使用 KubeEdge 用户可以在边缘节点上编排应用、管理设备并监控应用程序/设备状态，就如同在云端操作 Kubernetes 集群一样。
+
+4. **丰富的应用程序**
+
+    用户可以轻松地将复杂的机器学习、图像识别、事件处理等高层应用程序部署到边缘端。
+
+#### 3.1.3 依赖
+
+在云端方面，我们需要：
+
+- Kubernetes 集群
+
+在边缘，我们需要：
+
+- 容器运行时，现在我们支持：
+  - Docker
+  - Containerd
+  - Cri-o
+  - Virtlet
+- MQTT服务器（可选）
+
+### 3.2 KubeEdge 的架构
+
+#### 3.2.1 KubeEdge 模块组成
+
+KubeEdge 由以下组件构成:
+
+**云上部分**
+
+- **CloudHub**: CloudHub 是一个 Web Socket 服务端，负责监听云端的变化, 缓存并发送消息到 EdgeHub。
+- **EdgeController**: EdgeController 是一个扩展的 Kubernetes 控制器，管理边缘节点和 Pods 的元数据确保数据能够传递到指定的边缘节点。
+- **DeviceController**: DeviceController 是一个扩展的 Kubernetes 控制器，管理边缘设备，确保设备信息、设备状态的云边同步。
+
+**边缘部分**
+
+- **EdgeHub**: EdgeHub 是一个 Web Socket 客户端，负责与边缘计算的云服务（例如 KubeEdge 架构图中的 Edge
+  Controller）交互，包括同步云端资源更新、报告边缘主机和设备状态变化到云端等功能。
+- **Edged**: Edged 是运行在边缘节点的代理，用于管理容器化的应用程序。
+- **EventBus**: EventBus 是一个与 MQTT 服务器（mosquitto）交互的 MQTT 客户端，为其他组件提供订阅和发布功能。
+- **ServiceBus**:
+  ServiceBus是一个运行在边缘的HTTP客户端，接受来自云上服务的请求，与运行在边缘端的HTTP服务器交互，提供了云上服务通过HTTP协议访问边缘端HTTP服务器的能力。
+- **DeviceTwin**: DeviceTwin 负责存储设备状态并将设备状态同步到云，它还为应用程序提供查询接口。
+- **MetaManager**: MetaManager 是消息处理器，位于 Edged 和 Edgehub 之间，它负责向轻量级数据库（SQLite）存储/检索元数据。
+
+#### 3.2.2 KubeEdge 架构
+
+![](images/kubeedge_arch.png)
+
+### 3.3 KubeEdge 部署
+
+**使用限制**
+
+- keadm 目前支持 Ubuntu 和 CentOS OS。RaspberryPi 的支持正在进行中。
+- 需要超级用户权限（或 root 权限）才能运行。
+
+| 角色    | 环境                | CPU    | 内存  | 磁盘   | 数量 | os        |
+| ----- | ----------------- | ------ | --- | ---- | -- | --------- |
+| cloud | K8S(AIO/HA)1.18.6 | >4Core | >4G | >50G | 1  | centos7.x |
+| edge  | dokcer19.03.9     | >1Core | >1G | >10G | n  | centos7.x |
+
+#### 3.3.1 使用 Keadm 进行部署
+
+Keadm 用于安装 KubeEdge 的云端和边缘端组件。**它不负责 K8s 的安装和运行**。所以在部署 KubeEdge Cloud 部分前需要预先搭建好一个 K8s 集群环境。[K8s 部署过程](class-01-Kubernetes-Administration.md#27-实验k8s-的部署)
+
+下面介绍 Keadm 部署 KubeEdge。为方便说明，我们将 **cloud 端的 K8S 集群称为 cloud 端**，**边缘节点称为 edge 端**。且 cloud 端的所有操作在 K8S 集群的 **master** 节点上进行（该节点需具备 kubectl 和 kubeconfig）
+
+使用 Keadm 部署 cloud 端
+
+```bash
+# 在 cloud 端下载 keadm
+yum update -y
+yum install wget -y
+wget https://github.com/kubeedge/kubeedge/releases/download/v1.8.0/keadm-v1.8.0-linux-amd64.tar.gz 
+tar -vxf keadm-v1.8.0-linux-amd64.tar.gz
+cp keadm-v1.8.1-linux-amd64/keadm/keadm /usr/bin/
+
+# 部署 cloud 端
+# 部署过程比较简单，但是受限国内网络环境，大多数情况下仅靠该命令无法成功部署出来，我们需要额外做一些辅助线部署工作
+
+mkdir -pv /etc/kubeedge
+mkdir -pv /etc/kubeedge/crds
+mkdir -pv /etc/kubeedge/crds/devices && /etc/kubeedge/crds/reliablesyncs && /etc/kubeedge/crds/router
+
+wget -k --no-check-certificate https://github.com/kubeedge/kubeedge/releases/download/v1.8.0/kubeedge-v1.8.0-linux-amd64.tar.gz -O /etc/kubeedge/kubeedge-v1.8.0-linux-amd64.tar.gz
+wget -k --no-check-certificate https://raw.githubusercontent.com/kubeedge/kubeedge/release-1.8/build/tools/cloudcore.service -O  /etc/kubeedge/cloudcore.service
+wget -k --no-check-certificate https://raw.githubusercontent.com/kubeedge/kubeedge/release-1.8/build/crds/devices/devices_v1alpha2_device.yaml -O /etc/kubeedge/crds/devices/devices_v1alpha2_device.yaml
+wget -k --no-check-certificate https://raw.githubusercontent.com/kubeedge/kubeedge/release-1.8/build/crds/reliablesyncs/devices_v1alpha2_devicemodel.yaml -O /etc/kubeedge/crds/devices/devices_v1alpha2_devicemodel.yaml
+wget -k --no-check-certificate https://raw.githubusercontent.com/kubeedge/kubeedge/masrelease-1.8ter/build/crds/reliablesyncs/cluster_objectsync_v1alpha1.yaml -O /etc/kubeedge/crds/reliablesyncs/cluster_objectsync_v1alpha1.yaml
+wget -k --no-check-certificate https://raw.githubusercontent.com/kubeedge/kubeedge/release-1.8/build/crds/reliablesyncs/objectsync_v1alpha1.yaml -O /etc/kubeedge/crds/reliablesyncs/objectsync_v1alpha1.yaml
+wget -k --no-check-certificate https://raw.githubusercontent.com/kubeedge/kubeedge/release-1.8/build/crds/router/router_v1_ruleEndpoint.yaml -O /etc/kubeedge/crds/router/router_v1_ruleEndpoint.yaml
+wget -k --no-check-certificate https://raw.githubusercontent.com/kubeedge/kubeedge/release-1.8/build/crds/router/router_v1_rule.yaml -O /etc/kubeedge/crds/router/router_v1_ruleEndpoint.yaml
+```
+
+```bash
+# 部署 cloud 端
+# THE-EXPOSED-IP 通常为 k8s master ip/vip
+# 特别注意：部署过程中出现 'kubeedge-v1.8.0-linux-amd64.tar.gz in your path checksum failed and do you want to delete this file and try to download again? [y/N]:',输入 n 即可
+```
+
+```console
+$ keadm init --advertise-address="THE-EXPOSED-IP"
+
+Kubernetes version verification passed, KubeEdge installation will start...
+Expected or Default KubeEdge version 1.8.0 is already downloaded and will checksum for it. 
+kubeedge-v1.8.0-linux-amd64.tar.gz checksum: 
+checksum_kubeedge-v1.8.0-linux-amd64.tar.gz.txt content: 
+kubeedge-v1.8.0-linux-amd64.tar.gz in your path checksum failed and do you want to delete this file and try to download again? 
+[y/N]: 
+n
+W1002 10:30:19.561552   65565 common.go:279] failed to checksum and will continue to install.
+[Run as service] service file already exisits in /etc/kubeedge//cloudcore.service, skip download
+kubeedge-v1.8.0-linux-amd64/
+kubeedge-v1.8.0-linux-amd64/edge/
+kubeedge-v1.8.0-linux-amd64/edge/edgecore
+kubeedge-v1.8.0-linux-amd64/cloud/
+kubeedge-v1.8.0-linux-amd64/cloud/csidriver/
+kubeedge-v1.8.0-linux-amd64/cloud/csidriver/csidriver
+kubeedge-v1.8.0-linux-amd64/cloud/admission/
+kubeedge-v1.8.0-linux-amd64/cloud/admission/admission
+kubeedge-v1.8.0-linux-amd64/cloud/cloudcore/
+kubeedge-v1.8.0-linux-amd64/cloud/cloudcore/cloudcore
+kubeedge-v1.8.0-linux-amd64/version
+
+KubeEdge cloudcore is running, For logs visit:  /var/log/kubeedge/cloudcore.log
+CloudCore started
+
+# 查看 cloudcore 服务
+$ ps aux | grep cloudcore
+root      65819  0.6  1.3 900580 25600 pts/0    Sl   10:30   0:00 /usr/local/bin/cloudcore
+root      65914  0.0  0.0 112812   972 pts/0    S+   10:30   0:00 grep --color=auto cloudcore
+```
+
+使用 Keadm 部署 edge 端
+
+```bash
+# 所有 edge 节点均执行下述操作
+
+# 安装 dokcer
+yum update -y
+yum install -y yum-utils
+yum-config-manager --add-repo http://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
+yum makecache fast
+yum install docker-ce-19.03.9 -y
+mkdir -p /etc/docker
+echo '{"registry-mirrors": ["http://hub-mirror.c.163.com"]}'>/etc/docker/daemon.json
+systemctl enable --now docker
+
+# 在 edge 端下载 keadm
+yum install wget -y
+wget https://github.com/kubeedge/kubeedge/releases/download/v1.8.0/keadm-v1.8.0-linux-amd64.tar.gz 
+tar -vxf keadm-v1.8.0-linux-amd64.tar.gz
+cp keadm-v1.8.1-linux-amd64/keadm/keadm /usr/bin/
+
+# 部署 edge 端
+# THE-EXPOSED-IP 通常为 cloud 端 k8s master ip/vip
+# TOKEN 通常在 cloud 端获取：keadm gettoken
+# edge 端加入 cloud 端比较简单，同样受限国内网络环境，我们需要做一下辅助性工作
+
+scp -r root@{THE-EXPOSED-IP}:/etc/kubeedge /etc/
+
+keadm join --cloudcore-ipport={THE-EXPOSED-IP}:10000 --kubeedge-version=1.8.0 --token={TOKEN}
+
+# 特别注意：部署过程中出现 'kubeedge-v1.8.0-linux-amd64.tar.gz in your path checksum failed and do you want to delete this file and try to download again? [y/N]:',输入 n 即可
+```
+
+```console
+Host has mosquit+ already installed and running. Hence skipping the installation steps !!!
+Expected or Default KubeEdge version 1.8.0 is already downloaded and will checksum for it. 
+kubeedge-v1.8.0-linux-amd64.tar.gz checksum: 
+checksum_kubeedge-v1.8.0-linux-amd64.tar.gz.txt content: 
+kubeedge-v1.8.0-linux-amd64.tar.gz in your path checksum failed and do you want to delete this file and try to download again? 
+[y/N]: 
+n
+W1002 10:56:18.457155   74140 common.go:279] failed to checksum and will continue to install.
+[Run as service] service file already exisits in /etc/kubeedge//edgecore.service, skip download
+kubeedge-v1.8.0-linux-amd64/
+kubeedge-v1.8.0-linux-amd64/edge/
+kubeedge-v1.8.0-linux-amd64/edge/edgecore
+kubeedge-v1.8.0-linux-amd64/cloud/
+kubeedge-v1.8.0-linux-amd64/cloud/csidriver/
+kubeedge-v1.8.0-linux-amd64/cloud/csidriver/csidriver
+kubeedge-v1.8.0-linux-amd64/cloud/admission/
+kubeedge-v1.8.0-linux-amd64/cloud/admission/admission
+kubeedge-v1.8.0-linux-amd64/cloud/cloudcore/
+kubeedge-v1.8.0-linux-amd64/cloud/cloudcore/cloudcore
+kubeedge-v1.8.0-linux-amd64/version
+
+KubeEdge edgecore is running, For logs visit: journalctl -u edgecore.service -b
+
+# 略微等待1分钟，我们回到 cloud 端进行查看 edge 是否成功加入
+$ kubectl get no
+
+NAME                    STATUS   ROLES        AGE   VERSION
+localhost.localdomain   Ready    agent,edge   11h   v1.19.3-kubeedge-v1.8.0
+master                  Ready    master       12h   v1.18.6
+```
+
+### 3.4 KubeEdge 边缘计算案例剖析
+
+#### 3.4.1 用 Apache Beam 进行数据分析
+
+Apache Beam是一个开源的、统一的模型，用于定义批处理和流数据并行处理管道。使用其中一个开源的 Beam SDK，我们可以建立一个定义管道的程序。
+
+![](images/High_level_Arch.png)
+
+分析引擎的主要目的是以流的形式从 mqtt 代理处获得数据，并对传入的数据实时应用规则，在 mqtt 代理处产生警报/行动。通过管道获取数据和应用分析功能是通过使用 Apache Beam 完成的。
+
+#### 3.4.2 为什么使用 Apache Beam 进行分析
+
+有许多框架，如 Hadoop、Spark、Flink、Google Cloud
+Dataflow 等用于流处理。但没有统一的 API 来绑定所有这些框架和数据源。我们需要从这些大数据框架中抽象出应用逻辑。Apache Beam 框架在您的应用逻辑和大数据生态系统之间提供了这种抽象。
+
+- 基于数据流的通用模型用于构建抽象管道，可以在任何运行时（如 Flink/Samza 等）上运行。
+- 同样的管道代码可以在云上执行（例如，基于 Apache Flink 的华为云流），也可以在边缘使用自定义的后端，可以在边缘集群中有效地安排工作负载并执行分布式分析。
+- Apache Beam 与用于机器学习的 TensorFlow 整合得很好，这是边缘的一个关键用例。
+- Beam 支持流处理和分析所需的大多数功能。
+
+#### 3.4.3 Demo 实时警报：从 MQTT 读取批量数据，过滤并生成警报
+
+- Apache Beam 中对批处理数据的基本 mqtt 读/写支持
+- 从一个 MQTT 中读取数据
+- 创建读取数据的 PC 集合，并将其作为管道的初始数据
+- 对数据进行过滤
+- 如果读数超过数值，在主题上发布一个警报
+
+![](images/Demo1.1.png)
+
+#### 3.4.4 Demo 过滤流数据。从 MQTT 读取流数据，定期过滤
+
+- 使用 MQTT 读取流数据
+- 在固定的时间间隔内对数据进行过滤
+
+![](images/Demo1.2.png)
+
+#### 3.4.5 部署流水线应用程序
+
+先决条件
+
+- Golang(版本: 1.14+)
+- KubeEdge(版本: v1.5+)
+- Docker(版本: 18.09-ce+)
+
+```console
+$ git clone https://github.com/kubeedge/examples && cd examples
+
+# 拉取镜像
+$ docker pull containerise/ke_apache_beam:ke_apache_analysis_v1.1
+$ docker pull containerise/ke_apache_beam:ke_apache_analysis_v1.2
+
+# 运行 deployment
+$ kubectl apply -f examples/apache-beam-analysis/deployment.yaml
+
+# 然后你可以使用下面的命令来检查应用程序是否正常运行。
+$ kubectl get pods
+```
+
+#### 3.4.6 数据检验
+
+```console
+# 通过使用[testmachine](publisher/testmachine.go)发布假数据。添加以下供应商软件包。
+
+$ go get -u github.com/yosssi/gmq/mqtt
+$ go get -u github.com/yosssi/gmq/mqtt/client
+
+$ go build testmachine.go
+$ ./testmachine
+```
+
+### 3.5 CloudCore 原理和应用
+
+我们通过前面的了解可以知道，KubeEdge Cloud Core 主要有三大模块组成：CloudHub、EdgeController 和 DeviceController，下面我们来分别介绍三个模块
+
+![](images/cloudhub.png)
+
+#### 3.5.1 CloudHub
+
+CloudHub 是 cloudcore 的一个模块，是 Controller 和 Edge 端之间的中转。它同时支持基于 websocket 的连接以及 QUIC 协议访问。Edgehub 可以选择一种协议来访问 cloudhub。CloudHub 的功能是启用边端与控制器之间的通信。
+
+到边端的连接（通过 EdgeHub 模块）是通过 websocket 连接上的 HTTP 完成的。对于内部通讯，它直接与控制器通讯。发送到 CloudHub 的所有请求都是上下文对象，它们与标记为它的 nodeID 的事件对象的映射通道一起存储在 channelQ 中。
+
+CloudHub 执行的主要功能是：
+
+1. **获取消息上下文并为事件创建ChannelQ**
+
+    上下文对象存储在 channelQ 中。对于所有 nodeID，将创建通道并将消息转换为事件对象，然后将事件对象通过通道传递。
+
+2. **通过websocket创建http连接：**
+
+    TLS 证书通过上下文对象中提供的路径加载, HTTP 服务器以 TLS 配置启动,然后将 HTTP 连接升级为接收 conn 对象的 websocket 连接。ServeConn 函数可服务所有传入连接
+
+3. **从边端读取消息：**
+
+    首先，为保持活动间隔设置最后期限, 然后读取来自连接的 JSON 消息, 设置完消息路由器详细信息之后, 然后将消息转换为事件对象以进行云内部通信, 最后，事件被发布给控制器
+
+4. ** 将消息写到Edge：**
+
+    首先，为给定的 nodeID 接收所有事件对象, 检查相同请求的存在和节点的活动性,事件对象转换为消息结构,设置写截止时间。然后消息传递到 websocket 连接
+
+5. **向控制器发布消息：**
+
+    每次向 Websocket 连接发出请求时，带有时间戳，clientID 和事件类型的默认消息都会发送到控制器, 如果节点断开连接，则会引发错误，并将描述节点故障的事件发布到控制器。
+
+CloudHub 消息可靠性
+
+- CloudHub 作为 Controller 和 Edge端之间的中介。它负责下行分发消息(其内封装了 k8s 资源事件，如 pod update 等)，也负责接收并发送边缘节点上行消息至 controllers。其中下行的消息在应用层增强了传输的可靠性，以应对云边的弱网络环境。
+- 到边缘的连接（通过 EdgeHub 模块）是通过可选的 websocket/quic 连接完成的。对于 Cloudcore 内部通信，Cloudhub 直接与 Controller 通讯。Controller 发送到 CloudHub 的所有请求，与用于存储这个边缘节点的事件对象的通道一起存储在 channelq 中。
+- 如果是 message 类型，则表示 EdgeController 和 devicecontroller 需要同步到边端的消息。这时需要 Cloudhub 和Edgehub作消息通信。但考虑到云与边缘之间的不稳定网络会导致边缘节点频繁断开连接。如果 cloudcore 或 edgecore 重启或离线一段时间，可能会导致发送到边缘节点的消息丢失，而这些消息在没有消息可靠性前是无法到达的。如果没有将新事件成功发送到边缘，这将导致云和边缘之间的不一致。所以云边通信需要一个可靠的消息传输机制。它需要覆盖以下几种情况：
+    1. 如果 cloudcore 重新启动或离线一段时间，则每当 cloudcore 重新上线时，将最新事件发送到边缘节点（如果有任何更新要发送）。
+    2. 如果edgenode重新启动或离线一段时间，无论何时该节点上线时，cloudcore 都会发送最新事件以使其保持最新状态。
+
+CloudHub 消息可靠机制：有三种类型的消息传递机制
+
+1. 最多一次 At-Most-Once
+2. 恰好一次 Exactly-Once
+3. 至少一次 At-Least-Once
+
+第一种方法“At-Most-Once”是不可靠的，第二种方法“Exactly-Once”代价非常高，虽然它提供了可靠的消息传递，没有消息丢失或重复的现象，但是性能比第三种差很多。
+
+由于 KubeEdge 遵循 Kubernetes 最终的一致性设计原则，因此，只要消息是最新消息，边缘节点重复接收相同消息不是问题。因此，KubeEdge 采用 At-Least-Once 建议。
+
+下面显示的是消息从云传递到边缘的具体流程。
+
+![](images/reliablemessage-workflow_nxqnay.png)
+
+1. KubeEdge 使用 K8s CRD 存储已成功发送到 Edge 的资源的最新 resourceVersion。当 cloudcore 重新启动或正常启动时，它将检查 resourceVersion 以避免发送旧消息。
+2. EdgeController 和 devicecontroller 将消息发送到 Cloudhub，MessageDispatcher 将根据消息中的节点名称将消息发送到相应的 NodeMessageQueue。
+3. CloudHub 将顺序地将数据从 NodeMessageQueue 发送到相应的边缘节点 [5]，并将消息 ID 存储在 ACK 通道中 [4]。当收到来自边缘节点的 ACK 消息时，ACK 通道将触发以将消息 resourceVersion 作为 CRD 保存到 K8s[11]，并发送下一条消息。
+4. 当 Edgecore 收到消息时，它将首先将消息保存到本地数据存储中，然后将ACK消息返回到云中。如果 cloudhub 在此间隔内未收到  ACK消息，它将继续重新发送该消息 5 次。如果所有 5 次重试均失败，cloudhub 将丢弃该事件。
+5. SyncController 将处理这些失败的事件。即使边缘节点接收到该消息，返回的ACK消息也可能在传输过程中丢失。在这种情况下，cloudhub 将再次发送消息，并且边缘可以处理重复的消息。
+
+#### 3.5.2 EdgeController
+
+我们知道 EdgeController 是一个扩展的 Kubernetes 控制器，管理边缘节点和 Pods 的元数据确保数据能够传递到指定的边缘节点。
+
+EdgeController 结构图
+
+![](images/edge-controller.png)
+
+upstream 处理上行数据（与原生 k8s 中 kubelet 上报自身信息一致，这里主要上报边缘节点 node 状态和 pod 状态）；downstream 处理下行数据。云边协同采用的是在 websocket 之上封装了一层消息，而且不会全量的同步数据，只会同步和本节点最相关最需要的数据，边缘节点故障重启后也不会 re-list，因为边缘采用了持久化存储，直接从本地恢复。本地数据怎么实时保持最新？就是通过 downstream 不断从云上发生变更的相关数据往边缘去同步。
+
+![](images/edge-pod.png)
+
+系统起来的时候，CloudCore 里面的 EdgeController 会 watch 很多资源，对于 pod 来说，它会 watch 所有 pod，但它里面会有一个过滤，但是过滤不会反映在 list-watch 上，只在内部做下发的时候处理。
+
+1. CloudCore 收到 pod 变更通知后，会在内部循环中做条件的判断，看pod 中的 nodeName 字段是不是在它所管理的边缘节点范围。如果是，它会做一个事件的封装发送到 CloudHub 中去
+2. CloudHub 对事件做完消息的封装和编码后会通过 websocket通道发送到每个边缘的节点，边缘节点的 EdgeHub 收到消息后解开去查看 pod 的信息，然后发送到 MetaManager 组件
+3. MetaManager 会把收到的 pod 进行本地持久化
+4. MetaManager 在把 pod 信息发送到 Edged(轻量化的 kubelet)，去拉起应用
+
+#### 3.5.3 DeviceController
+
+DeviceController 属于 KubeEdge 的云端组件，负责设备管理。这个完全是一个 operator 的典型设计和实现，有一个自定义的 API 对象以及有一个相应的自定义 controller 去管理该对象的生命周期。
+
+KubeEdge 利用 Kubernetes 提供的 CRD 机制，对真实的物理设备进行抽象，通过自定义一个名为 Device 的自定义资源（Custom
+Resource）来描述设备的元数据以及状态。而 DeviceController，顾名思义，就是这一资源的的控制器，由它负责云边的设备信息同步。在具体的实现中，DeviceController 分为两个部分，会启动两个独立的goroutine，即 downstream 和 upstream，其中 downstream 通过监听 Kubernetes API Server 将设备的状态更新由云端同步至边缘端；而 upstream 则负责订阅来自边缘端的消息，并将其同步至 API Server中。
+
+在 KubeEdge 中，DeviceController 通过下面这两个概念对设备进行抽象。
+
+- DeviceModel：描述了设备的属性（properties），定义了访问这些属性的方式（property visitor）。我们可以将 DeviceModel 理解为一组设备的模板。DeviceModel 的具体设计详见[这里](https://github.com/kubeedge/kubeedge/blob/master/docs/proposals/device-crd.md#device-model-type-definition)。
+- DeviceInstance：表示一个真实的设备实例。通过引用DeviceModel，创建一个设备实例。其中，Device Spec表示的设备的期望状态，而Device Status 则表示设备的真实状态。DeviceInstance 的具体设计详见[这里](https://github.com/kubeedge/kubeedge/blob/master/docs/proposals/device-crd.md#device-instance-type-definition)。
+
+![](images/DeviceController.png)
+
+### 3.6 EdgeCore 原理和应用
+
+我们通过前面的了解可以知道，KubeEdge Edge Core
+主要下面几个模块组成：EdgeCore包括几个模块：Edged、EdgeHub、MetaManager、DeviceTwin、EventBus、ServiceBus 下面我们来分别介绍这些模块
+
+#### 3.6.1 Edged
+
+Edged是管理节点生命周期的边缘节点模块。它可以帮助用户在边缘节点上部署容器化的工作负载或应用程序。
+这些工作负载可以执行任何操作，从简单的遥测数据操作到分析或ML推理等。使用kubectl云端的命令行界面，用户可以发出命令来启动工作负载。
+
+当前容器和镜像管理支持Docker容器运行时。将来应添加其他运行时支持，例如containerd等。有许多模块协同工作以实现edged的功能。
+
+- pod管理: 用于pod的添加删除修改,它还使用pod status manager和pleg跟踪pod的运行状况。其主要工作如下：
+  - 从metamanager接收和处理pod添加/删除/修改消息。
+  - 处理单独的工作队列以添加和删除容器。
+  - 处理工作程序例程以检查工作程序队列以执行pod操作。
+  - 分别为config map 和 secrets保留单独的的缓存。
+  - 定期清理孤立的pod
+
+- Pod生命周期事件生成器
+- CRI边缘化
+- secret管理
+- Probe Management
+- ConfigMap Management
+- Container GC
+- Image GC
+- Status Manager
+- 卷管理
+- MetaClient
+
+#### 3.6.2 EdgeHub
+
+Edge Hub 负责与云中存在的 CloudHub 组件进行交互。它可以使用 WebSocket 连接或 QUIC 协议连接到 CloudHub。它支持同步云端资源更新，报告边缘端主机和设备状态更改等功能。它充当边缘与云之间的通信链接。它将从云接收的消息转发到边缘的相应模块，反之亦然。
+
+edgehub 执行的主要功能是：
+
+- Keep Alive
+- Publish Client Info
+- Route to Cloud
+- Route to Edge
+
+![](images/edgehub.png)
+
+EdgeHub 中有两类 client，分别是 httpclient 以及 websocket/quic client，前者用于与 EdgeCore 与 CloudCore 通信所需证书的申请，后者负责与 CloudCore 的日常通信（资源下发、状态上传等）
+
+当 EdgeHub 启动时，其先从 CloudCore 申请证书（若正确配置本地证书，则直接使用本地证书），初始化与 CloudCore 通信的 websocket/quic client，成功连接之后将成功连接的信息传给其他组件（MetaGroup、TwinGroup、BusGroup），分别启动三个 goroutine 不断的进行云到边以及边到云的消息分发(单纯分发，不做任何封装或改变)、健康状态上报。当云边传送消息过程中出现错误时，则边缘端重新 init 相应的websocket/quic client，与云端重新建立连接。
+
+#### 3.6.3 MetaManager
+
+MetaManager 是 edged 和 edgehub 之间的消息处理器。它还负责将元数据存储到轻量级数据库（SQLite）或从中检索元数据。
+
+Metamanager 根据以下列出的操作接收不同类型的消息：
+
+- Insert
+- Update
+- Delete
+- Query
+- Response
+- NodeConnection
+- MetaSync
+
+![](images/meta-update.png)
+
+#### 3.6.4 DeviceTwin
+
+DeviceTwin 模块负责存储设备状态，处理设备属性，处理 DeviceTwin 操作，在边缘设备和边缘节点之间创建成员关系，将设备状态同步到云以及在边缘和云之间同步 DeviceTwin 信息。它还为应用程序提供查询接口。
+
+DeviceTwin 由四个子模块组成，以执行 device twin 模块的职责。
+
+- Membership Module
+- Twin Module
+- Communication Module
+- Device Module
+
+数据存储方面，将设备数据存储到本地存储 sqlLite，包括三张表：
+
+- device
+- deviceAttr
+- deviceTwin
+
+处理其他模块发送到 twin module 的消息，然后调用 dtc.distributeMsg 来处理消息。在消息处理逻辑里面，消息被分为了四个类别，并分别发送到这四个类别的action执行处理（每一个类别又包含多个 action）：
+
+- membership
+- device
+- communication
+- twin
+
+#### 3.6.5 Eventbus
+
+Eventbus 充当用于发送/接收有关 mqtt 主题的消息的接口, 它支持三种模式：
+
+- internalMqttMode
+- externalMqttMode
+- bothMqttMode
+
+#### 3.6.6 ServiceBus
+
+ServiceBus 是一个运行在边缘的 HTTP 客户端，接受来自云上服务的请求，与运行在边缘端的HTTP服务器交互，提供了云上服务通过 HTTP 协议访问边缘端 HTTP 服务器的能力。
+
+ServiceBus 通常启动一个 goroutine 来接受来自 beehive 的消息，然后基于消息中带的参数，通过调用 http
+client 将消息通过 REST-API 发送到本地 127.0.0.1 上的目标 APP。这相当于一个客户端，而 APP 是一个 http Rest-API
+server，所有的操作和设备状态都需要客户端调用接口来下发和获取。
 
 ## 4. EdgeX Fundary 解决方案
 
