@@ -1471,6 +1471,16 @@ docker-compose logs -f [compose-contatainer-name]
 
 ### 4.3 EdgeX Foundry 案例
 
+智慧场馆 / 开源物业系统
+
+- 展现层：U3D/UE4/web/App
+- 业务层：物业/办公
+- 中台：IoT 中台（EdgeX）、用户、权限
+- IoT 适配层
+- IoT：三方 IoT 接口
+- 网络层：BA/Bodbus/Zigbee/NBIoT/HTTP
+- 感知层：设备（传感器）
+
 ## 5. 企业实践
 
 ### 5.1 容器镜像服务高可用解决方案
