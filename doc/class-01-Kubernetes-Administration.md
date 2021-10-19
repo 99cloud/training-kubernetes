@@ -618,7 +618,7 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
         - 安装了 Git（非必须）
         - 安装了 Docker
         - 一个 Kubernetes 平台
-    - [代码](src/hello-python)
+    - [代码](../src/hello-python)
         - 其中 `requirements.txt` 里只有一行：flask，是依赖包列表文件
         - 另一个文件是 `main.py`，是应用的逻辑代码
 
