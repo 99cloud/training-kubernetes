@@ -923,8 +923,8 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
     etcdctl --cert="/etc/kubernetes/pki/apiserver-etcd-client.crt" --key="/etc/kubernetes/pki/apiserver-etcd-client.key" --cacert="/etc/kubernetes/pki/etcd/ca.crt" --endpoints=https://127.0.0.1:2379 get --prefix ""
 
     # backup & restore
-    etcdctl --cert="/etc/kubernetes/pki/apiserver-etcd-client.crt" --key="/etc/kubernetes/pki/apiserver-etcd-client.key" --cacert="/etc/kubernetes/pki/etcd/ca.crt" --endpoints=https://127.0.0.1:2379 snapshot restore a.txt
-    # etcdctl --cert="/etc/kubernetes/pki/apiserver-etcd-client.crt" --key="/etc/kubernetes/pki/apiserver-etcd-client.key" --cacert="/etc/kubernetes/pki/etcd/ca.crt" --endpoints=https://127.0.0.1:2379 snapshot save a.txt
+    etcdctl --cert="/etc/kubernetes/pki/apiserver-etcd-client.crt" --key="/etc/kubernetes/pki/apiserver-etcd-client.key" --cacert="/etc/kubernetes/pki/etcd/ca.crt" --endpoints=https://127.0.0.1:2379 snapshot save a.txt
+    # etcdctl --cert="/etc/kubernetes/pki/apiserver-etcd-client.crt" --key="/etc/kubernetes/pki/apiserver-etcd-client.key" --cacert="/etc/kubernetes/pki/etcd/ca.crt" --endpoints=https://127.0.0.1:2379 snapshot restore a.txt
     ```
 
 ### 3.9 什么是静态 Pod？
