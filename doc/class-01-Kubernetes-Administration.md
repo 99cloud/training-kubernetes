@@ -1548,8 +1548,188 @@ my-nginx.default.svc.cluster.local. 30 IN A	10.98.172.84
 ### 7.3 什么是 Ingress？
 
 - [Ingress Controller](https://kubernetes.io/docs/concepts/services-networking/ingress-controllers/)
-  - [安装 Nginx Ingress Controller](https://kubernetes.github.io/ingress-nginx/deploy/#bare-metal)：`kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v0.44.0/deploy/static/provider/baremetal/deploy.yaml`
+  - [安装 Nginx Ingress Controller](https://kubernetes.github.io/ingress-nginx/deploy/#bare-metal)
+
+    ```bash
+    # 下载 ingress controller 的 yaml 文件
+    kubectl wget -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.30.0/deploy/static/mandatory.yaml
+    # 在不翻墙的情况下，可以通过以下链接下载
+    https://files.cnblogs.com/files/xiluhua/mandatory.zip
+    ```
+
+    新版本默认不监听80、443端口，需自行进行配置
+    
+    ```bash
+    # 查看端口是否被占用
+    lsof -i :xxx
+    # 修改 mandatory.yaml 文件，在 spec.template.spec 处添加如下语句可监听本地端口
+    hostNetwork: true
+    # 一般443会被 calico 占用，80端口不会被占用，可将文件下方 ports 处关于443的注释掉, controller 不会再监听443端口
+    
+    # 安装 ingress controller
+    kubectl apply -f mandatory.yaml
+    # 查看
+    kubectl get pods -n ingress-nginx
+    ```
 - [Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/)
+
+  - 部署后端服务
+
+    ```console
+    [root@iZuf6g226c4titrnrwds2tZ ~]# vim deploy-demo.yaml
+    ```
+    ``` yaml
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: myapp
+      namespace: default
+    spec:
+      selector:
+        app: myapp
+        release: canary
+      ports:
+      - name: http
+        targetPort: 80
+        port: 80
+    ---
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: myapp-backend-pod
+      namespace: default
+    spec:
+      replicas: 3
+      selector:
+        matchLabels:
+          app: myapp
+          release: canary
+      template:
+        metadata:
+          labels:
+            app: myapp
+            release: canary
+        spec:
+          containers:
+          - name: myapp
+            image: ikubernetes/myapp:v2
+            ports:
+            - name: http
+              containerPort: 80
+    ```
+
+    ```console
+    [root@iZuf6g226c4titrnrwds2tZ ~]# kubectl apply -f deploy-demo.yaml
+    [root@iZuf6g226c4titrnrwds2tZ ~]# kubectl get pods
+    NAME                                 READY   STATUS    RESTARTS   AGE
+    myapp-backend-pod-58b7f5cf77-krmzh   1/1     Running   2          17h
+    myapp-backend-pod-58b7f5cf77-vqlgl   1/1     Running   2          17h
+    myapp-backend-pod-58b7f5cf77-z7j7z   1/1     Running   2          17h
+    ```
+
+  - 通过 ingress-controller 对外提供服务，还要为其建立一个 service
+
+    ```bash
+    #下载 yaml 文件
+    wget https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/provider/baremetal/service-nodeport.yaml
+    vim service-nodeport.yaml
+    ```
+
+    ```yaml
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: ingress-nginx
+      namespace: ingress-nginx
+      labels:
+        app.kubernetes.io/name: ingress-nginx
+        app.kubernetes.io/part-of: ingress-nginx
+    spec:
+      type: NodePort
+      ports:
+        - name: http
+          port: 80
+          targetPort: 80
+          protocol: TCP
+          nodePort: 30080
+        - name: https
+          port: 443
+          targetPort: 443
+          protocol: TCP
+          nodePort: 30443
+      selector:
+        app.kubernetes.io/name: ingress-nginx
+        app.kubernetes.io/part-of: ingress-nginx
+
+    ---
+    ```
+
+    ```console
+    [root@iZuf6g226c4titrnrwds2tZ ~]# kubectl apply -f service-nodeport.yaml
+    [root@iZuf6g226c4titrnrwds2tZ ~]# kubectl get svc -n ingress-nginx
+    NAME            TYPE       CLUSTER-IP       EXTERNAL-IP   PORT(S)                      AGE
+    ingress-nginx   NodePort   10.105.153.191   <none>        80:30080/TCP,443:30443/TCP   9h
+    ```
+
+  - 部署 Ingress
+
+    ```console
+    [root@iZuf6g226c4titrnrwds2tZ ~]# vim ingress-myapp.yaml
+    ```
+    ```yaml
+    apiVersion: networking.k8s.io/v1
+    kind: Ingress
+    metadata:
+      name: ingress-myapp
+      namespace: default
+      annotations:
+        kubernetes.io/ingress.class: "nginx"
+    spec:
+      rules:
+      - host: myapp.test.com
+        http:
+          paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: myapp
+                port:
+                  number: 80
+    ```
+    ```console
+    [root@iZuf6g226c4titrnrwds2tZ ~]# kubectl apply -f ingress-myapp.yaml
+    [root@iZuf6g226c4titrnrwds2tZ ~]# kubectl get ingress
+    NAME            CLASS    HOSTS            ADDRESS          PORTS   AGE
+    ingress-myapp   <none>   myapp.test.com   10.105.153.191   80      17h
+    ```
+
+  - 结果测试
+
+    ```bash
+    # 修改本地 host 文件
+    sudo vi /etc/hosts
+    # 添加
+    xxx.xxx.xxx.xxx myapp.test.com
+    # 终端访问
+    curl http://myapp.test.com
+    # 结果
+    Hello MyApp | Version: v2 | <a href="hostname.html">Pod Name</a>
+    # 在外部访问时可能出现网站未备案的问题，多次尝试即可
+    # 在内部也需配置 hosts 通过域名进行访问
+    ```
+
+  - k8s.gcr.io 网络问题导致镜像 pull 失败
+    - 将 yaml 文件下载到本地
+    - 在 docker hub 上搜索对应的images
+    - 将文件内对应的 image 修改为 docker hub 上搜索到的对应 image ，如：
+
+      ```console
+      #image: k8s.gcr.io/ingress-nginx/controller:v0.47.  0@sha256:52f0058bed0a17ab0fb35628ba97e8d52b5d32299fbc03cc0f6c7b9ff036b61a
+      image: willdockerhub/ingress-nginx-controller:v0.47.0
+      ```
+      
+    - kubectl apply -f xxx `
 
 ## Lesson 08：Advance
 
@@ -1684,7 +1864,364 @@ my-nginx.default.svc.cluster.local. 30 IN A	10.98.172.84
 ### 8.2 什么是 HPA / CA / VA？
 
 - 怎么理解 HPA / CA / VPA？
+- 配置 metrics server
 
+  ```bash
+  mkdir metrics
+  cd metrics
+  for file in auth-delegator.yaml auth-reader.yaml metrics-apiservice.yaml metrics-server-deployment.yaml metrics-server-service.yaml resource-reader.yaml ; do wget https://raw.githubusercontent.com/kubernetes/kubernetes/master/cluster/addons/metrics-server/$file;done
+  kubectl apply -f .
+  #最新版本可能会出现无法通过健康检查的问题，可以根据自己的 kubernetes 版本，选择相同的 metrics server 版本
+  ```
+
+  修改 metrics-server-deployment.yaml
+
+  ```yaml
+  apiVersion: v1
+  kind: ServiceAccount
+  metadata:
+    name: metrics-server
+    namespace: kube-system
+    labels:
+      kubernetes.io/cluster-service: "true"
+      addonmanager.kubernetes.io/mode: Reconcile
+  ---
+  apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: metrics-server-config
+    namespace: kube-system
+    labels:
+      kubernetes.io/cluster-service: "true"
+      addonmanager.kubernetes.io/mode: EnsureExists
+  data:
+    NannyConfiguration: |-
+      apiVersion: nannyconfig/v1alpha1
+      kind: NannyConfiguration
+  ---
+  apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: metrics-server-v0.3.6
+    namespace: kube-system
+    labels:
+      k8s-app: metrics-server
+      kubernetes.io/cluster-service: "true"
+      addonmanager.kubernetes.io/mode: Reconcile
+      version: v0.3.6
+  spec:
+    selector:
+      matchLabels:
+        k8s-app: metrics-server
+        version: v0.3.6
+    template:
+      metadata:
+        name: metrics-server
+        labels:
+          k8s-app: metrics-server
+          version: v0.3.6
+      spec:
+        securityContext:
+          seccompProfile:
+            type: RuntimeDefault
+        priorityClassName: system-cluster-critical
+        serviceAccountName: metrics-server
+        nodeSelector:
+          kubernetes.io/os: linux
+        containers:
+        - name: metrics-server
+          # image: k8s.gcr.io/metrics-server-amd64:v0.3.6
+          image: opsdockerimage/metrics-server-amd64:v0.3.6
+          command:
+          - /metrics-server
+          - --metric-resolution=30s
+          # These are needed for GKE, which doesn't support secure communication yet.
+          # Remove these lines for non-GKE clusters, and when GKE supports token-based auth.
+          # - --kubelet-port=10255
+          # - --deprecated-kubelet-completely-insecure=true
+          - --kubelet-insecure-tls
+          - --kubelet-preferred-address-types=InternalIP
+          # - --kubelet-preferred-address-types=InternalIP,Hostname,InternalDNS,ExternalDNS,ExternalIP
+          ports:
+          - containerPort: 443
+            name: https
+            protocol: TCP
+        - name: metrics-server-nanny
+          # image: k8s.gcr.io/addon-resizer:1.8.11
+          image: opsdockerimage/addon-resizer:1.8.11
+          resources:
+            limits:
+              cpu: 100m
+              memory: 300Mi
+            requests:
+              cpu: 5m
+              memory: 50Mi
+          env:
+            - name: MY_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: MY_POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          volumeMounts:
+          - name: metrics-server-config-volume
+            mountPath: /etc/config
+          command:
+            - /pod_nanny
+            - --config-dir=/etc/config
+            # - --cpu={{ base_metrics_server_cpu }}
+            - --extra-cpu=0.5m
+            # - --memory={{ base_metrics_server_memory }}
+            # - --extra-memory={{ metrics_server_memory_per_node }}Mi
+            - --threshold=5
+            - --deployment=metrics-server-v0.3.6
+            - --container=metrics-server
+            - --poll-period=300000
+            - --estimator=exponential
+            # Specifies the smallest cluster (defined in number of nodes)
+            # resources will be scaled to.
+            # - --minClusterSize={{ metrics_server_min_cluster_size }}
+            - --minClusterSize=2
+            # Use kube-apiserver metrics to avoid periodically listing nodes.
+            - --use-metrics=true
+        volumes:
+          - name: metrics-server-config-volume
+            configMap:
+              name: metrics-server-config
+        tolerations:
+          - key: "CriticalAddonsOnly"
+            operator: "Exists"
+  ```
+
+  修改 resource-reader.yaml
+
+  ```yaml
+  apiVersion: rbac.authorization.k8s.io/v1
+  kind: ClusterRole
+  metadata:
+    name: system:metrics-server
+    labels:
+      kubernetes.io/cluster-service: "true"
+      addonmanager.kubernetes.io/mode: Reconcile
+  rules:
+  - apiGroups:
+    - ""
+    resources:
+    - pods
+    - nodes
+    # 添加 nodes/stats
+    - nodes/stats
+    - namespaces
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
+    - "apps"
+    resources:
+    - deployments
+    verbs:
+    - get
+    - list
+    - update
+    - watch
+  - nonResourceURLs:
+    - /metrics
+    verbs:
+    - get
+  ---
+  apiVersion: rbac.authorization.k8s.io/v1
+  kind: ClusterRoleBinding
+  metadata:
+    name: system:metrics-server
+    labels:
+      kubernetes.io/cluster-service: "true"
+      addonmanager.kubernetes.io/mode: Reconcile
+  roleRef:
+    apiGroup: rbac.authorization.k8s.io
+    kind: ClusterRole
+    name: system:metrics-server
+  subjects:
+  - kind: ServiceAccount
+    name: metrics-server
+    namespace: kube-system
+  ```
+
+- 检查 metrics 是否可用
+
+  ```bash
+  # 查看 pod 是否正常运行
+  kubectl get pods -n kube-system
+  # 查看 api-versions ，正常情况下应当多出 metrics.k8s.io/v1beta1
+  kubectl api-versions
+  # 查看 node 监控指标
+  kubectl top nodes
+  NAME                      CPU(cores)   CPU%   MEMORY(bytes)   MEMORY%   
+  izuf6g226c4titrnrwds2tz   129m         6%     1500Mi          42%
+  # 查看 pod 监控指标
+  kubectl top pods
+  NAME                                 CPU(cores)   MEMORY(bytes)   
+  myapp-backend-pod-58b7f5cf77-krmzh   0m           1Mi             
+  myapp-backend-pod-58b7f5cf77-vqlgl   0m           1Mi             
+  myapp-backend-pod-58b7f5cf77-z7j7z   0m           1Mi
+  ```
+
+  - 如果 metrics 不可用，报错 unable to fully collect metrics: unable to fully scrape metrics from source kubelet_summary ，可以尝试修改证书
+
+    ```bash
+    mkdir certs; cd certs
+    cp /etc/kubernetes/pki/ca.crt ca.pem
+    cp /etc/kubernetes/pki/ca.key ca-key.pem
+    ```
+    
+    创建文件 kubelet-csr.json
+    
+    ```json
+    {
+      "CN": "kubernetes",
+      "hosts": [
+        "127.0.0.1",
+        "<node_name>",
+        "kubernetes",
+        "kubernetes.default",
+        "kubernetes.default.svc",
+        "kubernetes.default.svc.cluster",
+        "kubernetes.default.svc.cluster.local"
+      ],
+      "key": {
+        "algo": "rsa",
+        "size": 2048
+      },
+      "names": [{
+        "C": "US",
+        "ST": "NY",
+        "L": "City",
+        "O": "Org",
+        "OU": "Unit"
+      }]
+    }
+    ```
+
+    创建文件 ca-config.json
+
+    ```json
+    {
+      "signing": {
+        "default": {
+          "expiry": "8760h"
+        },
+        "profiles": {
+          "kubernetes": {
+            "usages": [
+              "signing",
+              "key encipherment",
+              "server auth",
+              "client auth"
+            ],
+            "expiry": "8760h"
+          }
+        }
+      }
+    }
+    ```
+
+    更新证书
+
+    ```bash
+    cfssl gencert -ca=ca.pem -ca-key=ca-key.pem --config=ca-config.json -profile=kubernetes kubelet-csr.json | cfssljson -bare kubelet
+    scp kubelet.pem <nodeip>:/var/lib/kubelet/pki/kubelet.crt
+    scp kubelet-key.pem <nodeip>:/var/lib/kubelet/pki/kubelet.key
+    systemctl restart kubelet
+    ```
+
+- 定制 docker 镜像
+
+  ```console
+  FROM php:5-apache
+  COPY index.php /var/www/html/index.php
+  RUN chmod a+rx index.php
+  ```
+
+  index.php 文件内容如下：
+
+  ```php
+  <?php
+    $x = 0.0001;
+    for ($i = 0; $i <= 1000000; $i++) {
+        $x += sqrt($x);
+    }
+  ?>
+  ```
+
+- 配置 Deployment 运行镜像并暴露服务
+
+  php-apache.yaml:
+
+  ```yaml
+  apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: php-apache
+  spec:
+    selector:
+      matchLabels:
+        run: php-apache
+    replicas: 1
+    template:
+      metadata:
+        labels:
+          run: php-apache
+      spec:
+        containers:
+        - name: php-apache
+          #image: k8s.gcr.io/hpa-example
+          image: 0layfolk0/hpa-example
+          ports:
+          - containerPort: 80
+          resources:
+            limits:
+              cpu: 50m
+            requests:
+              cpu: 20m
+
+  ---
+
+  apiVersion: v1
+  kind: Service
+  metadata:
+    name: php-apache
+    labels:
+      run: php-apache
+  spec:
+    ports:
+    - port: 80
+    selector:
+      run: php-apache
+  ```
+
+- 创建 HPA
+
+  ```bash
+  # 实验过程中副本、 CPU 负载等变化需要一定的时间，不会即时改变，一般耗时几分钟
+  # 创建一个 HPA 控制上一步骤中的 Deployment ，使副本数量维持在1-10之间，平均 CPU 利用率50%
+  kubectl autoscale deployment php-apache --cpu-percent=50 --min=1 --max=10
+  horizontalpodautoscaler.autoscaling/php-apache autoscaled
+  # 查看Autoscaler状态
+  kubectl get hpa
+  # 在新终端中启动容器，增加负载
+  kubectl run -i --tty load-generator --rm --image=busybox --restart=Never -- /bin/sh -c "while sleep 0.01; do wget -q -O- http://php-apache; done"
+  # 回到旧终端
+  # 查看 CPU 负载情况，升高
+  kubectl get hpa
+  # 查看 deployment 的副本数量，增多
+  kubectl get deployment php-apache
+  # 新终端ctrl+C终止容器运行，旧终端检查负载状态， CPU 利用率应当降为0，副本数量变为1
+  kubectl get hpa
+  kubectl get deployment php-apache
+  ```
+  
 ### 8.3 什么是 Federation？
 
 - Kubenetes Federation vs ManageIQ
