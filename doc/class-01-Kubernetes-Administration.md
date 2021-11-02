@@ -1699,7 +1699,7 @@ my-nginx.default.svc.cluster.local. 30 IN A	10.98.172.84
     ```
     ```console
     [root@iZuf6g226c4titrnrwds2tZ ~]# kubectl apply -f ingress-myapp.yaml
-    root@iZuf6g226c4titrnrwds2tZ ~]# kubectl get ingress
+    [root@iZuf6g226c4titrnrwds2tZ ~]# kubectl get ingress
     NAME            CLASS    HOSTS            ADDRESS          PORTS   AGE
     ingress-myapp   <none>   myapp.test.com   10.105.153.191   80      17h
     ```
