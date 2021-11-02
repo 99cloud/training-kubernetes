@@ -1548,8 +1548,177 @@ my-nginx.default.svc.cluster.local. 30 IN A	10.98.172.84
 ### 7.3 什么是 Ingress？
 
 - [Ingress Controller](https://kubernetes.io/docs/concepts/services-networking/ingress-controllers/)
-  - [安装 Nginx Ingress Controller](https://kubernetes.github.io/ingress-nginx/deploy/#bare-metal)：`kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v0.44.0/deploy/static/provider/baremetal/deploy.yaml`
+  - [安装 Nginx Ingress Controller](https://kubernetes.github.io/ingress-nginx/deploy/#bare-metal)
+    ```bash
+    #下载ingress controller的yaml文件
+    kubectl wget -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.30.0/deploy/static/mandatory.yaml
+    #在不翻墙的情况下，可以通过以下链接下载
+    https://files.cnblogs.com/files/xiluhua/mandatory.zip
+    ```
+
+    新版本默认不监听80、443端口，需自行进行配置
+    ```bash
+    #查看端口是否被占用
+    lsof -i :xxx
+    #修改mandatory.yaml文件，在spec.template.spec处添加如下语句可监听本地端口
+    hostNetwork: true
+    #一般443会被calico占用，80端口不会被占用，可将文件下方ports处关于443的注释掉,controller不会再监听443端口
+    
+    #安装ingress controller
+    kubectl apply -f mandatory.yaml
+    #查看
+    kubectl get pods -n ingress-nginx
+    ```
 - [Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/)
+
+  *  部署后端服务
+  ```console
+  [root@iZuf6g226c4titrnrwds2tZ ~]# vim deploy-demo.yaml
+  ```
+  ``` yaml
+  apiVersion: v1
+  kind: Service
+  metadata:
+    name: myapp
+    namespace: default
+  spec:
+    selector:
+      app: myapp
+      release: canary
+    ports:
+    - name: http
+      targetPort: 80
+      port: 80
+  ---
+  apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: myapp-backend-pod
+    namespace: default
+  spec:
+    replicas: 3
+    selector:
+      matchLabels:
+        app: myapp
+        release: canary
+    template:
+      metadata:
+        labels:
+          app: myapp
+          release: canary
+      spec:
+        containers:
+        - name: myapp
+          image: ikubernetes/myapp:v2
+          ports:
+          - name: http
+            containerPort: 80
+  ```
+  ```console
+  [root@iZuf6g226c4titrnrwds2tZ ~]# kubectl apply -f deploy-demo.yaml
+  [root@iZuf6g226c4titrnrwds2tZ ~]# kubectl get pods
+  NAME                                 READY   STATUS    RESTARTS   AGE
+  myapp-backend-pod-58b7f5cf77-krmzh   1/1     Running   2          17h
+  myapp-backend-pod-58b7f5cf77-vqlgl   1/1     Running   2          17h
+  myapp-backend-pod-58b7f5cf77-z7j7z   1/1     Running   2          17h
+  ```
+
+  * 通过ingress-controller对外提供服务，还要为其建立一个service
+  ```bash
+  #下载yaml文件
+  wget https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/provider/baremetal/service-nodeport.yaml
+  vim service-nodeport.yaml
+  ```
+  ```yaml
+  apiVersion: v1
+  kind: Service
+  metadata:
+    name: ingress-nginx
+    namespace: ingress-nginx
+    labels:
+      app.kubernetes.io/name: ingress-nginx
+      app.kubernetes.io/part-of: ingress-nginx
+  spec:
+    type: NodePort
+    ports:
+      - name: http
+        port: 80
+        targetPort: 80
+        protocol: TCP
+        nodePort: 30080
+      - name: https
+        port: 443
+        targetPort: 443
+        protocol: TCP
+        nodePort: 30443
+    selector:
+      app.kubernetes.io/name: ingress-nginx
+      app.kubernetes.io/part-of: ingress-nginx
+
+  ---
+  ```
+  ```console
+  [root@iZuf6g226c4titrnrwds2tZ ~]# kubectl apply -f service-nodeport.yaml
+  [root@iZuf6g226c4titrnrwds2tZ ~]# kubectl get svc -n ingress-nginx
+  NAME            TYPE       CLUSTER-IP       EXTERNAL-IP   PORT(S)                      AGE
+  ingress-nginx   NodePort   10.105.153.191   <none>        80:30080/TCP,443:30443/TCP   9h
+  ```
+
+  * 部署Ingress
+  ```console
+  [root@iZuf6g226c4titrnrwds2tZ ~]# vim ingress-myapp.yaml
+  ```
+  ```yaml
+  apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    name: ingress-myapp
+    namespace: default
+    annotations:
+      kubernetes.io/ingress.class: "nginx"
+  spec:
+    rules:
+    - host: myapp.test.com
+      http:
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: myapp
+              port:
+                number: 80
+  ```
+  ```console
+  [root@iZuf6g226c4titrnrwds2tZ ~]# kubectl apply -f ingress-myapp.yaml
+  root@iZuf6g226c4titrnrwds2tZ ~]# kubectl get ingress
+  NAME            CLASS    HOSTS            ADDRESS          PORTS   AGE
+  ingress-myapp   <none>   myapp.test.com   10.105.153.191   80      17h
+  ```
+
+  * 结果测试
+  ```bash
+  #修改本地host文件
+  sudo vi /etc/hosts
+  #添加
+  xxx.xxx.xxx.xxx myapp.test.com
+  #终端访问
+  curl http://myapp.test.com
+  #结果
+  Hello MyApp | Version: v2 | <a href="hostname.html">Pod Name</a>
+  #在外部访问时可能出现网站未备案的问题，多次尝试即可
+  #在内部也需配置hosts通过域名进行访问
+  ```
+
+  * k8s.gcr.io网络问题导致镜像pull失败
+    * 将yaml文件下载到本地
+    * 在docker hub上搜索对应的images
+    * 将文件内对应的image修改为docker hub上搜索到的对应image，如：
+    ```console
+    #image: k8s.gcr.io/ingress-nginx/controller:v0.47.0@sha256:52f0058bed0a17ab0fb35628ba97e8d52b5d32299fbc03cc0f6c7b9ff036b61a
+    image: willdockerhub/ingress-nginx-controller:v0.47.0
+    ```
+    * kubectl apply -f xxx `
 
 ## Lesson 08：Advance
 
