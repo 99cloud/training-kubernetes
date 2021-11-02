@@ -1853,7 +1853,339 @@ my-nginx.default.svc.cluster.local. 30 IN A	10.98.172.84
 ### 8.2 什么是 HPA / CA / VA？
 
 - 怎么理解 HPA / CA / VPA？
+* 配置metrics server
+  ```bash
+  mkdir metrics
+  cd metrics
+  for file in auth-delegator.yaml auth-reader.yaml metrics-apiservice.yaml metrics-server-deployment.yaml metrics-server-service.yaml resource-reader.yaml ; do wget https://raw.githubusercontent.com/kubernetes/kubernetes/master/cluster/addons/metrics-server/$file;done
+  kubectl apply -f .
+  #最新版本可能会出现无法通过健康检查的问题，可以根据自己的kubernetes版本，选择相同的metrics server版本
+  ```
+  修改metrics-server-deployment.yaml
+  ```yaml
+  apiVersion: v1
+  kind: ServiceAccount
+  metadata:
+    name: metrics-server
+    namespace: kube-system
+    labels:
+      kubernetes.io/cluster-service: "true"
+      addonmanager.kubernetes.io/mode: Reconcile
+  ---
+  apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: metrics-server-config
+    namespace: kube-system
+    labels:
+      kubernetes.io/cluster-service: "true"
+      addonmanager.kubernetes.io/mode: EnsureExists
+  data:
+    NannyConfiguration: |-
+      apiVersion: nannyconfig/v1alpha1
+      kind: NannyConfiguration
+  ---
+  apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: metrics-server-v0.3.6
+    namespace: kube-system
+    labels:
+      k8s-app: metrics-server
+      kubernetes.io/cluster-service: "true"
+      addonmanager.kubernetes.io/mode: Reconcile
+      version: v0.3.6
+  spec:
+    selector:
+      matchLabels:
+        k8s-app: metrics-server
+        version: v0.3.6
+    template:
+      metadata:
+        name: metrics-server
+        labels:
+          k8s-app: metrics-server
+          version: v0.3.6
+      spec:
+        securityContext:
+          seccompProfile:
+            type: RuntimeDefault
+        priorityClassName: system-cluster-critical
+        serviceAccountName: metrics-server
+        nodeSelector:
+          kubernetes.io/os: linux
+        containers:
+        - name: metrics-server
+          #image: k8s.gcr.io/metrics-server-amd64:v0.3.6
+          image: opsdockerimage/metrics-server-amd64:v0.3.6
+          command:
+          - /metrics-server
+          - --metric-resolution=30s
+          # These are needed for GKE, which doesn't support secure communication yet.
+          # Remove these lines for non-GKE clusters, and when GKE supports token-based auth.
+          #- --kubelet-port=10255
+          #- --deprecated-kubelet-completely-insecure=true
+          - --kubelet-insecure-tls
+          - --kubelet-preferred-address-types=InternalIP
+          #- --kubelet-preferred-address-types=InternalIP,Hostname,InternalDNS,ExternalDNS,ExternalIP
+          ports:
+          - containerPort: 443
+            name: https
+            protocol: TCP
+        - name: metrics-server-nanny
+          #image: k8s.gcr.io/addon-resizer:1.8.11
+          image: opsdockerimage/addon-resizer:1.8.11
+          resources:
+            limits:
+              cpu: 100m
+              memory: 300Mi
+            requests:
+              cpu: 5m
+              memory: 50Mi
+          env:
+            - name: MY_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: MY_POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          volumeMounts:
+          - name: metrics-server-config-volume
+            mountPath: /etc/config
+          command:
+            - /pod_nanny
+            - --config-dir=/etc/config
+            #- --cpu={{ base_metrics_server_cpu }}
+            - --extra-cpu=0.5m
+            #- --memory={{ base_metrics_server_memory }}
+            #- --extra-memory={{ metrics_server_memory_per_node }}Mi
+            - --threshold=5
+            - --deployment=metrics-server-v0.3.6
+            - --container=metrics-server
+            - --poll-period=300000
+            - --estimator=exponential
+            # Specifies the smallest cluster (defined in number of nodes)
+            # resources will be scaled to.
+            #- --minClusterSize={{ metrics_server_min_cluster_size }}
+            - --minClusterSize=2
+            # Use kube-apiserver metrics to avoid periodically listing nodes.
+            - --use-metrics=true
+        volumes:
+          - name: metrics-server-config-volume
+            configMap:
+              name: metrics-server-config
+        tolerations:
+          - key: "CriticalAddonsOnly"
+            operator: "Exists"
+  ```
+  修改resource-reader.yaml
+  ```yaml
+  apiVersion: rbac.authorization.k8s.io/v1
+  kind: ClusterRole
+  metadata:
+    name: system:metrics-server
+    labels:
+      kubernetes.io/cluster-service: "true"
+      addonmanager.kubernetes.io/mode: Reconcile
+  rules:
+  - apiGroups:
+    - ""
+    resources:
+    - pods
+    - nodes
+    #添加nodes/stats
+    - nodes/stats
+    - namespaces
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
+    - "apps"
+    resources:
+    - deployments
+    verbs:
+    - get
+    - list
+    - update
+    - watch
+  - nonResourceURLs:
+    - /metrics
+    verbs:
+    - get
+  ---
+  apiVersion: rbac.authorization.k8s.io/v1
+  kind: ClusterRoleBinding
+  metadata:
+    name: system:metrics-server
+    labels:
+      kubernetes.io/cluster-service: "true"
+      addonmanager.kubernetes.io/mode: Reconcile
+  roleRef:
+    apiGroup: rbac.authorization.k8s.io
+    kind: ClusterRole
+    name: system:metrics-server
+  subjects:
+  - kind: ServiceAccount
+    name: metrics-server
+    namespace: kube-system
+  ```
+* 检查metrics是否可用
+  ```bash
+  #查看pod是否正常运行
+  kubectl get pods -n kube-system
+  #查看api-versions，正常情况下应当多出metrics.k8s.io/v1beta1
+  kubectl api-versions
+  #查看node监控指标
+  kubectl top nodes
+  NAME                      CPU(cores)   CPU%   MEMORY(bytes)   MEMORY%   
+  izuf6g226c4titrnrwds2tz   129m         6%     1500Mi          42%
+  #查看pod监控指标
+  kubectl top pods
+  NAME                                 CPU(cores)   MEMORY(bytes)   
+  myapp-backend-pod-58b7f5cf77-krmzh   0m           1Mi             
+  myapp-backend-pod-58b7f5cf77-vqlgl   0m           1Mi             
+  myapp-backend-pod-58b7f5cf77-z7j7z   0m           1Mi
+  ```
+  * 如果metrics不可用，报错unable to fully collect metrics: unable to fully scrape metrics from source kubelet_summary，可以尝试修改证书
+    ```bash
+    mkdir certs; cd certs
+    cp /etc/kubernetes/pki/ca.crt ca.pem
+    cp /etc/kubernetes/pki/ca.key ca-key.pem
+    ```
+    创建文件kubelet-csr.json
+    ```json
+    {
+      "CN": "kubernetes",
+      "hosts": [
+        "127.0.0.1",
+        "<node_name>",
+        "kubernetes",
+        "kubernetes.default",
+        "kubernetes.default.svc",
+        "kubernetes.default.svc.cluster",
+        "kubernetes.default.svc.cluster.local"
+      ],
+      "key": {
+        "algo": "rsa",
+        "size": 2048
+      },
+      "names": [{
+        "C": "US",
+        "ST": "NY",
+        "L": "City",
+        "O": "Org",
+        "OU": "Unit"
+      }]
+    }
+    ```
+    创建文件ca-config.json
+    ```json
+    {
+      "signing": {
+        "default": {
+          "expiry": "8760h"
+        },
+        "profiles": {
+          "kubernetes": {
+            "usages": [
+              "signing",
+              "key encipherment",
+              "server auth",
+              "client auth"
+            ],
+            "expiry": "8760h"
+          }
+        }
+      }
+    }
+    ```
+    更新证书
+    ```bash
+    cfssl gencert -ca=ca.pem -ca-key=ca-key.pem --config=ca-config.json -profile=kubernetes kubelet-csr.json | cfssljson -bare kubelet
+    scp kubelet.pem <nodeip>:/var/lib/kubelet/pki/kubelet.crt
+    scp kubelet-key.pem <nodeip>:/var/lib/kubelet/pki/kubelet.key
+    systemctl restart kubelet
+    ```
+* 定制docker镜像
+  ```console
+  FROM php:5-apache
+  COPY index.php /var/www/html/index.php
+  RUN chmod a+rx index.php
+  ```
+  index.php文件内容如下：
+  ```php
+  <?php
+    $x = 0.0001;
+    for ($i = 0; $i <= 1000000; $i++) {
+        $x += sqrt($x);
+    }
+  ?>
+  ```
+* 配置Deployment运行镜像并暴露服务
+  php-apache.yaml:
+  ```yaml
+  apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: php-apache
+  spec:
+    selector:
+      matchLabels:
+        run: php-apache
+    replicas: 1
+    template:
+      metadata:
+        labels:
+          run: php-apache
+      spec:
+        containers:
+        - name: php-apache
+          #image: k8s.gcr.io/hpa-example
+          image: 0layfolk0/hpa-example
+          ports:
+          - containerPort: 80
+          resources:
+            limits:
+              cpu: 50m
+            requests:
+              cpu: 20m
 
+  ---
+
+  apiVersion: v1
+  kind: Service
+  metadata:
+    name: php-apache
+    labels:
+      run: php-apache
+  spec:
+    ports:
+    - port: 80
+    selector:
+      run: php-apache
+  ```
+* 创建HPA
+  ```bash
+  #实验过程中副本、CPU负载等变化需要一定的时间，不会即时改变，一般耗时几分钟
+  #创建一个HPA控制上一步骤中的Deployment，使副本数量维持在1-10之间，平均CPU利用率50%
+  kubectl autoscale deployment php-apache --cpu-percent=50 --min=1 --max=10
+  horizontalpodautoscaler.autoscaling/php-apache autoscaled
+  #查看Autoscaler状态
+  kubectl get hpa
+  #在新终端中启动容器，增加负载
+  kubectl run -i --tty load-generator --rm --image=busybox --restart=Never -- /bin/sh -c "while sleep 0.01; do wget -q -O- http://php-apache; done"
+  #回到旧终端
+  #查看CPU负载情况，升高
+  kubectl get hpa
+  #查看deployment的副本数量，增多
+  kubectl get deployment php-apache
+  #新终端ctrl+C终止容器运行，旧终端检查负载状态，CPU利用率应当降为0，副本数量变为1
+  kubectl get hpa
+  kubectl get deployment php-apache
+  ```
 ### 8.3 什么是 Federation？
 
 - Kubenetes Federation vs ManageIQ
