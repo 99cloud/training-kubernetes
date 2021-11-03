@@ -1553,8 +1553,7 @@ my-nginx.default.svc.cluster.local. 30 IN A	10.98.172.84
     ```bash
     # 下载 ingress controller 的 yaml 文件
     kubectl wget -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.30.0/deploy/static/mandatory.yaml
-    # 在不翻墙的情况下，可以通过以下链接下载
-    https://files.cnblogs.com/files/xiluhua/mandatory.zip
+    # 因网络问题无法下载，可参考 /src/adm-lab/mandatory.yaml
     ```
 
     新版本默认不监听80、443端口，需自行进行配置
@@ -1869,9 +1868,11 @@ my-nginx.default.svc.cluster.local. 30 IN A	10.98.172.84
   ```bash
   mkdir metrics
   cd metrics
+  # 在 github 对应仓库中下载全部 yaml 文件
   for file in auth-delegator.yaml auth-reader.yaml metrics-apiservice.yaml metrics-server-deployment.yaml metrics-server-service.yaml resource-reader.yaml ; do wget https://raw.githubusercontent.com/kubernetes/kubernetes/master/cluster/addons/metrics-server/$file;done
   kubectl apply -f .
-  #最新版本可能会出现无法通过健康检查的问题，可以根据自己的 kubernetes 版本，选择相同的 metrics server 版本
+  # 最新版本可能会出现无法通过健康检查的问题，可以根据自己的 kubernetes 版本，选择相同的 metrics server 版本
+  # v1.20.1可参考 /src/adm-lab/metrics-server
   ```
 
   修改 metrics-server-deployment.yaml
