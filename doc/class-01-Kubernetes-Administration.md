@@ -2267,3 +2267,7 @@ my-nginx.default.svc.cluster.local. 30 IN A	10.98.172.84
 ### 9.2 模拟题讲解
 
 ### 9.3 实验：做模拟题
+
+## Lesson 10: FAQ
+
+1. 什么是配置 egress ip？[红帽方案](https://docs.openshift.com/container-platform/4.1/networking/openshift_sdn/assigning-egress-ips.html)，[开源方案](https://github.com/nirmata/kube-static-egress-ip)
