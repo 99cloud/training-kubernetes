@@ -1648,44 +1648,47 @@ MEC 与边缘云不能一概而论，边缘云是一个小型云计算数据中�
 
 ## 7 FAQ
 
-1. K3S比K8S，在文件大小、CPU/内存占用率、能耗方面，一般能提升多少？
-2. 使用KubeEdge在边缘节点上编排应用，有什么独特的专有的优点？
-   - 借助在Edge上运行的业务逻辑，可以让本地生成的数据，进行大量数据处理操作并对其进行保护。这样可以减少边缘和云之间的网络带宽需求和消耗，提高响应速度，降低成本并保护客户的数据隐私
-   - 开发人员可以编写基于HTTP或MQTT的常规应用程序，对其进行容器化，然后在Edge或Cloud中的任何一个更合适的位置运行应用程序。
-   - 借助KubeEdge，用户可以像在传统的Kubernetes集群一样，在Edge节点上编排应用程序，管理设备并监视应用程序和设备状态。
-   - 可以轻松地将现有的复杂机器学习，图像识别，事件处理等其他高级应用程序部署到Edge。
-3. 如果边缘设备挂了，APP如何会自动跳转到远端服务？
+1. K3S 比 K8S，在文件大小、CPU/内存占用率、能耗方面，一般能提升多少？
+
+   50%
+
+2. 使用 KubeEdge 在边缘节点上编排应用，有什么独特的专有的优点？
+   - 借助在 Edge 上运行的业务逻辑，可以让本地生成的数据，进行大量数据处理操作并对其进行保护。这样可以减少边缘和云之间的网络带宽需求和消耗，提高响应速度，降低成本并保护客户的数据隐私
+   - 开发人员可以编写基于 HTTP 或 MQTT 的常规应用程序，对其进行容器化，然后在 Edge 或 Cloud 中的任何一个更合适的位置运行应用程序。
+   - 借助 KubeEdge ，用户可以像在传统的 Kubernetes 集群一样，在 Edge 节点上编排应用程序，管理设备并监视应用程序和设备状态。
+   - 可以轻松地将现有的复杂机器学习，图像识别，事件处理等其他高级应用程序部署到 Edge。
+3. 如果边缘设备挂了，APP 如何会自动跳转到远端服务？
 4. 实际应用中推荐使用边缘云还是云边缘？
 
    参考：http://blog.itpub.net/69912185/viewspace-2685097/
 
-   边缘云：在边缘侧构建中小规模云服务能力，服务能力主要由边缘云提供，集中式数据中心侧主要提供边缘云的管理调度能力，如多接入边缘计算（MEC）、CDN等属于此类。
+   边缘云：在边缘侧构建中小规模云服务能力，服务能力主要由边缘云提供，集中式数据中心侧主要提供边缘云的管理调度能力，如多接入边缘计算（MEC）、CDN 等属于此类。
 
    云边缘：是云服务在边缘侧的延伸，逻辑上仍是云服务，主要的能力提供依赖于云服务或需要与云服务紧密协同，如视频智能接入解决方案就属于此类。
 
-   目前，边缘云形态的边缘计算逐渐成为云服务厂商的主要产品研发方向和业务布局方向。
+   二者各有优势，应根据具体场景选择。
    
-5. KubeEdge节点和普通节点都在 kubectl get node 中获取到，这两者有什么区别？
+5. KubeEdge 节点和普通节点都在 kubectl get node 中获取到，这两者有什么区别？
 
    参考：https://my.oschina.net/u/4425967/blog/3149045
 
-   没有本质区别，KubeEdge的边缘组件会将Node通过云边协同通道注册到K8s Master，唯一的不同是普通节点由Kubelet直接访问Master完成节点注册，KubeEdge是通过云边协同通道注册，API都是一致的。
+   没有本质区别，KubeEdge 的边缘组件会将 Node 通过云边协同通道注册到 K8s Master，唯一的不同是普通节点由 Kubelet 直接访问 Master 完成节点注册，KubeEdge 是通过云边协同通道注册，API 都是一致的。
 
-6. KubeEdge的安全层是怎么做的？
+6. KubeEdge 的安全层是怎么做的？
 
-   KubeEdge云边协同使用了安全的WebSocket通道。对于应用间的安全互访要依赖用户自己配置安全证书等。
+   KubeEdge 云边协同使用了安全的 WebSocket 通道。对于应用间的安全互访要依赖用户自己配置安全证书等。
 
-   WebSocket：基于TCP的全双工通信协议
+   WebSocket：基于 TCP 的全双工通信协议
 
-7. kubeEdge的业务流和serviceBus、edgeHub有交互吗？
+7. kubeEdge 的业务流和 serviceBus、edgeHub 有交互吗？
 
-   serviceBus接受来自云端的请求，调用相应的边缘端http接口，发送请求并接收回复后传给edgeHub
+   serviceBus 接受来自云端的请求，调用相应的边缘端 http 接口，发送请求并接收回复后传给 edgeHub
 
-8. k3s把多个二进制打包成一个二进制，除了安装方便外，有别的好处吗？
+8. k3s 把多个二进制打包成一个二进制，除了安装方便外，有别的好处吗？
 
    所有 Kubernetes control-plane 组件的操作都封装在单个二进制文件和进程中，使 K3s 具有自动化和管理包括证书分发在内的复杂集群操作的能力。
 
-9.  K3S的轻量化性能如何保证？
+9.  K3S 的轻量化性能如何保证？
 
     删除不必要的组件、代码以及其它遗留程序来减少空间，同时支持用户按需选择加载项
 
@@ -1693,56 +1696,56 @@ MEC 与边缘云不能一概而论，边缘云是一个小型云计算数据中�
 
     边缘计算：分布式计算架构，将应用程序、数据资料与服务的计算，由网络中心节点，移往网络逻辑上的边缘节点来处理。
 
-    协同边缘计算：
+    云边协同：中心云与边缘云协同，中心云可以管理边缘云，并为边缘云提供充足的虚拟资源支持。
 
-11. k0s的主要思想是什么
-
-    简易、稳定，它提供了构建 Kubernetes 集群所需的所有内容，预先配置了所有所需的功能，使得构建 Kubernetes 集群只需复制一个可执行文件到每个主机并运行它即可。
-
+11. k0s 的主要思想是什么
+    - 零摩擦：降低了安装和运行 k8s 的复杂性，可以在几分钟内创建一个新集群。开发人员之间的摩擦减少到0，允许任何在 k8s 没有特殊技能或专业知识的人轻松开始。
+    - 零依赖：以一个二进制文件的形式分发，除了主机操作系统内核外没有主机操作系统依赖。可以与任何操作系统一起工作而无需额外的软件包或配置，任何安全漏洞或性能问题都可以在 k0s 发行版中修复。
+    - 零成本：对个人或商业用途完全免费。
 12. 边缘云和云边缘哪个方案在生产系统多一些
-13. k3s和k8s性能相比差距有多少
-14. kata解决方案有哪些优点
+13. k3s 和 k8s 性能相比差距有多少
+14. kata 解决方案有哪些优点
 
-    参考：https://blog.csdn.net/hdu_hanwei/article/details/82389111
+    参考：https://github.com/kata-containers/kata-containers/blob/main/docs/Limitations.md
 
     解决了传统容器共享内核的安全和隔离问题，让每个容器运行在一个轻量级的虚拟机中，使用单独的内核
 
-15. K3S在轻量化的情况下，如何确保安全性？
+15. K3S 在轻量化的情况下，如何确保安全性？
     
     参考：https://docs.rancher.cn/docs/k3s/security/hardening-guide/_index
 
     K3s 已经应用了一些安全缓解措施，并在默认情况下开启，无需修改即可通过 Kubernetes CIS 的一些控制。有一些明显的例外，如主机级别的修改，需要手动执行才能完全符合 CIS 基准。
     
-16. K3S边缘云是否可以通过flannel与K8S集群实现容器网络互通？
+16. K3S 边缘云是否可以通过 flannel 与 K8S 集群实现容器网络互通？
     
     可以
 
 17. 边缘节点离线后，依赖数据多次变更，边缘应用和云端数据的最终一致是怎么保证的？
 
-    KubeEdge目前的应用管理等操作都需要通过K8s master进行，针对边缘节点离线场景主要提供自治的能力，既本地持久化的数据仅用于管理节点上的应用和设备，云边通信恢复时，节点将同步云依据来自CloudCore的最新消息更新本地元数据。这里稍有不同的是边缘设备管理，对设备期望状态的设置需要通过Device CRD中的Desired State来操作（从云到边），而设备实际状态的上报会体现在Reported State中（从边到云），两个方向的数据同步不会冲突。
+    KubeEdge 目前的应用管理等操作都需要通过 K8s master 进行，针对边缘节点离线场景主要提供自治的能力，既本地持久化的数据仅用于管理节点上的应用和设备，云边通信恢复时，节点将同步云依据来自 CloudCore 的最新消息更新本地元数据。这里稍有不同的是边缘设备管理，对设备期望状态的设置需要通过 Device CRD 中的 Desired State 来操作（从云到边），而设备实际状态的上报会体现在 Reported State 中（从边到云），两个方向的数据同步不会冲突。
 
-18. 边缘节点的Docker容器镜像是从整个云-边k8s系统统一的镜像仓库拉取的吗？
+18. 边缘节点的 Docker 容器镜像是从整个云-边 k8s 系统统一的镜像仓库拉取的吗？
 
-    kubeedge边缘节点可以从任意连接到的镜像仓库拉取镜像
+    kubeedge 边缘节点可以从任意连接到的镜像仓库拉取镜像
 
-19. k8s集群生命周期管理是否适用于k3s？
+19. k8s 集群生命周期管理是否适用于 k3s？
     
     适用
     
-20. k3s相比于k8s的轻量级体现在哪里，能将镜像更轻量化吗？
-    - 使用SQLite数据库取代etcd
-    - 最大程度减轻了外部依赖性，k3s仅需要kernel和cgroup挂载
+20. k3s 相比于 k8s 的轻量级体现在哪里，能将镜像更轻量化吗？
+    - 使用 SQLite 数据库取代 etcd
+    - 最大程度减轻了外部依赖性，k3s 仅需要 kernel 和 cgroup 挂载
 
     不能
 
-21. k3s能解决镜像在国外拉不到的问题吗
+21. k3s 能解决镜像在国外拉不到的问题吗
 
     不能，但可以改用国内镜像仓库
 
-22. k3s除了安全还有什么优势吗
+22. k3s 除了安全还有什么优势吗
     - 轻量级、适合部署在边缘
     - 用户操作简单
-23. k3s中cloud core可以对应什么规模的edgecore
+23. k3s 中 cloud core 可以对应什么规模的 edgecore
 
     | 部署规模  | 节点      |  VCPUS | 内存 |
     | ---------|----------|--------|-----|
@@ -1752,85 +1755,125 @@ MEC 与边缘云不能一概而论，边缘云是一个小型云计算数据中�
     | X-Large  | up to 500|   8    |32 GB|
     | XX-Large | 500+     |   16   |64 GB|
 
-24. K3s是如何保证数据安全的?与主控节点通信可以中断多长时间
+24. K3s 是如何保证数据安全的?与主控节点通信可以中断多长时间
 25. 云边缘和边缘云两者从用户角度来讲，是否有差别，哪个用户感觉更好一点
-26. 对于开源license，比如GPL、Apache等是否有对国内限制的可能？如果有，目前国产捐献内容是否有不可用风险
+26. 对于开源 license，比如 GPL、Apache 等是否有对国内限制的可能？如果有，目前国产捐献内容是否有不可用风险
 
-    GPL无，Apache有。
+    有，但可能性不高。
 
     国产捐献内容应当不存在不可用风险
 
-27. StarlingX目前是否还有应用场景
+27. StarlingX 目前是否还有应用场景
 
     参考：https://www.99cloud.net/11234.html%EF%BC%8F
 
-    有。主要面向工业IoT、电信、视频等对延迟要求较高的业务
+    有。主要面向工业 IoT、电信、视频等对延迟要求较高的业务
 
-28. kubeedge离线自治大概能够保证多久离线时间业务是正常的
-29. k3s相比k8s主要在哪些组件有所精简？
+28. kubeedge 离线自治大概能够保证多久离线时间业务是正常的
+29. k3s 相比 k8s 主要在哪些组件有所精简？
 
-    参考：https://zhuanlan.zhihu.com/p/125499493
+    参考：https://github.com/k3s-io/k3s/blob/master/README.md
 
-    apiserver、controller-manager、scheduler、kube-proxy、flannel、cloud provider、stotage
+    整合：
+      - Containerd & runc
+      - Flannel for CNI
+      - CoreDNS
+      - Metrics Server
+      - Traefik for ingress
+      - Klipper-lb as an embedded service load balancer provider
+      - Kube-router for network policy
+      - Helm-controller to allow for CRD-driven deployment of helm manifests
+      - Kine as a datastore shim that allows etcd to be replaced with other databases
+      - Local-path-provisioner for provisioning volumes using local storage
+      - Host utilities such as iptables/nftables, ebtables, ethtool, & socat
 
-30. k3s与kubeedge应用前景怎么样？
+    移除：
+      - In-tree storage drivers
+      - In-tree cloud provider
 
-    前景很好，很多的边缘设备都不足以部署k8s，且相较于k8s，它们的成本更低。
+30. k3s 与 kubeedge 应用前景怎么样？
 
-31. K3S目前在国内边缘计算产业发展应用的成熟度如何？
-32. K3S是如何保证高并发的？
-33. k3s落地案例有哪些
+    前景很好，很多的边缘设备都不足以部署 k8s，且相较于 k8s，它们的成本更低。
+
+31. K3S 目前在国内边缘计算产业发展应用的成熟度如何？
+    
+    较为成熟，已经有了一定数目的落地案例
+
+32. K3S 是如何保证高并发的？
+
+    Deployment
+
+33. k3s 落地案例有哪些
 
     工业物联网、国有银行
 
-34. k3s的性能如何，可以承载多大业务量
-35. kubeedge中cloud core可以对应多少个edgecore
+34. k3s 的性能如何，可以承载多大业务量
+35. kubeedge 中 cloud core 可以对应多少个 edgecore
 
     n
     
-36. kubeedge中edge core可以对应多少个edged
+36. kubeedge 中 edge core 可以对应多少个 edged
 
-    1,轻量化 kubelet
+    1
 
-37. 边缘计算的计算节点放在5G基站合适还是下沉UPF合适？
+37. 边缘计算的计算节点放在 5G 基站合适还是下沉 UPF 合适？
 
-    参考：https://baijiahao.baidu.com/s?id=1653806339445030187&wfr=spider&for=pc
-
-    放在下沉UPF，5G基站之后。
+    放在下沉 UPF 之后。
 
 38. 边缘计算落地典型案例有哪些？
     - KubeEdge: 使用 Apache Beam 进行数据分析
     - 农业现代化，如播种、监控作物长势
     - 城市监控系统
-39. kubeEdge的网络组件是否要与K8S保持一致？
-40. kubevirt是否完成模拟了网络环境？
+39. kubeEdge 的网络组件是否要与K8S保持一致？
+40. kubevirt 是否完成模拟了网络环境？
 
-    每个虚拟机实例对象都对应1个pod，该pod的网卡作为虚拟机的虚拟网卡所对应的物理网卡。
+    每个虚拟机实例对象都对应1个 pod ，该 pod 的网卡作为虚拟机的虚拟网卡所对应的物理网卡。
     
-41. 国内MEC平台解决方案与KubeEdge有何区别？
-42. KubeEdge支持的设备接入规模是多大？
+41. 国内MEC平台解决方案与 KubeEdge 有何区别？
+42. KubeEdge 支持的设备接入规模是多大？
 43. K3S的轻量级体现在哪里？
     - 磁盘要求更小
     - 内存要求低
     - 删除多余组件、程序、旧的代码
-    - 使用SQLite替换etcd
-    - 没有操作系统依赖，只需要kernel和cgroup挂载
-44. KubeEdge和K3S哪个在边缘云场景使用的更多？
+    - 使用 SQLite 替换 etcd
+    - 没有操作系统依赖，只需要 kernel 和 cgroup 挂载
+44. KubeEdge 和 K3S 哪个在边缘云场景使用的更多？
 45. 中心云纳管边缘云和边缘云纳管中心云，这两者各有什么优劣点？
-46. K3S与K8S相比，具体轻量化了哪些组件和功能？
+46. K3S 与 K8S 相比，具体轻量化了哪些组件和功能？
 
-    apiserver、controller-manager、scheduler、kube-proxy、flannel、cloud provider、stotage
+    参考：https://github.com/k3s-io/k3s/blob/master/README.md
 
-47. k3s和k8s集群生命周期管理有什么推荐的方式？
-48. KubeEdge端容器和K8S端容器互通有哪些方案推荐
-49. k8s crd operator除helm外还有哪些替代产品？
-50. 从k3s和k8s的资源环境需求来看，两者的差别不是很大，这种情况下，k3s的差异性优势如何体现？
-    - k3s和k8s的资源环境需求还是比较大的，k3s的资源占用更加小，更适合部署在资源不足的边缘环境；
-    - 对于很多用户来说，k8s的很多功能并不是必须的，在这种情况下，k3s仅保留必要的组件、额外需求用户可以自行安装组件扩展，比k8s更有竞争力；
-    - k3s的操作更加简单，对用户更加友好。
-    - IoT场景下，边缘设备大多采用ARM架构，仅有部分k8s发行版支持
-51. k3s对比k8s安全性能如何？
-52. 国内k3s的应用案例有哪些？
+    整合：
+      - Containerd & runc
+      - Flannel for CNI
+      - CoreDNS
+      - Metrics Server
+      - Traefik for ingress
+      - Klipper-lb as an embedded service load balancer provider
+      - Kube-router for network policy
+      - Helm-controller to allow for CRD-driven deployment of helm manifests
+      - Kine as a datastore shim that allows etcd to be replaced with other databases
+      - Local-path-provisioner for provisioning volumes using local storage
+      - Host utilities such as iptables/nftables, ebtables, ethtool, & socat
+
+    移除：
+      - In-tree storage drivers
+      - In-tree cloud provider
+
+47. k3s 和 k8s 集群生命周期管理有什么推荐的方式？
+48. KubeEdge 端容器和 K8S 端容器互通有哪些方案推荐
+49. k8s crd operator 除 helm 外还有哪些替代产品？
+
+    https://docs.k0sproject.io/v1.22.3+k0s.0/manifests/
+
+    k0s：Manifest Deployer
+
+50. 从 k3s 和 k8s 的资源环境需求来看，两者的差别不是很大，这种情况下，k3s 的差异性优势如何体现？
+    - k3s 和 k8s 的资源环境需求还是比较大的，k3s 的资源占用更加小，更适合部署在资源不足的边缘环境；
+    - 对于很多用户来说，k8s 的很多功能并不是必须的，在这种情况下，k3s 仅保留必要的组件、额外需求用户可以自行安装组件扩展，比 k8s 更有竞争力；
+    - k3s 的操作更加简单，对用户更加友好。
+51. k3s 对比 k8s 安全性能如何？
+52. 国内 k3s 的应用案例有哪些？
 
     参考：https://www.bilibili.com/video/BV1g7411G7By?from=search&seid=18067894859541366568&spm_id_from=333.337.0.0
 
@@ -1840,35 +1883,35 @@ MEC 与边缘云不能一概而论，边缘云是一个小型云计算数据中�
 
     边缘计算最大的优势还是低时延；虽然在边缘设备上能够进行一定的数据处理，但最终仍要上传到服务器，期间可以对数据进行一定的处理保证安全性，独享性并不突出。
 
-54. kubevirt在哪种应用场景下性价比最高
+54. kubevirt 在哪种应用场景下性价比最高
 
-    同时需要纳管虚拟机和k8s集群
+    同时需要纳管虚拟机和 k8s 集群
 
-55. K3S常用端口有哪些？
+55. K3S 常用端口有哪些？
     - 6443: agent 节点访问 server 节点
     - 8472: Flannel VXLAN 下节点互相访问
     - 10250: metrics server
     - 2379-2380: etcd
-56. k3s怎么避免master的单点故障
+56. k3s 怎么避免 master 的单点故障
 
     高可用架构，增加冗余；节点故障难以避免
 
-57. K3S单节点架构如何保证高可靠？
+57. K3S 单节点架构如何保证高可靠？
 
     可靠性指在规定的条件下和规定的时间内，完成规定功能的能力。这与单节点架构无关。
 
     单节点架构无法保证高可用。
 
-58. K3S云到边的数据同步对网络有什么要求，是强一致性同步吗
-59. MEC中的云适配器，主流架构和软件是什么？
-60. OpenYurt除了零侵入外，还有没有其它优点？
+58. K3S 云到边的数据同步对网络有什么要求，是强一致性同步吗
+59. MEC 中的云适配器，主流架构和软件是什么？
+60. OpenYurt 除了零侵入外，还有没有其它优点？
     - 边缘异构资源支持：对于同边缘节点硬件架构（e.g. x86、ARM、RM64 等），硬件规格，通信协议提供一致体验；
     - 高可靠/稳定性：基于边缘自治和边缘单元化能力，为多地域，大规模的边缘应用的持续稳定运行提供保障。支持各类开源 AI 系统（e.g. Tensorflow、Pytorch 等），为 AI 用户提供最佳体验；
     - 云平台无关：OpenYurt 可以轻松部署在任何公共云的 Kubernetes 服务中；
     - 一键转换：一条指令将 Kubernetes 转换为 OpenYurt 集群。
-61. dvr为啥在生产中使用较少
-62. kubevirt在生产是否有大规模部署？
-63. upgw和运营商upf有什么区别
+61. dvr 为啥在生产中使用较少
+62. kubevirt 在生产是否有大规模部署？
+63. upgw 和运营商 upf 有什么区别
 64. 云边缘的编排是不是都在云端
 
     不是。 KubeEdge 将原生的容器化应用程序编排功能扩展到了边缘节点。
@@ -1877,26 +1920,26 @@ MEC 与边缘云不能一概而论，边缘云是一个小型云计算数据中�
 
     增量镜像，将对虚拟机的改变都保存到增量镜像中，原始镜像保持不变。
 
-66. etcd本来就容易连接超时，如果考虑安全，用https会更慢，那怎么保证安全？
-67. K3S的具体适用场景有哪些？
+66. etcd 本来就容易连接超时，如果考虑安全，用 https 会更慢，那怎么保证安全？
+67. K3S 的具体适用场景有哪些？
     - 边缘计算
     - 物联网
     - CI
     - Deployment
     - ARM
-    - 嵌入k8s
-68. OpenYurt的适用场景有哪些？和K8S,K3S有什么不同点？
+    - 嵌入 k8s
+68. OpenYurt 的适用场景有哪些？和 K8S,K3S 有什么不同点？
 
     参考：https://cloud.tencent.com/developer/article/1785922
 
-    K8S是为云数据中心设计，拥有完整的功能，但对资源的消耗更大；如果需要在边缘部署较为复杂的应用，可以选择K8S
+    K8S 是为云数据中心设计，拥有完整的功能，但对资源的消耗更大；如果需要在边缘部署较为复杂的应用，可以选择 K8S
 
-    K3S是轻量化的K8S，资源需求小，可以不需要中心云，独立部署于边缘节点，应用于需要完整集群（包含管理集群）的边缘节点
+    K3S 是轻量化的 K8S，资源需求小，可以不需要中心云，独立部署于边缘节点，应用于需要完整集群（包含管理集群）的边缘节点
 
-    OpenYurt同样是基于K8S的边缘计算项目，相对于K3S，它拥有云边协同，边缘自治等特性，维护成本更低，管理方式为云管边
+    OpenYurt 同样是基于 K8S 的边缘计算项目，相对于 K3S，它拥有云边协同，边缘自治等特性，维护成本更低，管理方式为云管边
 
-69. k3s有好多推荐的书吗
-70. 云边缘的pod调度由边缘控制还是云中心控制
+69. k3s 有好多推荐的书吗
+70. 云边缘的 pod 调度由边缘控制还是云中心控制
 
     由边缘控制，边缘网络状况往往不佳，由云中心控制存在不便。
 
@@ -1904,26 +1947,26 @@ MEC 与边缘云不能一概而论，边缘云是一个小型云计算数据中�
     
     中心云的硬件规格要求更高。
 
-72. EdgeXFoundry有哪些应用场景
+72. EdgeXFoundry 有哪些应用场景
 
-    EdgeXFoundry适用于需要接入大量的不同种类设备，且想要用统一架构进行操控的场合，如工业物联网、智慧场馆、开源物业系统。
+    EdgeXFoundry 适用于需要接入大量的不同种类设备，且想要用统一架构进行操控的场合，如工业物联网、智慧场馆、开源物业系统。
 
-73. EdgeX Foundry如何应用在混合云及MEC场景中？
-74. Kubeedge与k3s各适用于那些MEC场景？
-75. EdgeX Foundry架构中core data和meta data都存储的什么数据？
+73. EdgeX Foundry 如何应用在混合云及MEC场景中？
+74. Kubeedge 与 k3s 各适用于那些 MEC 场景？
+75. EdgeX Foundry 架构中 core data 和 meta data 都存储的什么数据？
 
     core data： 数据中转，南北侧通信借此转发
 
     meta data：设备和服务的信息
 
-76. EdgeX Foundry的安全层是怎么做的？
+76. EdgeX Foundry 的安全层是怎么做的？
     - secret store：为 EdgeX 存放加密数据。EdgeX 加密数据的例子有：其他服务连接到云系统使用的数据库访问密码等。
     - API gateway：作为反向代理访问受限制的 EdgeX REST 资源，同时执行访问控制相关工作。 系统管理服务系统管理工具为外部管理系统提供中央访问控制点，以启动/停止/重启 EdgeX 服务，获取服务的状态/健康状况，或获取 EdgeX 服务的指标(如内存使用情况)，以便监视 EdgeX 服务。
 77. 边缘计算有哪些解决方案已经使用。
     - EdgeX Foundry：智能零售、制造工厂表面质量检测、监控工业设备
     - k3s：工业物联网、某国有银行
-    - KubeEdge：用Apache Beam进行数据分析
-78. 如何实现redis的高可用
+    - KubeEdge：用 Apache Beam 进行数据分析
+78. 如何实现 redis 的高可用
 
     redis sentinel
 
@@ -1933,29 +1976,29 @@ MEC 与边缘云不能一概而论，边缘云是一个小型云计算数据中�
 
     会
 
-80. k3s在国外有应用场景吗
-81. EdgeX Foundry架构中对承载网络的需求是什么?
-82. EdgeX Foundry中得数据安全是怎么做的？
+80. k3s 在国外有应用场景吗
+81. EdgeX Foundry 架构中对承载网络的需求是什么?
+82. EdgeX Foundry 中得数据安全是怎么做的？
     - secret store：存储其他服务和令牌用以连接到云端系统的数据库许可密码
     - API gateway：反向代理，限制对 EdgeX REST 资源的访问并进行访问控制
 83. 三层的分布式云操作系统在实际项目部署中是否存在因为层级导致整体性能下降的情况？
 84. openYurt 与 kubeadge 最关键的区别是什么？ 从架构图看不是很明显都是基于两个连接组件将K8s联系起来了
-85. kubeedge是否支持arm架构的低功耗产品
+85. kubeedge 是否支持 arm 架构的低功耗产品
 
     支持
     
-86. edgex foundry架构是否支持低功耗产品
+86. edgex foundry 架构是否支持低功耗产品
     
     支持
 
 87. 运营商边缘环境与IT的边缘环境有什么区别，运营商架构有哪些可以借鉴优化？
-88. 已经采用horizon作为界面的系统如何解决日志排查链比较长的问题？
-89. 如何通过Core Services Layers和Supporting Services Layers进行安全的访问接入和控制？
-90. IP摄像机等设备的视频流如何接入EdgeX Foundry？
+88. 已经采用 horizon 作为界面的系统如何解决日志排查链比较长的问题？
+89. 如何通过 Core Services Layers 和 Supporting Services Layers 进行安全的访问接入和控制？
+90. IP摄像机等设备的视频流如何接入 EdgeX Foundry？
     
     参考：https://www.edgexfoundry.club/user/lulililu/article/5d8d93356598210001292c9b
 
-    使用edgex-device-rtsp
+    使用 edgex-device-rtsp
 
 91. EdgeXFoundry 必须支持棕色和绿色设备/传感器的现场部署，棕色和绿色分别指什么设备？
     - 棕色：较旧的遗留设备，通常使用较旧的协议
@@ -1964,18 +2007,23 @@ MEC 与边缘云不能一概而论，边缘云是一个小型云计算数据中�
     
     5G+MEC+边缘云
 
-93. kubeedge与k3s是否有融合使用方案
-94. kubeedge与物联网有没有成熟方案
+93. kubeedge 与 k3s 是否有融合使用方案
+94. kubeedge 与物联网有没有成熟方案
+    
+    参考：https://bbs.huaweicloud.com/blogs/241370
+
+    KubeEdge+K8S 管理高速公路边缘节点
+
 95. 边缘计算的应用场景有哪些？
     
-    物联网、工业互联网、车联网、5G超低时延业务
+    物联网、工业互联网、车联网、5G 超低时延业务
 
 96. 边缘计算目前做得好的公司有哪些？
     
     亚马逊、微软、谷歌、阿里云、华为云、中国移动等
 
-97. Kubesphere集群纳管的数量是否有限制？
-98. Kubeedge资源缺乏报错的解决方案是啥？
+97. Kubesphere 集群纳管的数量是否有限制？
+98. Kubeedge 资源缺乏报错的解决方案是啥？
 99.  技术迭代非常快，容器化技术后，是否有其他更新技术的雏形产生？
 
      新容器技术：podman
@@ -1984,32 +2032,68 @@ MEC 与边缘云不能一概而论，边缘云是一个小型云计算数据中�
 
      物联网、工业互联网、车联网、5G超低时延业务
 
-101. 怎么选择redis的HA实现方式？
+101. 怎么选择 redis 的 HA 实现方式？
 102. 边缘设备自动发现有哪些技术？
-103. EdgeX Foundry在哪些方面优化时延问题？
-104. C比golang性能好，原因是啥？
+
+     订阅
+
+103. EdgeX Foundry 在哪些方面优化时延问题？
+104. C 比 golang 性能好，原因是啥？
 
      C：程序员可以自己管理内存的分配和释放
 
-     golang：使用GC（垃圾收集器），编译器自己实现内存的分配和过期内存的回收
+     golang：使用 GC（垃圾收集器），编译器自己实现内存的分配和过期内存的回收
 
 105. 通常而言，在一个边缘计算应用的场景中，都需要哪些参与方，各方的职责及提供的内容是什么？
 106. 在工程实践中，边缘计算哪些方面标准化不足，最亟需标准化的是哪些方面？
-107. EdgeXFoundry与kubeEdge面向物联网需求场景有何差异性？
+107. EdgeXFoundry 与 kubeEdge 面向物联网需求场景有何差异性？
+     
+     EdgeXFoundry更适用于存在大量不同设备的场景，它可以兼容多种不同协议
+
 108. 电信运营商边缘云发展有何建议？
-109. JWT令牌的优势是什么？
-     - 基于json，方便解析
+     
+     MEC+边缘云，构建面向应用的电信级 PaaS 平台
+
+109. JWT 令牌的优势是什么？
+     - 基于 json，方便解析
      - 可以自定义丰富的内容，易扩展
      - 通过非对称加密算法及数字签名技术，防篡改，安全性高
      - 资源服务可以不依赖认证服务即可完成授权
-110. k3s/k8s对arm的支持如何？
-     - k3s：支持
-     - k8s：仅部分发行版支持
-111. EdgeXFoundry如何保证安全性
-112. 随着AIops工具和流程的成熟，云计算行业对运维人员的需求点在哪里
-113. k3s有什么好用的工具书或者网站吗？
-114. kubedge在物联网方面的应用有什么？
+110. k3s/k8s 对 arm 的支持如何？
+     
+     均支持
+
+111. EdgeXFoundry 如何保证安全性
+112. 随着 AIOps 工具和流程的成熟，云计算行业对运维人员的需求点在哪里
+     - 相关业务经验
+     - 具有AI能力
+113. k3s 有什么好用的工具书或者网站吗？
+114. kubedge 在物联网方面的应用有什么？
+     
+     参考：https://bbs.huaweicloud.com/blogs/241370
+
+     KubeEdge+K8S 管理高速公路边缘节点
+
 115. 一般什么规模下需要考虑边缘计算
 116. 边缘计算的架构是否还需要继续发展
-117. 服务网格Service Mesh有哪几种实现方式？
-118. EdgeXFoundry的四层架构和智慧场馆/开源物业系统案例中的几个层次是如何对应的
+117. 服务网格 Service Mesh 有哪几种实现方式？
+     
+     参考：https://www.nginx.com/blog/what-is-a-service-mesh/
+
+     边车模式，设置一个代理服务接管服务的流量，通过代理之间的通信间接完成服务之间的通信请求。如：Linkerd、Envoy、Istio 等。
+
+118. EdgeXFoundry 的四层架构和智慧场馆/开源物业系统案例中的几个层次是如何对应的
+     - 应用服务层：
+       - 展现层：U3D/UE4/web/App
+
+     - 支持服务层：
+       - 业务层：物业/办公
+
+     - 核心服务层台：
+       - IoT 中台（EdgeX）、用户、权限
+       - IoT 适配层
+       - IoT：三方 IoT 接口
+       - 网络层：BA/Bodbus/Zigbee/NBIoT/HTTP
+
+     - 设备服务层：
+       - 感知层：设备（传感器）
