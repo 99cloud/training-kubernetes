@@ -265,7 +265,7 @@ $ curl -sfL http://rancher-mirror.cnrancher.com/k3s/k3s-install.sh | INSTALL_K3S
 # 查看对应的 linux 网络设备是否生成
 $ ip a | grep flannel
 
-31: flannel.1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1450 qdisc noqueue state UNKNOWN group default 
+31: flannel.1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1450 qdisc noqueue state UNKNOWN group default
     inet 10.42.0.0/32 scope global flannel.1
 
 # 替换 CNI
@@ -873,7 +873,7 @@ Keadm 用于安装 KubeEdge 的云端和边缘端组件。**它不负责 K8s 的
 # 在 cloud 端下载 keadm
 yum update -y
 yum install wget -y
-wget https://github.com/kubeedge/kubeedge/releases/download/v1.8.0/keadm-v1.8.0-linux-amd64.tar.gz 
+wget https://github.com/kubeedge/kubeedge/releases/download/v1.8.0/keadm-v1.8.0-linux-amd64.tar.gz
 tar -vxf keadm-v1.8.0-linux-amd64.tar.gz
 cp keadm-v1.8.1-linux-amd64/keadm/keadm /usr/bin/
 
@@ -904,11 +904,11 @@ wget -k --no-check-certificate https://raw.githubusercontent.com/kubeedge/kubeed
 $ keadm init --advertise-address="THE-EXPOSED-IP"
 
 Kubernetes version verification passed, KubeEdge installation will start...
-Expected or Default KubeEdge version 1.8.0 is already downloaded and will checksum for it. 
-kubeedge-v1.8.0-linux-amd64.tar.gz checksum: 
-checksum_kubeedge-v1.8.0-linux-amd64.tar.gz.txt content: 
-kubeedge-v1.8.0-linux-amd64.tar.gz in your path checksum failed and do you want to delete this file and try to download again? 
-[y/N]: 
+Expected or Default KubeEdge version 1.8.0 is already downloaded and will checksum for it.
+kubeedge-v1.8.0-linux-amd64.tar.gz checksum:
+checksum_kubeedge-v1.8.0-linux-amd64.tar.gz.txt content:
+kubeedge-v1.8.0-linux-amd64.tar.gz in your path checksum failed and do you want to delete this file and try to download again?
+[y/N]:
 n
 W1002 10:30:19.561552   65565 common.go:279] failed to checksum and will continue to install.
 [Run as service] service file already exisits in /etc/kubeedge//cloudcore.service, skip download
@@ -950,7 +950,7 @@ systemctl enable --now docker
 
 # 在 edge 端下载 keadm
 yum install wget -y
-wget https://github.com/kubeedge/kubeedge/releases/download/v1.8.0/keadm-v1.8.0-linux-amd64.tar.gz 
+wget https://github.com/kubeedge/kubeedge/releases/download/v1.8.0/keadm-v1.8.0-linux-amd64.tar.gz
 tar -vxf keadm-v1.8.0-linux-amd64.tar.gz
 cp keadm-v1.8.1-linux-amd64/keadm/keadm /usr/bin/
 
@@ -968,11 +968,11 @@ keadm join --cloudcore-ipport={THE-EXPOSED-IP}:10000 --kubeedge-version=1.8.0 --
 
 ```console
 Host has mosquit+ already installed and running. Hence skipping the installation steps !!!
-Expected or Default KubeEdge version 1.8.0 is already downloaded and will checksum for it. 
-kubeedge-v1.8.0-linux-amd64.tar.gz checksum: 
-checksum_kubeedge-v1.8.0-linux-amd64.tar.gz.txt content: 
-kubeedge-v1.8.0-linux-amd64.tar.gz in your path checksum failed and do you want to delete this file and try to download again? 
-[y/N]: 
+Expected or Default KubeEdge version 1.8.0 is already downloaded and will checksum for it.
+kubeedge-v1.8.0-linux-amd64.tar.gz checksum:
+checksum_kubeedge-v1.8.0-linux-amd64.tar.gz.txt content:
+kubeedge-v1.8.0-linux-amd64.tar.gz in your path checksum failed and do you want to delete this file and try to download again?
+[y/N]:
 n
 W1002 10:56:18.457155   74140 common.go:279] failed to checksum and will continue to install.
 [Run as service] service file already exisits in /etc/kubeedge//edgecore.service, skip download
@@ -1417,29 +1417,29 @@ docker-compose up -d
 # 查看容器
 $ docker-compose ps
 
-Name                              Command               State                                              Ports                                           
+Name                              Command               State                                              Ports
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-edgex-app-service-configurable-rules   /app-service-configurable  ...   Up       48095/tcp, 0.0.0.0:48100->48100/tcp                                                       
-edgex-core-command                     /core-command -cp=consul.h ...   Up       0.0.0.0:48082->48082/tcp                                                                  
-edgex-core-consul                      edgex-consul-entrypoint.sh ...   Up       8300/tcp, 8301/tcp, 8301/udp, 8302/tcp, 8302/udp, 8400/tcp, 0.0.0.0:8500->8500/tcp,       
-                                                                                 8600/tcp, 8600/udp                                                                        
-edgex-core-data                        /core-data -cp=consul.http ...   Up       0.0.0.0:48080->48080/tcp, 0.0.0.0:5563->5563/tcp                                          
-edgex-core-metadata                    /core-metadata -cp=consul. ...   Up       0.0.0.0:48081->48081/tcp                                                                  
-edgex-device-rest                      /device-rest-go --cp=consu ...   Up       0.0.0.0:49986->49986/tcp                                                                  
-edgex-device-virtual                   /device-virtual --cp=consu ...   Up       0.0.0.0:49990->49990/tcp                                                                  
-edgex-kuiper                           /usr/bin/docker-entrypoint ...   Up       0.0.0.0:20498->20498/tcp, 0.0.0.0:48075->48075/tcp, 9081/tcp                              
-edgex-proxy                            /bin/sh -c until /consul/s ...   Exit 0                                                                                             
-edgex-redis                            docker-entrypoint.sh redis ...   Up       0.0.0.0:6379->6379/tcp                                                                    
-edgex-secrets-setup                    entrypoint.sh generate           Up                                                                                                 
-edgex-security-bootstrap-database      /entrypoint.sh                   Up                                                                                                 
-edgex-support-notifications            /support-notifications -cp ...   Up       0.0.0.0:48060->48060/tcp                                                                  
-edgex-support-scheduler                /support-scheduler -cp=con ...   Up       0.0.0.0:48085->48085/tcp                                                                  
-edgex-sys-mgmt-agent                   /sys-mgmt-agent -cp=consul ...   Up       0.0.0.0:48090->48090/tcp                                                                  
-edgex-vault                            /vault/init/start_vault.sh       Up       0.0.0.0:8200->8200/tcp                                                                    
-edgex-vault-worker                     entrypoint.sh                    Up                                                                                                 
-kong                                   /docker-entrypoint.sh /bin ...   Up       0.0.0.0:8000->8000/tcp, 0.0.0.0:8001->8001/tcp, 0.0.0.0:8443->8443/tcp,                   
-                                                                                 0.0.0.0:8444->8444/tcp                                                                    
-kong-db                                docker-entrypoint.sh postgres    Up       0.0.0.0:5432->5432/tcp                                                                    
+edgex-app-service-configurable-rules   /app-service-configurable  ...   Up       48095/tcp, 0.0.0.0:48100->48100/tcp
+edgex-core-command                     /core-command -cp=consul.h ...   Up       0.0.0.0:48082->48082/tcp
+edgex-core-consul                      edgex-consul-entrypoint.sh ...   Up       8300/tcp, 8301/tcp, 8301/udp, 8302/tcp, 8302/udp, 8400/tcp, 0.0.0.0:8500->8500/tcp,
+                                                                                 8600/tcp, 8600/udp
+edgex-core-data                        /core-data -cp=consul.http ...   Up       0.0.0.0:48080->48080/tcp, 0.0.0.0:5563->5563/tcp
+edgex-core-metadata                    /core-metadata -cp=consul. ...   Up       0.0.0.0:48081->48081/tcp
+edgex-device-rest                      /device-rest-go --cp=consu ...   Up       0.0.0.0:49986->49986/tcp
+edgex-device-virtual                   /device-virtual --cp=consu ...   Up       0.0.0.0:49990->49990/tcp
+edgex-kuiper                           /usr/bin/docker-entrypoint ...   Up       0.0.0.0:20498->20498/tcp, 0.0.0.0:48075->48075/tcp, 9081/tcp
+edgex-proxy                            /bin/sh -c until /consul/s ...   Exit 0
+edgex-redis                            docker-entrypoint.sh redis ...   Up       0.0.0.0:6379->6379/tcp
+edgex-secrets-setup                    entrypoint.sh generate           Up
+edgex-security-bootstrap-database      /entrypoint.sh                   Up
+edgex-support-notifications            /support-notifications -cp ...   Up       0.0.0.0:48060->48060/tcp
+edgex-support-scheduler                /support-scheduler -cp=con ...   Up       0.0.0.0:48085->48085/tcp
+edgex-sys-mgmt-agent                   /sys-mgmt-agent -cp=consul ...   Up       0.0.0.0:48090->48090/tcp
+edgex-vault                            /vault/init/start_vault.sh       Up       0.0.0.0:8200->8200/tcp
+edgex-vault-worker                     entrypoint.sh                    Up
+kong                                   /docker-entrypoint.sh /bin ...   Up       0.0.0.0:8000->8000/tcp, 0.0.0.0:8001->8001/tcp, 0.0.0.0:8443->8443/tcp,
+                                                                                 0.0.0.0:8444->8444/tcp
+kong-db                                docker-entrypoint.sh postgres    Up       0.0.0.0:5432->5432/tcp
 kong-migrations                        /docker-entrypoint.sh /bin ...   Exit 0
 ```
 
@@ -1544,7 +1544,7 @@ MEC 与边缘云不能一概而论，边缘云是一个小型云计算数据中�
 
 ![](images/mec-cloud-os.png)
 
-- **分场景提供轻量下沉，或拉远管理的边缘节点**：针对某些边缘资源节点非常的有限的场景，需要提供轻量化的资源配置，而且可以实现拉远管理。- **边缘应用以及服务的全生命周期管理**：边缘应用自动上/下线、用户面规则自动创建/更新、边缘服务注册中心管理。
+- **分场景提供轻量下沉，或拉远管理的边缘节点**：针对某些边缘资源节点非常的有限的场景，需要提供轻量化的资源配置，而且可以实现拉远管理。- **边缘应用以及服务的全生命周期管理**：边缘应用自动上/下线、用户面规则自动创建/更新、边缘服务注册中心管理。
 - **云边协同**：基于 MEC 构建云操作系统所实现的云边协同。
 - **以微服务为中心的架构，实现差异化编排**：打造多租户、多场景的、按需差异化编排能力。
 - **多类型 VIM 支持，满足不同的资源池场景**：除了常规的 IaaS、CaaS、PaaS 平台，还支持 KubeEdge、K3S 等 VIM 类型的异构编排。
@@ -1650,43 +1650,48 @@ MEC 与边缘云不能一概而论，边缘云是一个小型云计算数据中�
 
 1. K3S 比 K8S，在文件大小、CPU/内存占用率、能耗方面，一般能提升多少？
 
-   50%
+    参考 <https://rancher.com/docs/k3s/latest/en/installation/installation-requirements/resource-profiling/>，K3S 在文件大小上相对于 K8S 提升意义不大，但利于 K8S 的极简部署。CPU 和内存的最小约束条件都比 K8S 提升 50% 左右。
+
+    参考 <https://www.siderolabs.com/blog/is-vanilla-kubernetes-really-too-heavy-for-the-raspberry-pi/>，对于优化后的 vanilla k8s 发行版，K3S 在 CPU 上依然有较多优势，内存上则相差无几。
 
 2. 使用 KubeEdge 在边缘节点上编排应用，有什么独特的专有的优点？
-   - 借助在 Edge 上运行的业务逻辑，可以让本地生成的数据，进行大量数据处理操作并对其进行保护。这样可以减少边缘和云之间的网络带宽需求和消耗，提高响应速度，降低成本并保护客户的数据隐私
-   - 开发人员可以编写基于 HTTP 或 MQTT 的常规应用程序，对其进行容器化，然后在 Edge 或 Cloud 中的任何一个更合适的位置运行应用程序。
-   - 借助 KubeEdge ，用户可以像在传统的 Kubernetes 集群一样，在 Edge 节点上编排应用程序，管理设备并监视应用程序和设备状态。
-   - 可以轻松地将现有的复杂机器学习，图像识别，事件处理等其他高级应用程序部署到 Edge。
+    - 借助在 Edge 上运行的业务逻辑，可以让本地生成的数据，进行大量数据处理操作并对其进行保护。这样可以减少边缘和云之间的网络带宽需求和消耗，提高响应速度，降低成本并保护客户的数据隐私
+    - 开发人员可以编写基于 HTTP 或 MQTT 的常规应用程序，对其进行容器化，然后在 Edge 或 Cloud 中的任何一个更合适的位置运行应用程序。
+    - 借助 KubeEdge ，用户可以像在传统的 Kubernetes 集群一样，在 Edge 节点上编排应用程序，管理设备并监视应用程序和设备状态。
+    - 可以轻松地将现有的复杂机器学习，图像识别，事件处理等其他高级应用程序部署到 Edge。
 3. 如果边缘设备挂了，APP 如何会自动跳转到远端服务？
+
+    可以设置 node 亲和性，优先选近端节点。近端 Node 断联 Pod 会自动调度到远端。对于有状态应用，要考虑远端和近端两侧的状态同步。
+
 4. 实际应用中推荐使用边缘云还是云边缘？
 
-   参考：http://blog.itpub.net/69912185/viewspace-2685097/
+    参考：http://blog.itpub.net/69912185/viewspace-2685097/
 
-   边缘云：在边缘侧构建中小规模云服务能力，服务能力主要由边缘云提供，集中式数据中心侧主要提供边缘云的管理调度能力，如多接入边缘计算（MEC）、CDN 等属于此类。
+    边缘云：在边缘侧构建中小规模云服务能力，服务能力主要由边缘云提供，集中式数据中心侧主要提供边缘云的管理调度能力，如多接入边缘计算（MEC）、CDN 等属于此类。
 
-   云边缘：是云服务在边缘侧的延伸，逻辑上仍是云服务，主要的能力提供依赖于云服务或需要与云服务紧密协同，如视频智能接入解决方案就属于此类。
+    云边缘：是云服务在边缘侧的延伸，逻辑上仍是云服务，主要的能力提供依赖于云服务或需要与云服务紧密协同，如视频智能接入解决方案就属于此类。
 
-   二者各有优势，应根据具体场景选择。
-   
+    二者各有优势，应根据具体场景选择。
+
 5. KubeEdge 节点和普通节点都在 kubectl get node 中获取到，这两者有什么区别？
 
-   参考：https://my.oschina.net/u/4425967/blog/3149045
+    参考：<https://my.oschina.net/u/4425967/blog/3149045>
 
-   没有本质区别，KubeEdge 的边缘组件会将 Node 通过云边协同通道注册到 K8s Master，唯一的不同是普通节点由 Kubelet 直接访问 Master 完成节点注册，KubeEdge 是通过云边协同通道注册，API 都是一致的。
+    KubeEdge 的边缘组件会将 Node 通过云边协同通道注册到 K8s Master，不同点是普通节点由 Kubelet 直接访问 Master 完成节点注册，KubeEdge 是通过云边协同通道注册，API 是一致的。
 
 6. KubeEdge 的安全层是怎么做的？
 
-   KubeEdge 云边协同使用了安全的 WebSocket 通道。对于应用间的安全互访要依赖用户自己配置安全证书等。
+    KubeEdge 云边协同使用了安全的 WebSocket 通道。对于应用间的安全互访要依赖用户自己配置安全证书等。
 
-   WebSocket：基于 TCP 的全双工通信协议
+    WebSocket：基于 TCP 的全双工通信协议
 
 7. kubeEdge 的业务流和 serviceBus、edgeHub 有交互吗？
 
-   serviceBus 接受来自云端的请求，调用相应的边缘端 http 接口，发送请求并接收回复后传给 edgeHub
+    serviceBus 接受来自云端的请求，调用相应的边缘端 http 接口，发送请求并接收回复后传给 edgeHub
 
 8. k3s 把多个二进制打包成一个二进制，除了安装方便外，有别的好处吗？
 
-   所有 Kubernetes control-plane 组件的操作都封装在单个二进制文件和进程中，使 K3s 具有自动化和管理包括证书分发在内的复杂集群操作的能力。
+    所有 Kubernetes control-plane 组件的操作都封装在单个二进制文件和进程中，使 K3s 具有自动化和管理包括证书分发在内的复杂集群操作的能力。
 
 9.  K3S 的轻量化性能如何保证？
 
@@ -1699,26 +1704,32 @@ MEC 与边缘云不能一概而论，边缘云是一个小型云计算数据中�
     云边协同：中心云与边缘云协同，中心云可以管理边缘云，并为边缘云提供充足的虚拟资源支持。
 
 11. k0s 的主要思想是什么
-    - 零摩擦：降低了安装和运行 k8s 的复杂性，可以在几分钟内创建一个新集群。开发人员之间的摩擦减少到0，允许任何在 k8s 没有特殊技能或专业知识的人轻松开始。
+    - 零摩擦（提供了比 kubeadm 更多功能的 k0s 运维工具）：降低了安装和运行 k8s 的复杂性，可以在几分钟内创建一个新集群。开发人员之间的摩擦减少到0，允许任何在 k8s 没有特殊技能或专业知识的人轻松开始。
     - 零依赖：以一个二进制文件的形式分发，除了主机操作系统内核外没有主机操作系统依赖。可以与任何操作系统一起工作而无需额外的软件包或配置，任何安全漏洞或性能问题都可以在 k0s 发行版中修复。
     - 零成本：对个人或商业用途完全免费。
-12. 边缘云和云边缘哪个方案在生产系统多一些
-13. k3s 和 k8s 性能相比差距有多少
-14. kata 解决方案有哪些优点
+12. 边缘云和云边缘哪个方案在生产系统多一些？
 
-    参考：https://github.com/kata-containers/kata-containers/blob/main/docs/Limitations.md
+    同问题 4
 
-    解决了传统容器共享内核的安全和隔离问题，让每个容器运行在一个轻量级的虚拟机中，使用单独的内核
+13. k3s 和 k8s 性能相比差距有多少？
+
+    同问题 1
+
+14. kata 解决方案有哪些优点？
+
+    参考：<https://github.com/kata-containers/kata-containers/blob/main/docs/Limitations.md>
+
+    主要是更安全，避免了传统容器共享内核的安全和隔离问题，让每个容器运行在一个轻量级的虚拟机中，使用单独的内核。
 
 15. K3S 在轻量化的情况下，如何确保安全性？
-    
+
     参考：https://docs.rancher.cn/docs/k3s/security/hardening-guide/_index
 
     K3s 已经应用了一些安全缓解措施，并在默认情况下开启，无需修改即可通过 Kubernetes CIS 的一些控制。有一些明显的例外，如主机级别的修改，需要手动执行才能完全符合 CIS 基准。
-    
+
 16. K3S 边缘云是否可以通过 flannel 与 K8S 集群实现容器网络互通？
-    
-    可以
+
+    打通不同 K8S（K3S）之间的容器网络需要通过路由（静态路由或者动态路由，比如BGP）或者 VPN。没有在生产环境中见过这种需求。
 
 17. 边缘节点离线后，依赖数据多次变更，边缘应用和云端数据的最终一致是怎么保证的？
 
@@ -1729,9 +1740,9 @@ MEC 与边缘云不能一概而论，边缘云是一个小型云计算数据中�
     kubeedge 边缘节点可以从任意连接到的镜像仓库拉取镜像
 
 19. k8s 集群生命周期管理是否适用于 k3s？
-    
+
     适用
-    
+
 20. k3s 相比于 k8s 的轻量级体现在哪里，能将镜像更轻量化吗？
     - 使用 SQLite 数据库取代 etcd
     - 最大程度减轻了外部依赖性，k3s 仅需要 kernel 和 cgroup 挂载
@@ -1740,7 +1751,7 @@ MEC 与边缘云不能一概而论，边缘云是一个小型云计算数据中�
 
 21. k3s 能解决镜像在国外拉不到的问题吗
 
-    不能，但可以改用国内镜像仓库
+    可以改用国内镜像仓库
 
 22. k3s 除了安全还有什么优势吗
     - 轻量级、适合部署在边缘
@@ -1755,8 +1766,14 @@ MEC 与边缘云不能一概而论，边缘云是一个小型云计算数据中�
     | X-Large  | up to 500|   8    |32 GB|
     | XX-Large | 500+     |   16   |64 GB|
 
-24. K3s 是如何保证数据安全的?与主控节点通信可以中断多长时间
-25. 云边缘和边缘云两者从用户角度来讲，是否有差别，哪个用户感觉更好一点
+24. K3s 是如何保证数据安全的?与主控节点通信可以中断多长时间。
+
+    K3S 本身是一个裁剪过的 K8S，保证数据安全，以及节点中断时间方面与 K8S 没有区别。
+
+25. 云边缘和边缘云两者从用户角度来讲，是否有差别，哪个用户感觉更好一点？
+
+    对用户来说，云边缘调度 pod 更简单。边缘云则更集群独立。各有其应用场景，电信边缘计算因为要放在基站侧，需要独立管理，通常选边缘云方案更多。
+
 26. 对于开源 license，比如 GPL、Apache 等是否有对国内限制的可能？如果有，目前国产捐献内容是否有不可用风险
 
     有，但可能性不高。
@@ -1767,54 +1784,62 @@ MEC 与边缘云不能一概而论，边缘云是一个小型云计算数据中�
 
     参考：https://www.99cloud.net/11234.html%EF%BC%8F
 
-    有。主要面向工业 IoT、电信、视频等对延迟要求较高的业务
+    主要面向工业 IoT、电信、视频等对延迟要求较高的业务。国内缺少生态。
 
 28. kubeedge 离线自治大概能够保证多久离线时间业务是正常的
+
+    可以长时间保证，因为有状态持久化数据库
+
 29. k3s 相比 k8s 主要在哪些组件有所精简？
 
     参考：https://github.com/k3s-io/k3s/blob/master/README.md
 
     整合：
-      - Containerd & runc
-      - Flannel for CNI
-      - CoreDNS
-      - Metrics Server
-      - Traefik for ingress
-      - Klipper-lb as an embedded service load balancer provider
-      - Kube-router for network policy
-      - Helm-controller to allow for CRD-driven deployment of helm manifests
-      - Kine as a datastore shim that allows etcd to be replaced with other databases
-      - Local-path-provisioner for provisioning volumes using local storage
-      - Host utilities such as iptables/nftables, ebtables, ethtool, & socat
+
+    - Containerd & runc
+    - Flannel for CNI
+    - CoreDNS
+    - Metrics Server
+    - Traefik for ingress
+    - Klipper-lb as an embedded service load balancer provider
+    - Kube-router for network policy
+    - Helm-controller to allow for CRD-driven deployment of helm manifests
+    - Kine as a datastore shim that allows etcd to be replaced with other databases
+    - Local-path-provisioner for provisioning volumes using local storage
+    - Host utilities such as iptables/nftables, ebtables, ethtool, & socat
 
     移除：
-      - In-tree storage drivers
-      - In-tree cloud provider
+
+    - In-tree storage drivers
+    - In-tree cloud provider
 
 30. k3s 与 kubeedge 应用前景怎么样？
 
     前景很好，很多的边缘设备都不足以部署 k8s，且相较于 k8s，它们的成本更低。
 
 31. K3S 目前在国内边缘计算产业发展应用的成熟度如何？
-    
+
     较为成熟，已经有了一定数目的落地案例
 
 32. K3S 是如何保证高并发的？
 
-    Deployment
+    这与 K8S 没有多大区别，K3S 也可以多个 work node
 
 33. k3s 落地案例有哪些
 
     工业物联网、国有银行
 
 34. k3s 的性能如何，可以承载多大业务量
+
+    这与 K8S 没有多大区别，K3S 也可以多个 work node
+
 35. kubeedge 中 cloud core 可以对应多少个 edgecore
 
-    n
-    
+    1:n
+
 36. kubeedge 中 edge core 可以对应多少个 edged
 
-    1
+    1:1
 
 37. 边缘计算的计算节点放在 5G 基站合适还是下沉 UPF 合适？
 
@@ -1824,13 +1849,22 @@ MEC 与边缘云不能一概而论，边缘云是一个小型云计算数据中�
     - KubeEdge: 使用 Apache Beam 进行数据分析
     - 农业现代化，如播种、监控作物长势
     - 城市监控系统
-39. kubeEdge 的网络组件是否要与K8S保持一致？
+39. kubeEdge 的网络组件是否要与 K8S 保持一致？
+
+    需要
+
 40. kubevirt 是否完成模拟了网络环境？
 
-    每个虚拟机实例对象都对应1个 pod ，该 pod 的网卡作为虚拟机的虚拟网卡所对应的物理网卡。
-    
-41. 国内MEC平台解决方案与 KubeEdge 有何区别？
+    每个虚拟机实例对象都对应 1 个 pod ，该 pod 的网卡作为虚拟机的虚拟网卡所对应的物理网卡。
+
+41. 国内 MEC 平台解决方案与 KubeEdge 有何区别？
+
+    MEC 平台一般都是边缘云 + MEP，KubeEdge 是云边缘。
+
 42. KubeEdge 支持的设备接入规模是多大？
+
+    官方宣传是上千节点和百万接入点，除一下的话，每个 node 上千设备接入。
+
 43. K3S的轻量级体现在哪里？
     - 磁盘要求更小
     - 内存要求低
@@ -1838,30 +1872,29 @@ MEC 与边缘云不能一概而论，边缘云是一个小型云计算数据中�
     - 使用 SQLite 替换 etcd
     - 没有操作系统依赖，只需要 kernel 和 cgroup 挂载
 44. KubeEdge 和 K3S 哪个在边缘云场景使用的更多？
+
+    同问题 4
+
 45. 中心云纳管边缘云和边缘云纳管中心云，这两者各有什么优劣点？
+
+    中心云纳管边缘云多见。
+
+    边缘云纳管中心云，控制数据在边缘，有安全隐患，一般多见于临时需要借助中心云的弹性算力，不多见。
+
 46. K3S 与 K8S 相比，具体轻量化了哪些组件和功能？
 
-    参考：https://github.com/k3s-io/k3s/blob/master/README.md
-
-    整合：
-      - Containerd & runc
-      - Flannel for CNI
-      - CoreDNS
-      - Metrics Server
-      - Traefik for ingress
-      - Klipper-lb as an embedded service load balancer provider
-      - Kube-router for network policy
-      - Helm-controller to allow for CRD-driven deployment of helm manifests
-      - Kine as a datastore shim that allows etcd to be replaced with other databases
-      - Local-path-provisioner for provisioning volumes using local storage
-      - Host utilities such as iptables/nftables, ebtables, ethtool, & socat
-
-    移除：
-      - In-tree storage drivers
-      - In-tree cloud provider
+    同问题 29
 
 47. k3s 和 k8s 集群生命周期管理有什么推荐的方式？
+
+    k8s 可以用 kubeadmin / k0s
+
+    k3s 有自己的生命周期管理工具
+
 48. KubeEdge 端容器和 K8S 端容器互通有哪些方案推荐
+
+    本身就是互通的
+
 49. k8s crd operator 除 helm 外还有哪些替代产品？
 
     https://docs.k0sproject.io/v1.22.3+k0s.0/manifests/
@@ -1872,7 +1905,10 @@ MEC 与边缘云不能一概而论，边缘云是一个小型云计算数据中�
     - k3s 和 k8s 的资源环境需求还是比较大的，k3s 的资源占用更加小，更适合部署在资源不足的边缘环境；
     - 对于很多用户来说，k8s 的很多功能并不是必须的，在这种情况下，k3s 仅保留必要的组件、额外需求用户可以自行安装组件扩展，比 k8s 更有竞争力；
     - k3s 的操作更加简单，对用户更加友好。
-51. k3s 对比 k8s 安全性能如何？
+51. k3s 对比 k8s 安全性如何？
+
+    k3s 只是裁剪，安全性和 k8s 相比并无多大不同
+
 52. 国内 k3s 的应用案例有哪些？
 
     参考：https://www.bilibili.com/video/BV1g7411G7By?from=search&seid=18067894859541366568&spm_id_from=333.337.0.0
@@ -1903,15 +1939,35 @@ MEC 与边缘云不能一概而论，边缘云是一个小型云计算数据中�
     单节点架构无法保证高可用。
 
 58. K3S 云到边的数据同步对网络有什么要求，是强一致性同步吗
+
+    K3S 是边缘云，本身不存在云边协调。云边协调需要额外的云管平台来做
+
 59. MEC 中的云适配器，主流架构和软件是什么？
+
+    不同的云平台自己提供
+
 60. OpenYurt 除了零侵入外，还有没有其它优点？
+
+    主要是生态。以及，对于不同发行版的 k8s 也很难完善支持。
+
     - 边缘异构资源支持：对于同边缘节点硬件架构（e.g. x86、ARM、RM64 等），硬件规格，通信协议提供一致体验；
     - 高可靠/稳定性：基于边缘自治和边缘单元化能力，为多地域，大规模的边缘应用的持续稳定运行提供保障。支持各类开源 AI 系统（e.g. Tensorflow、Pytorch 等），为 AI 用户提供最佳体验；
     - 云平台无关：OpenYurt 可以轻松部署在任何公共云的 Kubernetes 服务中；
     - 一键转换：一条指令将 Kubernetes 转换为 OpenYurt 集群。
 61. dvr 为啥在生产中使用较少
+
+    dvr 主要是大集群上提升网络性能，避免出现集中网络节点数据汇聚。但分布式带来了额外的网络复杂度，排查问题困难。
+
+    以便大集群指 1000 节点以上，这种规模不常见。通常 500 节点为限，多了就分 region 处理。不会遇到网络性能瓶颈（先遇到的往往是 mysql / rabbitmq 的性能瓶颈）
+
 62. kubevirt 在生产是否有大规模部署？
+
+    未见
+
 63. upgw 和运营商 upf 有什么区别
+
+    upgw 更简单，仅仅是一个无线侧串联分流网关
+
 64. 云边缘的编排是不是都在云端
 
     不是。 KubeEdge 将原生的容器化应用程序编排功能扩展到了边缘节点。
@@ -1921,6 +1977,9 @@ MEC 与边缘云不能一概而论，边缘云是一个小型云计算数据中�
     增量镜像，将对虚拟机的改变都保存到增量镜像中，原始镜像保持不变。
 
 66. etcd 本来就容易连接超时，如果考虑安全，用 https 会更慢，那怎么保证安全？
+
+    调整超时时间 & 用 SSD 硬盘，注意性能调优是关键，https 必须用上。
+
 67. K3S 的具体适用场景有哪些？
     - 边缘计算
     - 物联网
@@ -1938,21 +1997,30 @@ MEC 与边缘云不能一概而论，边缘云是一个小型云计算数据中�
 
     OpenYurt 同样是基于 K8S 的边缘计算项目，相对于 K3S，它拥有云边协同，边缘自治等特性，维护成本更低，管理方式为云管边
 
-69. k3s 有好多推荐的书吗
+69. k3s 有好的推荐的书吗
+
+    看官方文档吧……
+
 70. 云边缘的 pod 调度由边缘控制还是云中心控制
 
     由边缘控制，边缘网络状况往往不佳，由云中心控制存在不便。
 
 71. 边缘云和中心云的主机硬件规格有什么不同
-    
+
     中心云的硬件规格要求更高。
 
 72. EdgeXFoundry 有哪些应用场景
 
     EdgeXFoundry 适用于需要接入大量的不同种类设备，且想要用统一架构进行操控的场合，如工业物联网、智慧场馆、开源物业系统。
 
-73. EdgeX Foundry 如何应用在混合云及MEC场景中？
+73. EdgeX Foundry 如何应用在混合云及 MEC 场景中？
+
+    呃，这个很难理解问题点，按官方文档说明书使用？建议提 issue 留言
+
 74. Kubeedge 与 k3s 各适用于那些 MEC 场景？
+
+    k3s 在 MEC 场景用得多。同问题 4
+
 75. EdgeX Foundry 架构中 core data 和 meta data 都存储的什么数据？
 
     core data： 数据中转，南北侧通信借此转发
@@ -1977,25 +2045,45 @@ MEC 与边缘云不能一概而论，边缘云是一个小型云计算数据中�
     会
 
 80. k3s 在国外有应用场景吗
+
+    较多，边缘测常用
+
 81. EdgeX Foundry 架构中对承载网络的需求是什么?
+
+    不理解问题，建议提 issue 留言
+
 82. EdgeX Foundry 中得数据安全是怎么做的？
     - secret store：存储其他服务和令牌用以连接到云端系统的数据库许可密码
     - API gateway：反向代理，限制对 EdgeX REST 资源的访问并进行访问控制
 83. 三层的分布式云操作系统在实际项目部署中是否存在因为层级导致整体性能下降的情况？
-84. openYurt 与 kubeadge 最关键的区别是什么？ 从架构图看不是很明显都是基于两个连接组件将K8s联系起来了
+
+    架构复杂必然会有性能下降，trade off
+
+84. openYurt 与 kubeedge 最关键的区别是什么？ 从架构图看不是很明显都是基于两个连接组件将 K8s 联系起来了
+
+    openYurt 是把一个既有的边缘端 k8s 集群作为远端的 k8s 集群的一个 node。
+
+    KubeEdge 是一个 k8s 集群，只是边缘节点上带有状态持久化数据库
+
 85. kubeedge 是否支持 arm 架构的低功耗产品
 
     支持
-    
+
 86. edgex foundry 架构是否支持低功耗产品
-    
+
     支持
 
-87. 运营商边缘环境与IT的边缘环境有什么区别，运营商架构有哪些可以借鉴优化？
+87. 运营商边缘环境与 IT 的边缘环境有什么区别，运营商架构有哪些可以借鉴优化？
+
+    有无基站的区别
+
 88. 已经采用 horizon 作为界面的系统如何解决日志排查链比较长的问题？
+
+    通过 request id
+
 89. 如何通过 Core Services Layers 和 Supporting Services Layers 进行安全的访问接入和控制？
 90. IP摄像机等设备的视频流如何接入 EdgeX Foundry？
-    
+
     参考：https://www.edgexfoundry.club/user/lulililu/article/5d8d93356598210001292c9b
 
     使用 edgex-device-rtsp
@@ -2004,96 +2092,112 @@ MEC 与边缘云不能一概而论，边缘云是一个小型云计算数据中�
     - 棕色：较旧的遗留设备，通常使用较旧的协议
     - 绿色：具有现代协议的新设备
 92. 目前最有价值的边缘云落地场景有哪些？
-    
-    5G+MEC+边缘云
+
+    5G + MEC + 边缘云
 
 93. kubeedge 与 k3s 是否有融合使用方案
+
+    这两者没必要融合，二者取一
+
 94. kubeedge 与物联网有没有成熟方案
-    
+
     参考：https://bbs.huaweicloud.com/blogs/241370
 
     KubeEdge+K8S 管理高速公路边缘节点
 
 95. 边缘计算的应用场景有哪些？
-    
+
     物联网、工业互联网、车联网、5G 超低时延业务
 
 96. 边缘计算目前做得好的公司有哪些？
-    
+
     亚马逊、微软、谷歌、阿里云、华为云、中国移动等
 
 97. Kubesphere 集群纳管的数量是否有限制？
+
+    无明确限制
+
 98. Kubeedge 资源缺乏报错的解决方案是啥？
-99.  技术迭代非常快，容器化技术后，是否有其他更新技术的雏形产生？
+99. 技术迭代非常快，容器化技术后，是否有其他更新技术的雏形产生？
 
-     新容器技术：podman
+    emmmm，低代码平台？
 
-100. 目前边缘计算有什么应用场景
+    容器技术实际上 19 世纪已经实现，计算机底层革命不容易，能看到的是量子计算能带来根本性的革命。
 
-     物联网、工业互联网、车联网、5G超低时延业务
+    其它车联网、无人机群、元宇宙都是技术衍生
 
-101. 怎么选择 redis 的 HA 实现方式？
-102. 边缘设备自动发现有哪些技术？
+1. 目前边缘计算有什么应用场景
 
-     订阅
+    物联网、工业互联网、车联网、5G超低时延业务
 
-103. EdgeX Foundry 在哪些方面优化时延问题？
-104. C 比 golang 性能好，原因是啥？
+1. 怎么选择 redis 的 HA 实现方式？
 
-     C：程序员可以自己管理内存的分配和释放
+    看业务需要
 
-     golang：使用 GC（垃圾收集器），编译器自己实现内存的分配和过期内存的回收
+1. 边缘设备自动发现有哪些技术？
 
-105. 通常而言，在一个边缘计算应用的场景中，都需要哪些参与方，各方的职责及提供的内容是什么？
+    订阅
+
+1. EdgeX Foundry 在哪些方面优化时延问题？
+1. C 比 golang 性能好，原因是啥？
+
+    C：程序员可以自己管理内存的分配和释放
+
+    golang：使用 GC（垃圾收集器），编译器自己实现内存的分配和过期内存的回收
+
+1. 通常而言，在一个边缘计算应用的场景中，都需要哪些参与方，各方的职责及提供的内容是什么？
 106. 在工程实践中，边缘计算哪些方面标准化不足，最亟需标准化的是哪些方面？
 107. EdgeXFoundry 与 kubeEdge 面向物联网需求场景有何差异性？
-     
-     EdgeXFoundry更适用于存在大量不同设备的场景，它可以兼容多种不同协议
+
+    EdgeXFoundry更适用于存在大量不同设备的场景，它可以兼容多种不同协议
 
 108. 电信运营商边缘云发展有何建议？
-     
-     MEC+边缘云，构建面向应用的电信级 PaaS 平台
+
+    MEC+边缘云，构建面向应用的电信级 PaaS 平台
 
 109. JWT 令牌的优势是什么？
-     - 基于 json，方便解析
-     - 可以自定义丰富的内容，易扩展
-     - 通过非对称加密算法及数字签名技术，防篡改，安全性高
-     - 资源服务可以不依赖认证服务即可完成授权
+    - 基于 json，方便解析
+    - 可以自定义丰富的内容，易扩展
+    - 通过非对称加密算法及数字签名技术，防篡改，安全性高
+    - 资源服务可以不依赖认证服务即可完成授权
 110. k3s/k8s 对 arm 的支持如何？
-     
-     均支持
+
+    均支持
 
 111. EdgeXFoundry 如何保证安全性
 112. 随着 AIOps 工具和流程的成熟，云计算行业对运维人员的需求点在哪里
      - 相关业务经验
      - 具有AI能力
 113. k3s 有什么好用的工具书或者网站吗？
-114. kubedge 在物联网方面的应用有什么？
-     
-     参考：https://bbs.huaweicloud.com/blogs/241370
 
-     KubeEdge+K8S 管理高速公路边缘节点
+    同问题 69
+
+114. kubedge 在物联网方面的应用有什么？
+
+    参考：https://bbs.huaweicloud.com/blogs/241370
+
+    KubeEdge+K8S 管理高速公路边缘节点
 
 115. 一般什么规模下需要考虑边缘计算
-116. 边缘计算的架构是否还需要继续发展
-117. 服务网格 Service Mesh 有哪几种实现方式？
-     
-     参考：https://www.nginx.com/blog/what-is-a-service-mesh/
+116. 边缘计算的架构是否还需要继续发展？
 
-     边车模式，设置一个代理服务接管服务的流量，通过代理之间的通信间接完成服务之间的通信请求。如：Linkerd、Envoy、Istio 等。
+    边缘计算尚未真正铺开，一定会继续发展到它真正合适的形态
+
+117. 服务网格 Service Mesh 有哪几种实现方式？
+
+    参考：https://www.nginx.com/blog/what-is-a-service-mesh/
+
+    边车模式，设置一个代理服务接管服务的流量，通过代理之间的通信间接完成服务之间的通信请求。如：Linkerd、Envoy、Istio 等。
 
 118. EdgeXFoundry 的四层架构和智慧场馆/开源物业系统案例中的几个层次是如何对应的
-     - 应用服务层：
-       - 展现层：U3D/UE4/web/App
-
-     - 支持服务层：
-       - 业务层：物业/办公
-
-     - 核心服务层台：
-       - IoT 中台（EdgeX）、用户、权限
-       - IoT 适配层
-       - IoT：三方 IoT 接口
-       - 网络层：BA/Bodbus/Zigbee/NBIoT/HTTP
-
-     - 设备服务层：
-       - 感知层：设备（传感器）
+    - 应用服务层：
+        - 展现层：U3D/UE4/web/App
+        - 支持服务层：
+        - 业务层：物业/办公
+    - 核心服务层台：
+        - IoT 中台（EdgeX）、用户、权限
+        - IoT 适配层
+        - IoT：三方 IoT 接口
+        - 网络层：BA/Bodbus/Zigbee/NBIoT/HTTP
+    - 设备服务层：
+        - 感知层：设备（传感器）
