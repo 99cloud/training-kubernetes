@@ -1591,7 +1591,7 @@ my-nginx.default.svc.cluster.local. 30 IN A	10.98.172.84
     ```bash
     # 下载 ingress controller 的 yaml 文件
     # wget https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.30.0/deploy/static/mandatory.yaml
-    wget https://gitee.com/dev-99cloud/training-kubernetes/raw/master/src/adm-lab/mandatory.yaml
+    wget https://gitee.com/dev-99cloud/training-kubernetes/raw/master/src/amd-lab/mandatory.yaml
     ```
 
     新版本默认不监听80、443端口，需自行进行配置
