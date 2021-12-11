@@ -529,7 +529,7 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
     systemctl restart kubelet
     systemctl enable kubelet
     
-    # 12. 安装 kubeadm
+    # 12. 用 kubeadm 初始化创建 K8S 集群
     kubeadm init --image-repository registry.aliyuncs.com/google_containers --kubernetes-version=v1.20.1 --pod-network-cidr=10.244.0.0/16
     
     # 13. 配置 .kube/config 用于使用 kubectl
