@@ -525,7 +525,7 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
     # 10. 下载 kubernetes
     yum install -y kubelet-1.20.1-0 kubeadm-1.20.1-0 kubectl-1.20.1-0  --disableexcludes=kubernetes
     
-    # 11. 启动 kubectl
+    # 11. 启动 kubelet
     systemctl restart kubelet
     systemctl enable kubelet
     
