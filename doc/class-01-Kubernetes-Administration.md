@@ -692,7 +692,7 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
     - 本地运行：
         - 安装依赖：`pip3 install -r requirements.txt`
         - 本地运行：`python3 main.py`，会在本地启动一个用于开发的 web 服务器。
-        - 你可以打开浏览器，访问 `http://localhost:5000` 端口
+        - 你可以打开浏览器，访问 `http://<IP>:5000` 端口
     - Docker 镜像构建文件，目录下有一个 Dockerfile 文件
 
         ```dockerfile
@@ -711,7 +711,7 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
         - 运行命令构建镜像：`docker build -f Dockerfile -t hello-python:latest .`
         - 构建完成后，可以通过 `docker image ls` 看到刚才构建的镜像
         - 然后运行此镜像：`docker run -p 5001:5000 hello-python`
-        - 然后访问 `http://localhost:5001`，同样可以看到 `Hello form Python!` 字符串
+        - 然后访问 `http://<IP>:5001`，同样可以看到 `Hello form Python!` 字符串
     - 确定 Kubernetes 和 kubectl 运行正常
         - 运行命令：`kubectl version`，如果该命令不报错，就说明 kubectl 安装完成。
         - 运行命令：`kubectl get nodes`，如果返回节点信息，说明 K8S 运行正常，kubectl 配置正常。
@@ -758,7 +758,7 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
     - 将 Deployment 部署到 K8S 平台
         - 运行命令：`kubectl apply -f deployment.yaml`
         - 运行命令：`kubectl get pods，检查 pods`
-        - 然后可以打开浏览器，在 `http://localhost:31000` 看到 `Hello form Python!` 信息
+        - 然后可以打开浏览器，在 `http://<IP>:31000` 看到 `Hello form Python!` 信息
 
     - 实验
 
@@ -775,7 +775,7 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
         # 访问应用
         curl http://<pod-ip>:5000
         curl http://<cluster-ip>:6000
-        curl http://localhost:31000
+        curl http://<host-ip>:31000
         ```
 
 ## Lesson 03：K8S concepts
