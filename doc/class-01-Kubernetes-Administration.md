@@ -513,24 +513,26 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
     yum install docker -y
     systemctl enable docker --now
     
-    # 9. 修改 docker 镜像仓库
-    vi /etc/docker/daemon.json
-    {
-      "registry-mirrors": ["http://hub-mirror.c.163.com"]
-    }
+    # 9. 修改 docker 镜像代理仓库
+    # vi /etc/docker/daemon.json
+    # {
+    #  "registry-mirrors": ["http://hub-mirror.c.163.com"]
+    # }
     
-    systemctl daemon-reload
-    systemctl restart docker
+    # systemctl daemon-reload
+    # systemctl restart docker
     
     # 10. 下载 kubernetes
-    yum install -y kubelet-1.20.1-0 kubeadm-1.20.1-0 kubectl-1.20.1-0  --disableexcludes=kubernetes
+    export k8s_version="1.20.1"
+
+    yum install -y kubelet-${k8s_version}-0 kubeadm-${k8s_version}-0 kubectl-${k8s_version}-0  --disableexcludes=kubernetes
     
     # 11. 启动 kubelet
     systemctl restart kubelet
     systemctl enable kubelet
     
     # 12. 用 kubeadm 初始化创建 K8S 集群
-    kubeadm init --image-repository registry.aliyuncs.com/google_containers --kubernetes-version=v1.20.1 --pod-network-cidr=10.244.0.0/16
+    kubeadm init --image-repository registry.aliyuncs.com/google_containers --kubernetes-version=v${k8s_version} --pod-network-cidr=10.244.0.0/16
     
     # 13. 配置 .kube/config 用于使用 kubectl
     mkdir -p $HOME/.kube
@@ -538,7 +540,7 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
     chown $(id -u):$(id -g) $HOME/.kube/config
     
     # 15. 安装 calico
-    kubectl apply -f https://gitee.com/dev-99cloud/lab-openstack/raw/master/src/ansible-cloudlab-centos/playbooks/roles/init04-prek8s/files/calico_v3.10.yaml
+    kubectl apply -f https://gitee.com/dev-99cloud/lab-openstack/raw/master/src/ansible-cloudlab-centos/playbooks/roles/init04-prek8s/files/calico-${k8s_version}.yaml
     
     # 看到 node Ready 就 OK
     kubectl get nodes
@@ -1909,7 +1911,7 @@ my-nginx.default.svc.cluster.local. 30 IN A	10.98.172.84
   # 在 github 对应仓库中下载全部 yaml 文件
   # for file in auth-delegator.yaml auth-reader.yaml metrics-apiservice.yaml metrics-server-deployment.yaml metrics-server-service.yaml resource-reader.yaml ; do wget https://raw.githubusercontent.com/kubernetes/kubernetes/master/cluster/addons/metrics-server/$file;done
   # 最新版本可能会出现无法通过健康检查的问题，可以根据自己的 kubernetes 版本，选择相同的 metrics server 版本
-  # v1.20.1版本国内仓库下载
+  # v1.20.1 版本国内仓库下载
   for file in auth-delegator.yaml auth-reader.yaml metrics-apiservice.yaml metrics-server-deployment.yaml metrics-server-service.yaml resource-reader.yaml ; do wget https://gitee.com/dev-99cloud/training-kubernetes/raw/master/src/amd-lab/metrics-server/$file;done
   kubectl apply -f .
   ```
