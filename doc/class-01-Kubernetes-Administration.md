@@ -1548,7 +1548,7 @@ kubectl taint node ckaslave001 key=value:NoExecute
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/website/master/content/en/examples/service/networking/run-my-nginx.yaml
 
 # 创建 Service
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/website/master/content/en/examples/service/networking/nginx-svc.yamlservice/my-nginx unchanged
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/website/master/content/en/examples/service/networking/nginx-svc.yaml
 ```
 
 ```console
