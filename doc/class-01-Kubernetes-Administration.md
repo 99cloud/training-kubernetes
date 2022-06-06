@@ -427,7 +427,7 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
     net.bridge.bridge-nf-call-iptables = 1
     EOF
     sudo sysctl --system
-    
+
     # Install kubeadm
     apt-get update && apt-get install -y apt-transport-https curl
     curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
@@ -435,15 +435,15 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
     deb https://apt.kubernetes.io/ kubernetes-xenial main
     EOF
     apt-get update -y && apt-get install -y kubelet kubeadm kubectl
-    
+
     # 重启 kubelet
     systemctl daemon-reload
     systemctl restart kubelet
-    
+
     # 检查 kubelet 状态，在加入 k8s 集群之前，kubelet 状态会一直处于 activating 状态
     systemctl status kubelet
     ```
-    
+
 1. [用 kubeadm 创建一个 k8s 群集](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/)
 
     ```bash
@@ -476,27 +476,27 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
     # 3. 关闭防火墙（默认就是关闭的，不用做）
     # systemctl stop firewalld.service
     # systemctl disable firewalld.service
-    
+
     # 4. 关闭 selinux（默认就是关闭的，不用做）
     # vi /etc/selinux/config
     # 将 SELINUX=enforcing 改为 SELINUX=disabled
-    
+
     # 5. 关闭 swap（默认就是关闭的，不用做）
     # swapoff /dev/sda2
     # vi /etc/fstab
     # 在 swap 分区这行前加 # 禁用掉，保存退出
     # reboot
-    
+
     # 6. 配置系统相关属性
     cat <<EOF > /etc/sysctl.d/k8s.conf
     net.bridge.bridge-nf-call-ip6tables = 1
     net.bridge.bridge-nf-call-iptables = 1
     net.ipv4.ip_forward = 1
     EOF
-    
+
     sysctl -p
     sysctl --system
-    
+
     # 7. 配置yum源
     cat <<EOF > /etc/yum.repos.d/kubernetes.repo
     [kubernetes]
@@ -508,59 +508,59 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
     gpgkey=http://mirrors.aliyun.com/kubernetes/yum/doc/yum-key.gpg
             http://mirrors.aliyun.com/kubernetes/yum/doc/rpm-package-key.gpg
     EOF
-    
+
     # 8. 安装 docker
     yum install docker -y
     systemctl enable docker --now
-    
+
     # 9. 修改 docker 镜像代理仓库
     # vi /etc/docker/daemon.json
     # {
     #  "registry-mirrors": ["http://hub-mirror.c.163.com"]
     # }
-    
+
     # systemctl daemon-reload
     # systemctl restart docker
-    
+
     # 10. 下载 kubernetes
     export k8s_version="1.20.1"
 
     yum install -y kubelet-${k8s_version}-0 kubeadm-${k8s_version}-0 kubectl-${k8s_version}-0  --disableexcludes=kubernetes
-    
+
     # 11. 启动 kubelet
     systemctl restart kubelet
     systemctl enable kubelet
-    
+
     # 12. 用 kubeadm 初始化创建 K8S 集群
     kubeadm init --image-repository registry.aliyuncs.com/google_containers --kubernetes-version=v${k8s_version} --pod-network-cidr=10.244.0.0/16
-    
+
     # 13. 配置 .kube/config 用于使用 kubectl
     mkdir -p $HOME/.kube
     cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
     chown $(id -u):$(id -g) $HOME/.kube/config
-    
+
     # 15. 安装 calico
-    kubectl apply -f https://gitee.com/dev-99cloud/lab-openstack/raw/master/src/ansible-cloudlab-centos/playbooks/roles/init04-prek8s/files/calico-${k8s_version}.yaml
-    
+    kubectl apply -f https://gitee.com/dev-99cloud/lab-openstack/raw/master/src/ansible-cloudlab-centos/playbooks/roles/init04-prek8s/files/calico-${k8s_version}.yml
+
     # 看到 node Ready 就 OK
     kubectl get nodes
     ```
-    
+
 1. 集群安装/加入 GPU 节点
 
     ```bash
     # 1. 节点安装显卡驱动
     # 可以参考 https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#abstract
-    
+
     # 2. 安装 docker
     # 见上文
-    
+
     # 3. 安装 nvidia-docker
     distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \ && curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.repo | sudo tee /etc/yum.repos.d/nvidia-docker.repo
-    
+
     yum install -y nvidia-docker2
     # ubuntu 等其他系统安装参考文档 https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#installing-on-centos-7-8
-    
+
     # 4. 更改默认容器运行时
     # 编辑 `/etc/docker/daemon.json`， 添加如下字段:
     {
@@ -573,9 +573,9 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
         }
     }
     systemctl daemon-reload && systemctl restart docker
-    
+
     # 5. 安装 k8s 集群或将集群加入节点即可
-    
+
     # 6. 安装 vgpu 插件
     # * Nvidia 官方的插件只能在 k8s 上整卡调度，调度力度太大，在我们的场景中没有太大实际意义
     # * 阿里云 gpushare 是阿里云公有云使用的 cgpu 的部分开源项目，能对 gpu 进行显存划分，多容器调度，但是没有实现显存隔离
@@ -666,15 +666,15 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
             from flask import Flask
             import os
             import socket
-            
+
             app = Flask(__name__)
-            
+
             @app.route("/")
             def hello():
                 html = "<h3>Hello {name}!</h3>" \
                        "<b>Hostname:</b> {hostname}<br/>"
                 return html.format(name=os.getenv("NAME", "world"), hostname=socket.gethostname())
-            
+
             if __name__ == "__main__":
                 app.run(host='0.0.0.0')
             ```
@@ -769,11 +769,11 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
         kubectl get pods -l app=hello-python
         kubectl get deploy
         kubectl get deployment
-        
+
         kubectl get svc
         kubectl get service
         kubectl get pods -l app=hello-python -o wide
-        
+
         # 访问应用
         curl http://<pod-ip>:5000
         curl http://<cluster-ip>:6000
@@ -794,27 +794,27 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
     ```bash
     # 创建一个 namespace
     kubectl create namespace quota-mem-cpu-example
-    
+
     # 为这个 namespace 限定配额
     kubectl apply -f https://k8s.io/examples/admin/resource/quota-mem-cpu.yaml --namespace=quota-mem-cpu-example
-    
+
     # 查看配额的详细信息
     kubectl get resourcequota mem-cpu-demo --namespace=quota-mem-cpu-example --output=yaml
-    
+
     # 创建一个 pod，并限制它的资源使用
     kubectl apply -f https://k8s.io/examples/admin/resource/quota-mem-cpu-pod.yaml --namespace=quota-mem-cpu-example
-    
+
     # 确认 pod 已经启动
     kubectl get pod quota-mem-cpu-demo --namespace=quota-mem-cpu-example
-    
+
     # 再次查看配额信息，检查已用部分
     kubectl get resourcequota mem-cpu-demo --namespace=quota-mem-cpu-example --output=yaml
-    
+
     # 尝试启动第二个 pod，因为配额原因，失败
     kubectl apply -f https://k8s.io/examples/admin/resource/quota-mem-cpu-pod-2.yaml --namespace=quota-mem-cpu-example
-    
+
     # Error from server (Forbidden): error when creating "examples/admin/resource/quota-mem-cpu-pod-2.yaml":pods "quota-mem-cpu-demo-2" is forbidden: exceeded quota: mem-cpu-demo, requested: requests.memory=700Mi,used: requests.memory=600Mi, limited: requests.memory=1Gi
-    
+
     # 删除命名空间
     kubectl delete namespace quota-mem-cpu-example
     ```
@@ -828,19 +828,19 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
     kubectl apply -f https://k8s.io/examples/controllers/nginx-deployment.yaml
     kubectl get pods
     kubectl get deployments
-    
+
     kubectl set image deployment/nginx-deployment nginx=nginx:1.16.1 --record
     kubectl get pods
-    
+
     kubectl set image deployment.v1.apps/nginx-deployment nginx=nginx:1.161 --record=true
     kubectl get pods
-    
+
     kubectl rollout history deployment.v1.apps/nginx-deployment
     kubectl rollout history deployment.v1.apps/nginx-deployment --revision=2
     kubectl rollout undo deployment.v1.apps/nginx-deployment --to-revision=2
     kubectl get pods
     # 如果原来的 ErrorImagePull 的 pod 一直失败，可以 kuctl delete pod <pod-name> 删除掉
-    
+
     kubectl scale deployment.v1.apps/nginx-deployment --replicas=10
     kubectl get pods
     ```
@@ -853,19 +853,19 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
     ```console
     # 建好 services 后，可以看 iptables
     $ iptables -t nat -n -L -v
-    
+
     # 能看到如下字样，进入 service IP 的请求按比例分给各个 pod
     Chain KUBE-SVC-C5I534CP62HG2LN3 (2 references)
     pkts bytes target     prot opt in     out     source               destination
         0     0 KUBE-SEP-FBKE4RDEE4U4O7NI  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* default/hello-python-service */ statistic mode random probability 0.50000000000
         0     0 KUBE-SEP-ZIK7TOCY5OVWTBMA  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* default/hello-python-service */
-    
+
     kubectl get pods -o wide
     kubectl run curl --image=radial/busyboxplus:curl -i --tty
-    
+
     nslookup hello-python-service
     curl http://hello-python-service.default.svc.cluster.local:6000
-    
+
     # 在不同的 namespaces 或者宿主机节点上，需要 FQDN 长名
     nslookup hello-python-service.default.svc.cluster.local 10.96.0.10
     ```
@@ -925,7 +925,7 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
     ```bash
     kubectl apply -f test-statefulset.yaml
     kubectl get pods
-    
+
     # headless 服务，没有 service IP
     kubectl run curl --image=radial/busyboxplus:curl -i --tty
     nslookup nginx
@@ -938,18 +938,18 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
     ```console
     # Ubuntu 环境上用 apt-get 安装
     root@ckalab001:~# apt install etcd-client
-    
+
     # 其它环境直接 https://github.com/etcd-io/etcd/releases 下载二进制文件
-    
+
     root@ckalab001:~# ps -ef | grep api | grep -i etcd
     root       24761   24743  3 10:17 ?        00:06:53 kube-apiserver --advertise-address=172.31.43.206 --allow-privileged=true --authorization-mode=Node,RBAC --client-ca-file=/etc/kubernetes/pki/ca.crt --enable-admission-plugins=NodeRestriction --enable-bootstrap-token-auth=true --etcd-cafile=/etc/kubernetes/pki/etcd/ca.crt --etcd-certfile=/etc/kubernetes/pki/apiserver-etcd-client.crt --etcd-keyfile=/etc/kubernetes/pki/apiserver-etcd-client.key --etcd-servers=https://127.0.0.1:2379 --insecure-port=0 --kubelet-client-certificate=/etc/kubernetes/pki/apiserver-kubelet-client.crt --kubelet-client-key=/etc/kubernetes/pki/apiserver-kubelet-client.key --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname --proxy-client-cert-file=/etc/kubernetes/pki/front-proxy-client.crt --proxy-client-key-file=/etc/kubernetes/pki/front-proxy-client.key --requestheader-allowed-names=front-proxy-client --requestheader-client-ca-file=/etc/kubernetes/pki/front-proxy-ca.crt --requestheader-extra-headers-prefix=X-Remote-Extra- --requestheader-group-headers=X-Remote-Group --requestheader-username-headers=X-Remote-User --secure-port=6443 --service-account-issuer=https://kubernetes.default.svc.cluster.local --service-account-key-file=/etc/kubernetes/pki/sa.pub --service-account-signing-key-file=/etc/kubernetes/pki/sa.key --service-cluster-ip-range=10.96.0.0/12 --tls-cert-file=/etc/kubernetes/pki/apiserver.crt --tls-private-key-file=/etc/kubernetes/pki/apiserver.key
-    
+
     # 设置环境变量，ETCDCTL_API=3
     root@ckalab001:~# export ETCDCTL_API=3
-    
+
     root@ckalab001:~# etcdctl --cert="/etc/kubernetes/pki/apiserver-etcd-client.crt" --key="/etc/kubernetes/pki/apiserver-etcd-client.key" --cacert="/etc/kubernetes/pki/etcd/ca.crt" --endpoints=https://127.0.0.1:2379 put /firstkey trystack
     OK
-    
+
     root@ckalab001:~# etcdctl --cert="/etc/kubernetes/pki/apiserver-etcd-client.crt" --key="/etc/kubernetes/pki/apiserver-etcd-client.key" --cacert="/etc/kubernetes/pki/etcd/ca.crt" --endpoints=https://127.0.0.1:2379 get /firstkey
     /firstkey
     trystack
@@ -958,10 +958,10 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
     ```bash
     # list 所有的 key
     etcdctl --cert="/etc/kubernetes/pki/apiserver-etcd-client.crt" --key="/etc/kubernetes/pki/apiserver-etcd-client.key" --cacert="/etc/kubernetes/pki/etcd/ca.crt" --endpoints=https://127.0.0.1:2379 get --prefix --keys-only ""
-    
+
     # list 所有的 key & value
     etcdctl --cert="/etc/kubernetes/pki/apiserver-etcd-client.crt" --key="/etc/kubernetes/pki/apiserver-etcd-client.key" --cacert="/etc/kubernetes/pki/etcd/ca.crt" --endpoints=https://127.0.0.1:2379 get --prefix ""
-    
+
     # backup & restore
     etcdctl --cert="/etc/kubernetes/pki/apiserver-etcd-client.crt" --key="/etc/kubernetes/pki/apiserver-etcd-client.key" --cacert="/etc/kubernetes/pki/etcd/ca.crt" --endpoints=https://127.0.0.1:2379 snapshot save a.txt
     # etcdctl --cert="/etc/kubernetes/pki/apiserver-etcd-client.crt" --key="/etc/kubernetes/pki/apiserver-etcd-client.key" --cacert="/etc/kubernetes/pki/etcd/ca.crt" --endpoints=https://127.0.0.1:2379 snapshot restore a.txt
@@ -975,14 +975,14 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
     ```console
     root@CKA003:~# ps -ef | grep kubelet
     root     10572     1  2 09:37 ?        00:07:41 /usr/bin/kubelet --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf --config=/var/lib/kubelet/config.yaml --cgroup-driver=cgroupfs --network-plugin=cni --pod-infra-container-image=k8s.gcr.io/pause:3.2 --resolv-conf=/run/systemd/resolve/resolv.conf
-    
+
     root@CKA003:~# grep mani /var/lib/kubelet/config.yaml
     staticPodPath: /etc/kubernetes/manifests
-    
+
     root@CKA003:~# cd /etc/kubernetes/manifests
     root@CKA003:/etc/kubernetes/manifests# ls
     etcd.yaml  kube-apiserver.yaml  kube-controller-manager.yaml  kube-scheduler.yaml  static-web.yaml
-    
+
     root@CKA003:/etc/kubernetes/manifests# cat static-web.yaml
     apiVersion: v1
     kind: Pod
@@ -998,14 +998,14 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
           - name: web
             containerPort: 80
             protocol: TCP
-    
+
     root@CKA003:/etc/kubernetes/manifests# kubectl get pods
     NAME                READY   STATUS    RESTARTS   AGE
     dnsutils            1/1     Running   4          4h17m
     static-web          1/1     Running   0          98m
     static-web-cka003   1/1     Running   0          98m
     web-0               0/1     Pending   0          116m
-    
+
     root@CKA003:/etc/kubernetes/manifests# kubectl delete pod static-web
     pod "static-web" deleted
     root@CKA003:/etc/kubernetes/manifests# kubectl get pods
@@ -1013,7 +1013,7 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
     dnsutils            1/1     Running   4          4h17m
     static-web-cka003   1/1     Running   0          99m
     web-0               0/1     Pending   0          117m
-    
+
     root@CKA003:/etc/kubernetes/manifests# kubectl delete pod static-web-cka003
     pod "static-web-cka003" deleted
     root@CKA003:/etc/kubernetes/manifests# kubectl get pods
@@ -1021,7 +1021,7 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
     dnsutils            1/1     Running   4          4h18m
     static-web-cka003   1/1     Running   0          10s
     web-0               0/1     Pending   0          117m
-    
+
     root@CKA003:/etc/kubernetes/manifests# ls
     etcd.yaml  kube-apiserver.yaml  kube-controller-manager.yaml  kube-scheduler.yaml  static-web.yaml
     root@CKA003:/etc/kubernetes/manifests# rm -rf static-web.yaml
@@ -1246,10 +1246,10 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
     ```console
     root@CKA003:~# kubectl create serviceaccount sa-cluster-admin --namespace=kube-system
     serviceaccount/sa-cluster-admin created
-    
+
     root@CKA003:~# kubectl get secret --all-namespaces | grep sa-cluster-admin
     kube-system             sa-cluster-admin-token-k9xfp                     kubernetes.io/service-account-token   3      53s
-    
+
     root@CKA003:~# kubectl describe secret -n kube-system sa-cluster-admin-token-k9xfp
     Name:         sa-cluster-admin-token-k9xfp
     Namespace:    kube-system
@@ -1262,9 +1262,9 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
     ca.crt:     1025 bytes
     namespace:  11 bytes
     token:      eyJhbGciOiJSUzI1NiIsImtpZCI6InRBUkJ6bkxQMHNHSi1MejR4T2ZtYk43b1Y0S2M3MXZOMTMtQmtOaHpsbXMifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJrdWJlLXN5c3RlbSIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VjcmV0Lm5hbWUiOiJzYS1jbHVzdGVyLWFkbWluLXRva2VuLWs5eGZwIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQubmFtZSI6InNhLWNsdXN0ZXItYWRtaW4iLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC51aWQiOiIxMWRlYjhkZC01NjI1LTRkNzUtYWQ0NC0zYmVlZjFiY2Q5OTUiLCJzdWIiOiJzeXN0ZW06c2VydmljZWFjY291bnQ6a3ViZS1zeXN0ZW06c2EtY2x1c3Rlci1hZG1pbiJ9.Dr1aOVdwAXO_BPXlJAohKBjoxRhMmTWyfVy2AP3-D0V-2jzdzWKoEP_17wnAS3FP-hxuOtTr3XWN0zM4oAI8-CeXtP7AdB0sqZ9P7Wnp2s88DqDUNK0JUuYGke3js9xd44Bt5vhtRovNEMYEnLXj_NLOunW33f4g46ep4NvQpNGTd48BcgzFhiiWuXLKKGGoOZGrWlkXqyofE4li83B3D08oW-hjP4S0JBBXqmzpa0_PYi-hkPbirmn9J7F-oQd0So05uAzZROHSd7n8INlYwbJx2zRF8PKipscxu47ddEumr6R9b8qDDVolP5iawqFPeDTt9lOY7OdgEaVcL651UQ
-    
+
     root@CKA003:~# vi sa-cluster-admin-rolebinding.yaml
-    
+
     root@CKA003:~# cat sa-cluster-admin-rolebinding.yaml
     apiVersion: rbac.authorization.k8s.io/v1
     # This cluster role binding allows anyone in the "manager" group to read secrets in any namespace.
@@ -1279,10 +1279,10 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
       kind: ClusterRole
       name: cluster-admin
       apiGroup: rbac.authorization.k8s.io
-    
+
     root@CKA003:~# kubectl create -f sa-cluster-admin-rolebinding.yaml
     clusterrolebinding.rbac.authorization.k8s.io/read-secrets-global created
-    
+
     root@CKA003:~# kubectl apply -f nginx-deployment.yaml --token=eyJhbGciOiJSUzI1NiIsImtpZCI6InRBUkJ6bkxQMHNHSi1MejR4T2ZtYk43b1Y0S2M3MXZOMTMtQmtOaHpsbXMifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJrdWJlLXN5c3RlbSIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VjcmV0Lm5hbWUiOiJzYS1jbHVzdGVyLWFkbWluLXRva2VuLWs5eGZwIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQubmFtZSI6InNhLWNsdXN0ZXItYWRtaW4iLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC51aWQiOiIxMWRlYjhkZC01NjI1LTRkNzUtYWQ0NC0zYmVlZjFiY2Q5OTUiLCJzdWIiOiJzeXN0ZW06c2VydmljZWFjY291bnQ6a3ViZS1zeXN0ZW06c2EtY2x1c3Rlci1hZG1pbiJ9.Dr1aOVdwAXO_BPXlJAohKBjoxRhMmTWyfVy2AP3-D0V-2jzdzWKoEP_17wnAS3FP-hxuOtTr3XWN0zM4oAI8-CeXtP7AdB0sqZ9P7Wnp2s88DqDUNK0JUuYGke3js9xd44Bt5vhtRovNEMYEnLXj_NLOunW33f4g46ep4NvQpNGTd48BcgzFhiiWuXLKKGGoOZGrWlkXqyofE4li83B3D08oW-hjP4S0JBBXqmzpa0_PYi-hkPbirmn9J7F-oQd0So05uAzZROHSd7n8INlYwbJx2zRF8PKipscxu47ddEumr6R9b8qDDVolP5iawqFPeDTt9lOY7OdgEaVcL651UQ
     deployment.apps/nginx-deployment created
     ```
@@ -1500,10 +1500,10 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
 
     ```console
     root@ckamaster003:~# kubectl exec -it configmap-demo-pod /bin/sh
-    
+
     # env | grep TEST
     TEST1=world
-    
+
     # ls /config
     example.property.1  example.property.2	example.property.file
     ```
@@ -1597,14 +1597,14 @@ my-nginx.default.svc.cluster.local. 30 IN A	10.98.172.84
     ```
 
     新版本默认不监听80、443端口，需自行进行配置
-    
+
     ```bash
     # 查看端口是否被占用
     lsof -i :xxx
     # 修改 mandatory.yaml 文件，在 spec.template.spec 处添加如下语句可监听本地端口
     hostNetwork: true
     # 一般443会被 calico 占用，80端口不会被占用，可将文件下方 ports 处关于443的注释掉, controller 不会再监听443端口
-    
+
     # 安装 ingress controller
     kubectl apply -f mandatory.yaml
     # 查看
@@ -1767,7 +1767,7 @@ my-nginx.default.svc.cluster.local. 30 IN A	10.98.172.84
       #image: k8s.gcr.io/ingress-nginx/controller:v0.47.  0@sha256:52f0058bed0a17ab0fb35628ba97e8d52b5d32299fbc03cc0f6c7b9ff036b61a
       image: willdockerhub/ingress-nginx-controller:v0.47.0
       ```
-      
+
     - kubectl apply -f xxx `
 
 ## Lesson 08：Advance
@@ -1853,7 +1853,7 @@ my-nginx.default.svc.cluster.local. 30 IN A	10.98.172.84
         default via 45.77.182.1 dev ens3 proto dhcp src 45.77.183.254 metric 100
         192.168.208.1 dev cali65a032ad3e5 scope link
         192.168.209.192/26 via 192.168.209.192 dev vxlan.calico onlink
-        
+
         root@ckalab001:~# ip a
         2: ens3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP group default qlen 1000
             link/ether 56:00:02:d8:35:5a brd ff:ff:ff:ff:ff:ff
@@ -1880,7 +1880,7 @@ my-nginx.default.svc.cluster.local. 30 IN A	10.98.172.84
         default via 172.31.47.253 dev eth0 proto dhcp src 172.31.43.145 metric 100
         192.168.208.1 dev cali77bffbebec8 scope link
         192.168.209.192/26 via 172.31.43.146 dev eth0 proto 80 onlink
-        
+
         root@ckalab001:~# ip a
         2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP group default qlen 1000
             link/ether 00:16:3e:08:2e:5f brd ff:ff:ff:ff:ff:ff
@@ -2100,13 +2100,13 @@ my-nginx.default.svc.cluster.local. 30 IN A	10.98.172.84
   kubectl api-versions
   # 查看 node 监控指标
   kubectl top nodes
-  NAME                      CPU(cores)   CPU%   MEMORY(bytes)   MEMORY%   
+  NAME                      CPU(cores)   CPU%   MEMORY(bytes)   MEMORY%
   izuf6g226c4titrnrwds2tz   129m         6%     1500Mi          42%
   # 查看 pod 监控指标
   kubectl top pods
-  NAME                                 CPU(cores)   MEMORY(bytes)   
-  myapp-backend-pod-58b7f5cf77-krmzh   0m           1Mi             
-  myapp-backend-pod-58b7f5cf77-vqlgl   0m           1Mi             
+  NAME                                 CPU(cores)   MEMORY(bytes)
+  myapp-backend-pod-58b7f5cf77-krmzh   0m           1Mi
+  myapp-backend-pod-58b7f5cf77-vqlgl   0m           1Mi
   myapp-backend-pod-58b7f5cf77-z7j7z   0m           1Mi
   ```
 
@@ -2117,9 +2117,9 @@ my-nginx.default.svc.cluster.local. 30 IN A	10.98.172.84
     cp /etc/kubernetes/pki/ca.crt ca.pem
     cp /etc/kubernetes/pki/ca.key ca-key.pem
     ```
-    
+
     创建文件 kubelet-csr.json
-    
+
     ```json
     {
       "CN": "kubernetes",
@@ -2263,7 +2263,7 @@ my-nginx.default.svc.cluster.local. 30 IN A	10.98.172.84
   kubectl get hpa
   kubectl get deployment php-apache
   ```
-  
+
 ### 8.3 什么是 Federation？
 
 - Kubenetes Federation vs ManageIQ
