@@ -692,7 +692,7 @@ NAME         STATUS   ROLES                  AGE     VERSION
 caasnode-1   Ready    control-plane,master   2m58s   v1.21.4+k3s1
 caasnode-2   Ready    control-plane,master   78s     v1.21.4+k3s1
 caasnode-3   Ready    control-plane,master   82s     v1.21.4+k3s1
-````
+```
 
 #### 2.5.5 加入 agent
 
