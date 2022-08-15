@@ -189,14 +189,17 @@
     # 可以看一下本地镜像列表
     $ docker images
 
-    $ docker rm testFlask
+    # 删除已存在的 testFlask 容器
+    $ docker rm testFlask 2>/dev/null
+
+    # 以 99cloud/friendlyhello:3.9.6 镜像启动 testFlask 容器，容器内的 80 端口映射到宿主机的 4000 端口
     $ docker run --rm -p 4000:80 --name=testFlask 99cloud/friendlyhello:3.9.6
      * Running on http://0.0.0.0:80/ (Press CTRL+C to quit)
 
     # 此时可以从浏览器访问 http://<ip>:4000
 
     # 如果要跑在后台，可以加 -d 参数
-    $ docker run -d --rm -p 4000:80 --name=testNew 99cloud/friendlyhello:3.9.6
+    $ docker run -d --rm -p 4000:80 --name=testFlask 99cloud/friendlyhello:3.9.6
 
     # 进入容器调试
     $ docker exec -it testFlask /bin/bash
