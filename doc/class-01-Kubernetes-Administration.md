@@ -230,7 +230,8 @@
     $ docker rm testFlask
 
     # 删除镜像
-    $ docker rmi maodouzi/get-started:part2
+    $ docker rmi friendlyhello
+    $ docker rmi 99cloud/friendlyhello:3.9.6
     ```
 
 - [Docker 官方入门参考资料](https://docs.docker.com/get-started/)
