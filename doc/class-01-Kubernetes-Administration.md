@@ -914,6 +914,36 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
 ### 3.7 DeamonSet & StatefulSet
 
 - [DeamonSet](https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/)
+
+    ```yaml
+    apiVersion: apps/v1
+    kind: DaemonSet
+    metadata:
+      name: fluentd-elasticsearch
+      namespace: kube-system
+      labels:
+        k8s-app: fluentd-logging
+    spec:
+      selector:
+        matchLabels:
+          name: fluentd-elasticsearch
+      template:
+        metadata:
+          labels:
+            name: fluentd-elasticsearch
+        spec:
+          containers:
+          - name: fluentd-elasticsearch
+            image: quay.io/fluentd_elasticsearch/fluentd:v2.5.2
+            resources:
+              limits:
+                memory: 200Mi
+              requests:
+                cpu: 100m
+                memory: 200Mi
+          terminationGracePeriodSeconds: 30
+    ```
+
 - [StatefulSet](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/)
 
     ```yaml
