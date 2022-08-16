@@ -640,7 +640,7 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
 
 - 启动一个 Pod
 
-    ```
+    ```bash
     # 起 nginx pod
     kubectl apply -f nginx.yaml
 
