@@ -533,7 +533,8 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
     # systemctl restart docker
 
     # 10. 下载 kubernetes
-    export k8s_version="1.20.1"
+    # export k8s_version="1.20.1"
+    export k8s_version="1.23.3"
 
     yum install -y kubelet-${k8s_version}-0 kubeadm-${k8s_version}-0 kubectl-${k8s_version}-0  --disableexcludes=kubernetes
 
