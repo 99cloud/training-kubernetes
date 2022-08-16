@@ -861,6 +861,28 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
 - 基本概念：Service
 - 实验：Service
 
+    创建文件 service.yaml，内容如下：
+
+    ```yaml
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: hello-python-service
+    spec:
+      type: NodePort
+      selector:
+        app: nginx
+      ports:
+      - protocol: "TCP"
+        port: 6000
+        targetPort: 80
+        nodePort: 31000
+    ```
+
+    ```bash
+    kubectl apply -f service.yaml
+    ```
+
     ```console
     # 建好 services 后，可以看 iptables
     $ iptables -t nat -n -L -v
