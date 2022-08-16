@@ -641,7 +641,7 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
 - 启动一个 Pod
 
     ```
-     起 nginx pod
+    # 起 nginx pod
     kubectl apply -f nginx.yaml
 
     # 可以看到 pod 无法被调度，进行诊断
@@ -994,7 +994,7 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
     nslookup nginx
 
     # 多执行几次 nslookup nginx 命令，可以看到每次返回的顺序都不一样
-    # headless 服务就是通过 dns 返回顺序变化来实习负载均衡
+    # headless 服务就是通过 dns 返回顺序变化来实现负载均衡
     ```
 
 ### 3.8 实验：ETCD 操作
