@@ -1358,6 +1358,7 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
 ### 5.1 怎么部署多节点的 k8s 集群？
 
 - 参考资料
+    - 官方文档：[如何利用 kubeadm 创建高可用集群？](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/high-availability/)
     - [怎么部署一个 Multi-Node 的 K8S 环境？](deploy-k8s-manual.md)
     - [怎么部署一个 Dual Stack HA 的 K8S 环境？](basic.md)
     - [基于 AWS 部署高可用 Kubernetes 集群](deploy-aws-ha-k8s-cluster.md)
@@ -1467,6 +1468,24 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
     ```
 
 - 参考：[Assigning Pods to Nodes](https://kubernetes.io/docs/tasks/configure-pod-container/assign-pods-nodes/)
+- 实验：
+  1. 如何根据 label 选择 node 启动 pod？（参考上方示例）
+  1. 如何根据 node 名称选择 node 启动 pod？
+
+      ```yaml
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: nginx
+      spec:
+        nodeName: foo-node # schedule pod to specific node
+        containers:
+        - name: nginx
+          image: nginx
+          imagePullPolicy: IfNotPresent
+      ```
+
+Node Selector 实际是节点亲和，用于将 pod 部署到特定节点
 
 ### 5.3 什么是 Taints & Toleration？
 
@@ -1507,9 +1526,17 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
         imagePullPolicy: IfNotPresent
     ```
 
+Taint 实际上是节点反亲和，不允许 pod 部署到带 taint 的节点。
+
+Toleration 和 Taint 结合，可以让特定节点只允许运行特定 pod，专节点专用。
+
 ### 5.4 什么是 Node Affinity？
 
 - 参考：[Assign Pods to Nodes using Node Affinity](https://kubernetes.io/docs/tasks/configure-pod-container/assign-pods-nodes-using-node-affinity/)
+
+思考：
+
+1. Node Affinity 和 Node Selector 的关系？
 
 ### 5.5 什么是 Pod Affinity？
 
@@ -1576,6 +1603,8 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
 
 - [Secret](https://kubernetes.io/docs/concepts/configuration/secret/)
 
+    Secret 和 ConfigMap 都用于配置，但 Secret 会对内容编码或加密
+
 ### 6.2 什么是 PV / PVC？
 
 - [Types of Volumes](https://kubernetes.io/docs/concepts/storage/volumes/#types-of-volumes)
@@ -1612,9 +1641,48 @@ kubectl taint node ckaslave001 key=value:NoExecute
 
 # 创建 Deployment
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/website/master/content/en/examples/service/networking/run-my-nginx.yaml
+```
 
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-nginx
+spec:
+  selector:
+    matchLabels:
+      run: my-nginx
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        run: my-nginx
+    spec:
+      containers:
+      - name: my-nginx
+        image: nginx
+        ports:
+        - containerPort: 80
+```
+
+```bash
 # 创建 Service
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/website/master/content/en/examples/service/networking/nginx-svc.yaml
+```
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-nginx
+  labels:
+    run: my-nginx
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+  selector:
+    run: my-nginx
 ```
 
 ```console
