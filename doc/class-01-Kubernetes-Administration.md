@@ -1222,13 +1222,13 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
     ........................................................................................+++++
     e is 65537 (0x010001)
 
-    root@CKA003:~# openssl req -new -key superuser.key -out superuser.csr -subj "/CN=superuser /O=system:masters"
+    root@CKA003:~# openssl req -new -key superuser.key -out superuser.csr -subj "/CN=superuser/O=system:masters"
     Can't load /root/.rnd into RNG
     139767359660480:error:2406F079:random number generator:RAND_load_file:Cannot open file:../crypto/rand/randfile.c:88:Filename=/root/.rnd
 
     root@CKA003:~# openssl x509 -req -in superuser.csr -CA /etc/kubernetes/pki/ca.crt -CAkey /etc/kubernetes/pki/ca.key -CAcreateserial -out superuser.crt -days 60
     Signature ok
-    subject=CN = "superuser ", O = system:masters
+    subject=CN = "superuser", O = system:masters
     Getting CA Private Key
     ```
 
