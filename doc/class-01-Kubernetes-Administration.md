@@ -922,14 +922,14 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
     metadata:
       name: nginx
       labels:
-        app: nginx
+        app: statefulset
     spec:
       ports:
       - port: 80
         name: web
       clusterIP: None
       selector:
-        app: nginx
+        app: statefulset
     ---
     apiVersion: apps/v1
     kind: StatefulSet
@@ -938,13 +938,13 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
     spec:
       selector:
         matchLabels:
-          app: nginx # has to match .spec.template.metadata.labels
+          app: statefulset # has to match .spec.template.metadata.labels
       serviceName: "nginx"
       replicas: 3 # by default is 1
       template:
         metadata:
           labels:
-            app: nginx # has to match .spec.selector.matchLabels
+            app: statefulset # has to match .spec.selector.matchLabels
         spec:
           terminationGracePeriodSeconds: 10
           containers:
@@ -962,6 +962,9 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
     # headless 服务，没有 service IP
     kubectl run curl --image=radial/busyboxplus:curl -i --tty
     nslookup nginx
+
+    # 多执行几次 nslookup nginx 命令，可以看到每次返回的顺序都不一样
+    # headless 服务就是通过 dns 返回顺序变化来实习负载均衡
     ```
 
 ### 3.8 实验：ETCD 操作
