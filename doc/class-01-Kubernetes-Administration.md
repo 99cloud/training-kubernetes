@@ -1611,6 +1611,79 @@ Toleration 和 Taint 结合，可以让特定节点只允许运行特定 pod，�
 
     Secret 和 ConfigMap 都用于配置，但 Secret 会对内容编码或加密
 
+    ```bash
+    # 创建两个 secret
+    kubectl create secret generic prod-db-secret --from-literal=username=produser --from-literal=password=Y4nys7f11
+    kubectl create secret generic test-db-secret --from-literal=username=testuser --from-literal=password=iluvtests
+
+    # 创建两个 pod，分别将上述的 secret 映射到 pod 中，作为配置文件
+    cat <<EOF > pod.yaml
+    apiVersion: v1
+    kind: List
+    items:
+    - kind: Pod
+      apiVersion: v1
+      metadata:
+        name: prod-db-client-pod
+        labels:
+          name: prod-db-client
+      spec:
+        volumes:
+        - name: secret-volume
+          secret:
+            secretName: prod-db-secret
+        containers:
+        - name: db-client-container
+          image: nginx
+          volumeMounts:
+          - name: secret-volume
+            readOnly: true
+            mountPath: "/etc/secret-volume"
+    - kind: Pod
+      apiVersion: v1
+      metadata:
+        name: test-db-client-pod
+        labels:
+          name: test-db-client
+      spec:
+        volumes:
+        - name: secret-volume
+          secret:
+            secretName: test-db-secret
+        containers:
+        - name: db-client-container
+          image: nginx
+          volumeMounts:
+          - name: secret-volume
+            readOnly: true
+            mountPath: "/etc/secret-volume"
+    EOF
+
+    cat <<EOF >> kustomization.yaml
+    resources:
+    - pod.yaml
+    EOF
+
+    kubectl apply -k .
+    ```
+
+    然后登录到容器中，可以看到 secret 被映射成文件
+
+    ```console
+    [root@k8slab001 ~]# kubectl exec -it prod-db-client-pod -- sh
+
+    # cd /etc/secret-volume
+    # ls
+    password  username
+    # cat password
+    Y4nys7f11
+
+    # cat username
+    produser
+
+    # exit
+    ```
+
 ### 6.2 什么是 PV / PVC？
 
 - [Types of Volumes](https://kubernetes.io/docs/concepts/storage/volumes/#types-of-volumes)
