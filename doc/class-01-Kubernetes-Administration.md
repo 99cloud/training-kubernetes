@@ -1684,6 +1684,8 @@ Toleration 和 Taint 结合，可以让特定节点只允许运行特定 pod，�
     # exit
     ```
 
+  参考：<https://kubernetes.io/zh-cn/docs/concepts/configuration/secret/#use-case-as-container-environment-variables>，将 secret 映射成 pod 中的环境变量
+
 ### 6.2 什么是 PV / PVC？
 
 - [Types of Volumes](https://kubernetes.io/docs/concepts/storage/volumes/#types-of-volumes)
