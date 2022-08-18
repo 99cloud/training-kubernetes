@@ -1816,12 +1816,12 @@ my-nginx.default.svc.cluster.local. 30 IN A	10.98.172.84
     ```bash
     # 查看端口是否被占用
     lsof -i :xxx
-    # 修改 mandatory.yaml 文件，在 spec.template.spec 处添加如下语句可监听本地端口
+    # 修改 deploy.yaml 文件，在 spec.template.spec 处添加如下语句可监听本地端口
     hostNetwork: true
     # 一般443会被 calico 占用，80端口不会被占用，可将文件下方 ports 处关于443的注释掉, controller 不会再监听443端口
 
     # 安装 ingress controller
-    kubectl apply -f mandatory.yaml
+    kubectl apply -f deploy.yaml
     # 查看
     kubectl get pods -n ingress-nginx
     kubectl get svc -n ingress-nginx
