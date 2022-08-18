@@ -1807,8 +1807,8 @@ my-nginx.default.svc.cluster.local. 30 IN A	10.98.172.84
 
     ```bash
     # 下载 ingress controller 的 yaml 文件
-    # wget https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.30.0/deploy/static/mandatory.yaml
-    wget https://gitee.com/dev-99cloud/training-kubernetes/raw/master/src/amd-lab/mandatory.yaml
+    # wget https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.3.0/deploy/static/provider/cloud/deploy.yaml
+    wget https://gitee.com/dev-99cloud/training-kubernetes/raw/master/src/amd-lab/deploy.yaml
     ```
 
     新版本默认不监听80、443端口，需自行进行配置
@@ -1824,6 +1824,13 @@ my-nginx.default.svc.cluster.local. 30 IN A	10.98.172.84
     kubectl apply -f mandatory.yaml
     # 查看
     kubectl get pods -n ingress-nginx
+    kubectl get svc -n ingress-nginx
+    # 可以看到 ingress-nginx-controller 的 EXTERNAL-IP 状态为 pending，需要我们手动添加 externalIPs
+
+    # 在 spec 下添加，10.0.0.118 为节点内网 ip :
+    #   externalIPs:
+    #   - 10.0.0.118 
+    kubectl edit svc ingress-nginx-controller -n ingress-nginx
     ```
 - [Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/)
 
