@@ -2494,7 +2494,7 @@ my-nginx.default.svc.cluster.local. 30 IN A	10.98.172.84
 
 - [StatefulSet](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/)
 - [StatefulSet Examples](https://kubernetes.io/docs/tutorials/stateful-application/basic-stateful-set/)
-- CRD & Operator
+- CRD & Operator，比如 [mariadb-operator](https://github.com/mmontes11/mariadb-operator)
 
 ### 8.5 其它参考
 
