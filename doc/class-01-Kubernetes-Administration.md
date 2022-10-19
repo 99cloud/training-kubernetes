@@ -1811,14 +1811,23 @@ my-nginx.default.svc.cluster.local. 30 IN A	10.98.172.84
     wget https://gitee.com/dev-99cloud/training-kubernetes/raw/master/src/amd-lab/deploy.yaml
     ```
 
-    新版本默认不监听80、443端口，需自行进行配置
+    新版本默认不监听 80、443 端口，需自行进行配置
 
     ```bash
     # 查看端口是否被占用
-    lsof -i :xxx
-    # 修改 deploy.yaml 文件，在 spec.template.spec 处添加如下语句可监听本地端口
+    # lsof -i :xxx
+    netstat -putln | grep 80
+    netstat -putln | grep 443
+    # 修改 deploy.yaml 文件，在 Deployment 的 spec.template.spec 处添加如下语句可监听本地端口
     hostNetwork: true
-    # 一般443会被 calico 占用，80端口不会被占用，可将文件下方 ports 处关于443的注释掉, controller 不会再监听443端口
+
+    # spec:
+    #  hostNetwork: true
+    #  containers:
+    #  - name: nginx
+    #    image: nginx:1.7.9
+
+    # 一般 443 会被 calico 占用，80 端口不会被占用，可将文件下方 ports 处关于 443 的注释掉, controller 不会再监听 443 端口
 
     # 安装 ingress controller
     kubectl apply -f deploy.yaml
@@ -1827,9 +1836,17 @@ my-nginx.default.svc.cluster.local. 30 IN A	10.98.172.84
     kubectl get svc -n ingress-nginx
     # 可以看到 ingress-nginx-controller 的 EXTERNAL-IP 状态为 pending，需要我们手动添加 externalIPs
 
-    # 在 spec 下添加，10.0.0.118 为节点内网 ip :
+    # 在 ingress-nginx-controller service 的 spec 下添加，10.0.0.118 为节点内网 ip :
     #   externalIPs:
     #   - 10.0.0.118 
+
+    # spec:
+    #  externalIPs:
+    #  - 192.168.132.253
+    #  ports:
+    #   - name: highport
+    #     nodePort: 31903
+
     kubectl edit svc ingress-nginx-controller -n ingress-nginx
     ```
 - [Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/)
