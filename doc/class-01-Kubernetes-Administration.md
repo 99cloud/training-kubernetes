@@ -1827,7 +1827,7 @@ my-nginx.default.svc.cluster.local. 30 IN A	10.98.172.84
     #  - name: nginx
     #    image: nginx:1.7.9
 
-    # 一般 443 会被 calico 占用，80 端口不会被占用，可将文件下方 ports 处关于 443 的注释掉, controller 不会再监听 443 端口
+    # 一般 443 会被 calico 占用，80 端口不会被占用，可以注释掉文件中名为 ingress-nginx-controller 的 deployment 和 service 的 ports 处关于 443 的内容, controller 将不会再监听 443 端口
 
     # 安装 ingress controller
     kubectl apply -f deploy.yaml
