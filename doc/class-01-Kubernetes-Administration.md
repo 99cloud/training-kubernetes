@@ -124,45 +124,37 @@
 
 ### 1.6 实验：Docker Quick Start
 
-- 在 Ubuntu 18.04 / Ubuntu 20.04 / CentOS 7 上配置 Docker
+#### 1.6.1 centos 7
+
+- 在 centos 7
 
     ```bash
-    # 更新依赖仓库
-    apt-get update -y || yum update -y
+    # 移除旧的 docker 版本
+    $ yum remove docker \
+                  docker-client \
+                  docker-client-latest \
+                  docker-common \
+                  docker-latest \
+                  docker-latest-logrotate \
+                  docker-logrotate \
+                  docker-engine
 
-    # 安装 Docker
-    apt-get install docker.io -y || yum install docker -y
-    systemctl enable docker
-    systemctl start docker
+    $ yum install -y yum-utils
 
-    # 检查 docker 服务状态
-    systemctl status docker
+    $ yum-config-manager \
+    --add-repo \
+    https://download.docker.com/linux/centos/docker-ce.repo
 
-    # ubuntu 中需要把 docker 的 cgroup driver 改成 systemd
-    # !! centos 默认就是 systemd，不要修改这个文件，改了 docker 会起不来，保持 {} 就好
-    vi /etc/docker/daemon.json
+    $ yum install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
 
-    {
-      "exec-opts": ["native.cgroupdriver=systemd"]
-    }
-
-    systemctl restart docker
+    # 设置为开机启动并且立刻启动服务
+    $ systemctl enable docker --now
 
     # run hello-world
-    docker run hello-world
+    $ docker run hello-world
     ```
 
-  >Note：2021 年 7 月之后，ubuntu 环境 kubeadmin 默认都是 1.22+ 版本，因此需要将 docker 的 cgroup driver 改成 systemd（原来是 cgroup）。如果不改，后续 kubeadm init 时，会报错：`[kubelet-check] The HTTP call equal to 'curl -sSL http://localhost:10248/healthz' failed with error: Get "http://localhost:10248/healthz": dial tcp [::1]:10248: connect: connection refused.`
-  >
-  >检查 journalctl -x -u kubelet，可以看到：`Aug 07 15:10:45 ckalab2 kubelet[11394]: E0807 15:10:45.179485   11394 server.go:294] "Failed to run kubelet" err="failed to run Kubelet: misconfiguration: kubelet cgroup driver: \"systemd\" is different from docker cgroup driver: \"cgroupfs\""`
-  >
-  >看官方文档：<https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/configure-cgroup-driver/>：`In v1.22, if the user is not setting the cgroupDriver field under KubeletConfiguration, kubeadm will default it to systemd.`
-  >
-  > 所以我们需要把 docker 的 cgroup driver 改成 systemd
-  >
-  > 修改步骤参考：<https://stackoverflow.com/questions/43794169/docker-change-cgroup-driver-to-systemd>
-  >
-  > 修改完成后，检查一下 docker cgroup，确保 docker cgroup 是 systemd 了：`sudo docker info | grep -i cgroup`
+#### 1.6.1.1 在 centos7 上构建镜像
 
 - 如何创建一个镜像？如何启动和调试容器？[Github](https://github.com/99cloud/lab-openstack/tree/master/src/docker-quickstart) 或 [Gitee](https://gitee.com/dev-99cloud/lab-openstack/tree/master/src/docker-quickstart)
 
@@ -180,7 +172,7 @@
     $ pip3 install -i https://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt
 
     $ python3 app.py
-     * Running on http://0.0.0.0:80/ (Press CTRL+C to quit)
+    * Running on http://0.0.0.0:80/ (Press CTRL+C to quit)
 
     # 此时可以从浏览器访问 http://<ip>/
 
@@ -233,6 +225,48 @@
     $ docker rmi friendlyhello
     $ docker rmi 99cloud/friendlyhello:3.9.6
     ```
+
+#### 1.6.2 ubuntu Ubuntu 18.04 / Ubuntu 20.04
+
+- 在 Ubuntu 18.04 / Ubuntu 20.04
+
+    ```bash
+    # 更新依赖仓库
+    apt-get update -y || yum update -y
+
+    # 安装 Docker
+    apt-get install docker.io -y || yum install docker -y
+    systemctl enable docker
+    systemctl start docker
+
+    # 检查 docker 服务状态
+    systemctl status docker
+
+    # ubuntu 中需要把 docker 的 cgroup driver 改成 systemd
+    # !! centos 默认就是 systemd，不要修改这个文件，改了 docker 会起不来，保持 {} 就好
+    vi /etc/docker/daemon.json
+
+    {
+      "exec-opts": ["native.cgroupdriver=systemd"]
+    }
+
+    systemctl restart docker
+
+    # run hello-world
+    docker run hello-world
+    ```
+
+  >Note：2021 年 7 月之后，ubuntu 环境 kubeadmin 默认都是 1.22+ 版本，因此需要将 docker 的 cgroup driver 改成 systemd（原来是 cgroup）。如果不改，后续 kubeadm init 时，会报错：`[kubelet-check] The HTTP call equal to 'curl -sSL http://localhost:10248/healthz' failed with error: Get "http://localhost:10248/healthz": dial tcp [::1]:10248: connect: connection refused.`
+  >
+  >检查 journalctl -x -u kubelet，可以看到：`Aug 07 15:10:45 ckalab2 kubelet[11394]: E0807 15:10:45.179485   11394 server.go:294] "Failed to run kubelet" err="failed to run Kubelet: misconfiguration: kubelet cgroup driver: \"systemd\" is different from docker cgroup driver: \"cgroupfs\""`
+  >
+  >看官方文档：<https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/configure-cgroup-driver/>：`In v1.22, if the user is not setting the cgroupDriver field under KubeletConfiguration, kubeadm will default it to systemd.`
+  >
+  > 所以我们需要把 docker 的 cgroup driver 改成 systemd
+  >
+  > 修改步骤参考：<https://stackoverflow.com/questions/43794169/docker-change-cgroup-driver-to-systemd>
+  >
+  > 修改完成后，检查一下 docker cgroup，确保 docker cgroup 是 systemd 了：`sudo docker info | grep -i cgroup`
 
 - [Docker 官方入门参考资料](https://docs.docker.com/get-started/)
 
@@ -426,138 +460,107 @@
 
 ### 2.7 实验：K8S 的部署
 
-Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
+### 2.7.1 在 centos 7 上部署 k8s
 
-1. [安装 kubeadm](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/)
+```bash
+# 1. 关闭防火墙（在阿里云的 centos-7.9 镜像默认就是关闭的，不用做）
+$ systemctl stop firewalld.service
+$ systemctl disable firewalld.service
 
-    ```bash
-    # iptables 看到 bridged 流量
-    cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
-    net.bridge.bridge-nf-call-ip6tables = 1
-    net.bridge.bridge-nf-call-iptables = 1
-    EOF
-    sudo sysctl --system
+# 2. 关闭 selinx （在阿里云的 centos-7.9 镜像默认就是关闭的，不用做）
+# 将 SELINUX=enforcing 改为 SELINUX=disabled
+$ vi /etc/selinux/config
 
-    # Install kubeadm
-    apt-get update && apt-get install -y apt-transport-https curl
-    curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
-    cat <<EOF | sudo tee /etc/apt/sources.list.d/kubernetes.list
-    deb https://apt.kubernetes.io/ kubernetes-xenial main
-    EOF
-    apt-get update -y && apt-get install -y kubelet kubeadm kubectl
+# 立刻停止 selinux 
+$ setenforce=0
 
-    # 重启 kubelet
-    systemctl daemon-reload
-    systemctl restart kubelet
+# 3. 关闭 swap（在阿里云的 centos-7.9 镜像默认就是关闭的，不用做）
+# 注释掉 swapoff xxx ，避免重启后 swap 重新启用
+$ vi /etc/fstab
+# 立刻停止 swap
+$ swapoff -a
 
-    # 检查 kubelet 状态，在加入 k8s 集群之前，kubelet 状态会一直处于 activating 状态
-    systemctl status kubelet
-    ```
+# 4.开启内核参数
+# 持久化激活内核模块 br_netfilter
+$ echo br_netfilter | tee -a /etc/modules
+$ modprobe br_netfilter
+# 开启 ipv4 forward
+$ cat <<EOF > /etc/sysctl.d/k8s.conf
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables = 1
+net.ipv4.ip_forward = 1
+EOF
 
-1. [用 kubeadm 创建一个 k8s 群集](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/)
+# 启动内核参数配置
+$ sysctl -p
+$ sysctl --system
 
-    ```bash
-    # 拉起 k8s 群集
-    kubeadm init --pod-network-cidr 192.168.1.90/16
+# 5. 配置 kubernetes repo 源, 这里我们使用阿里云的 repo
+cat <<EOF > /etc/yum.repos.d/kubernetes.repo
+[kubernetes]
+name=Kubernetes
+baseurl=http://mirrors.aliyun.com/kubernetes/yum/repos/kubernetes-el7-x86_64
+enabled=1
+gpgcheck=0
+repo_gpgcheck=0
+gpgkey=http://mirrors.aliyun.com/kubernetes/yum/doc/yum-key.gpg
+        http://mirrors.aliyun.com/kubernetes/yum/doc/rpm-package-key.gpg
+EOF
 
-    # 配置 kubectl 客户端
-    mkdir -p $HOME/.kube
-    sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-    sudo chown $(id -u):$(id -g) $HOME/.kube/config
-    ```
+# 6. 移除之前安装的 docker 因为 1.23.3 的 k8s 版本不再支持 docker 这里为了实验方便我们先一改删除
+$ yum remove -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
 
-1. 此时可以观察到 node 并未 ready，导致 coredns 无法调度。接下来需要：[安装网络插件](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/#pod-network)，[插件列表](https://kubernetes.io/docs/concepts/cluster-administration/addons/)，这里我们用 [Calico](https://docs.projectcalico.org/getting-started/kubernetes/quickstart)。
+# 7. 通过 docker 的 repo 来安装 containerd
+# 理论上我们只需要 containerd 但是安装 containerd 通过需要通过繁琐的 go 的编译
+# 我们这里直接利用 docker 的 repo 来安装 containerd 当然那同时也安装了 docker 但巧妙的是我们并不启用 docker
+$ yum install docker-ce docker-ce-cli containerd.io docker-compose-plugin -y
 
-    ```bash
-    # 添加网络插件
-    # Install the Tigera Calico operator and custom resource definitions
-    kubectl create -f https://docs.projectcalico.org/manifests/tigera-operator.yaml
-    # Install Calico by creating the necessary custom resource
-    kubectl create -f https://docs.projectcalico.org/manifests/custom-resources.yaml
+# 开机启动 containerd
+$ systemctl enable containerd
 
-    # 查看 pods 和 nodes 状态
-    kubectl get pods --all-namespaces
-    kubectl get nodes
-    ```
+# 初始化 containerd 配置
+$ containerd config default > /etc/containerd/config.toml
 
-1. 如果希望在国内环境中安装 K8S（不使用代理访问 gcr），步骤如下（环境是 CentOS 7）：
+# 更新 sandbox 镜像为 registry.aliyuncs.com/google_containers/pause:3.6
+# sandbox_image = "registry.aliyuncs.com/google_containers/pause:3.6" 用国内的镜像仓库
+$ vi /etc/containerd/config.toml
 
-    ```bash
-    # 3. 关闭防火墙（默认就是关闭的，不用做）
-    # systemctl stop firewalld.service
-    # systemctl disable firewalld.service
+# 启动 containerd
+$ systemctl start containerd
 
-    # 4. 关闭 selinux（默认就是关闭的，不用做）
-    # vi /etc/selinux/config
-    # 将 SELINUX=enforcing 改为 SELINUX=disabled
+# 8. 安装 kubernetes 1.23.3
+$ export k8s_version="1.23.3"
+# 安装 1.23.3 的repo包
+$ yum install -y kubelet-${k8s_version}-0 kubeadm-${k8s_version}-0 kubectl-${k8s_version}-0  --disableexcludes=kubernetes
 
-    # 5. 关闭 swap（默认就是关闭的，不用做）
-    # swapoff /dev/sda2
-    # vi /etc/fstab
-    # 在 swap 分区这行前加 # 禁用掉，保存退出
-    # reboot
+# 启动 kubelet
+$ systemctl restart kubelet
+$ systemctl enable kubelet
 
-    # 6. 配置系统相关属性
-    cat <<EOF > /etc/sysctl.d/k8s.conf
-    net.bridge.bridge-nf-call-ip6tables = 1
-    net.bridge.bridge-nf-call-iptables = 1
-    net.ipv4.ip_forward = 1
-    EOF
+# 提前拉取镜像
+$ kubeadm config images pull --kubernetes-version 1.23.3 --image-repository registry.aliyuncs.com/google_containers
 
-    sysctl -p
-    sysctl --system
+# 安装 master
+$ kubeadm init --image-repository registry.aliyuncs.com/google_containers --kubernetes-version=v${k8s_version} --pod-network-cidr=10.244.0.0/16
 
-    # 7. 配置yum源
-    cat <<EOF > /etc/yum.repos.d/kubernetes.repo
-    [kubernetes]
-    name=Kubernetes
-    baseurl=http://mirrors.aliyun.com/kubernetes/yum/repos/kubernetes-el7-x86_64
-    enabled=1
-    gpgcheck=0
-    repo_gpgcheck=0
-    gpgkey=http://mirrors.aliyun.com/kubernetes/yum/doc/yum-key.gpg
-            http://mirrors.aliyun.com/kubernetes/yum/doc/rpm-package-key.gpg
-    EOF
+# 配置 kubectl 的配置文件
+$ mkdir $HOME/.kube
+$ cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 
-    # 8. 安装 docker
-    yum install docker -y
-    systemctl enable docker --now
+# 安装 calico
+$ kubectl apply -f https://gitee.com/dev-99cloud/lab-openstack/raw/master/src/ansible-cloudlab-centos/playbooks/roles/init04-prek8s/files/calico-${k8s_version}.yml
+```
 
-    # 9. 修改 docker 镜像代理仓库
-    # vi /etc/docker/daemon.json
-    # {
-    #  "registry-mirrors": ["http://hub-mirror.c.163.com"]
-    # }
+- 检查集群状态
 
-    # systemctl daemon-reload
-    # systemctl restart docker
+  ```bash
+  # 检查节点状态
+  $ kubectl get nodes
+  NAME           STATUS   ROLES                                           AGE    VERSION
+  cka-node1   Ready      control-plane,master,worker   30s      v1.23.3
+  ```
 
-    # 10. 下载 kubernetes
-    # export k8s_version="1.20.1"
-    export k8s_version="1.23.3"
-
-    yum install -y kubelet-${k8s_version}-0 kubeadm-${k8s_version}-0 kubectl-${k8s_version}-0  --disableexcludes=kubernetes
-
-    # 11. 启动 kubelet
-    systemctl restart kubelet
-    systemctl enable kubelet
-
-    # 12. 用 kubeadm 初始化创建 K8S 集群
-    kubeadm init --image-repository registry.aliyuncs.com/google_containers --kubernetes-version=v${k8s_version} --pod-network-cidr=10.244.0.0/16
-
-    # 13. 配置 .kube/config 用于使用 kubectl
-    mkdir -p $HOME/.kube
-    cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-    chown $(id -u):$(id -g) $HOME/.kube/config
-
-    # 15. 安装 calico
-    kubectl apply -f https://gitee.com/dev-99cloud/lab-openstack/raw/master/src/ansible-cloudlab-centos/playbooks/roles/init04-prek8s/files/calico-${k8s_version}.yml
-
-    # 看到 node Ready 就 OK
-    kubectl get nodes
-    ```
-
-1. 集群安装/加入 GPU 节点
+- 集群安装/加入 GPU 节点（仅当 cri 为 docker 时才行）
 
     ```bash
     # 1. 节点安装显卡驱动
@@ -592,6 +595,60 @@ Ubuntu 18.04 / 20.04 (CentOS 7 见后面)
     # * 阿里云 gpushare 是阿里云公有云使用的 cgpu 的部分开源项目，能对 gpu 进行显存划分，多容器调度，但是没有实现显存隔离
     # * 第四范式 vgpu 是第四范式开源的 vgpu 上层实现，底层核心逻辑是 libvgpu.so提供的，没有开源，可以实现对物理 gpu 的切分，实现了显存隔离。
     # 安装第四范式 vgpu 参考 `https://github.com/4paradigm/k8s-device-plugin/blob/master/README_cn.md#Kubernetes%E5%BC%80%E5%90%AFvGPU%E6%94%AF%E6%8C%81`
+    ```
+
+### 2.7.2 在  Ubuntu 18.04 / 20.04 上部署 k8s
+
+1. [安装 kubeadm](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/)
+
+    ```bash
+    # iptables 看到 bridged 流量
+    cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
+    net.bridge.bridge-nf-call-ip6tables = 1
+    net.bridge.bridge-nf-call-iptables = 1
+    EOF
+    sudo sysctl --system
+
+    # Install kubeadm
+    apt-get update && apt-get install -y apt-transport-https curl
+    curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+    cat <<EOF | sudo tee /etc/apt/sources.list.d/kubernetes.list
+    deb https://apt.kubernetes.io/ kubernetes-xenial main
+    EOF
+    apt-get update -y && apt-get install -y kubelet kubeadm kubectl
+
+    # 重启 kubelet
+    systemctl daemon-reload
+    systemctl restart kubelet
+
+    # 检查 kubelet 状态，在加入 k8s 集群之前，kubelet 状态会一直处于 activating 状态
+    systemctl status kubelet
+    ```
+
+2. [用 kubeadm 创建一个 k8s 群集](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/)
+
+    ```bash
+    # 拉起 k8s 群集
+    kubeadm init --pod-network-cidr 192.168.1.90/16
+
+    # 配置 kubectl 客户端
+    mkdir -p $HOME/.kube
+    sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+    sudo chown $(id -u):$(id -g) $HOME/.kube/config
+    ```
+
+3. 此时可以观察到 node 并未 ready，导致 coredns 无法调度。接下来需要：[安装网络插件](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/#pod-network)，[插件列表](https://kubernetes.io/docs/concepts/cluster-administration/addons/)，这里我们用 [Calico](https://docs.projectcalico.org/getting-started/kubernetes/quickstart)。
+
+    ```bash
+    # 添加网络插件
+    # Install the Tigera Calico operator and custom resource definitions
+    kubectl create -f https://docs.projectcalico.org/manifests/tigera-operator.yaml
+    # Install Calico by creating the necessary custom resource
+    kubectl create -f https://docs.projectcalico.org/manifests/custom-resources.yaml
+
+    # 查看 pods 和 nodes 状态
+    kubectl get pods --all-namespaces
+    kubectl get nodes
     ```
 
 ### 2.8 什么是 Pod？
@@ -2550,3 +2607,4 @@ my-nginx.default.svc.cluster.local. 30 IN A	10.98.172.84
 ## Lesson 10: FAQ
 
 1. 什么是配置 egress ip？[红帽方案](https://docs.openshift.com/container-platform/4.1/networking/openshift_sdn/assigning-egress-ips.html)，[开源方案](https://github.com/nirmata/kube-static-egress-ip)
+
