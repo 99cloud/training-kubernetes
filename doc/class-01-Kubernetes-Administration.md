@@ -1395,9 +1395,9 @@ $ kubectl apply -f https://gitee.com/dev-99cloud/lab-openstack/raw/master/src/an
     metadata:
       name: read-secrets-global
     subjects:
-    - kind: User
+    - kind: ServiceAccount
       name: sa-cluster-admin
-      apiGroup: rbac.authorization.k8s.io
+      namespace: kube-system
     roleRef:
       kind: ClusterRole
       name: cluster-admin
