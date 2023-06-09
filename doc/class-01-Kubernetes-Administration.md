@@ -103,7 +103,7 @@
     ![](../images/docker-undertech.png)
 
 - Docker 和容器有什么关系（ why Linus don't care docker ）？
-- Docker 有哪些竞争产品？[CRI-O ？](https://zhuanlan.zhihu.com/p/30667806)
+- Docker 有哪些竞争产品？[CRI-O ？](https://zhuanlan.zhihu.com/p/30667806)，其它的容器命令行工具：[Github](https://github.com/wu-wenxiang/lab-kubernetes/blob/master/doc/kubernetes-best-practices.md#222-%E5%91%BD%E4%BB%A4%E8%A1%8C%E5%AF%B9%E6%AF%94) 或 [Gitee](https://gitee.com/wu-wen-xiang/lab-kubernetes/blob/master/doc/kubernetes-best-practices.md#222-%E5%91%BD%E4%BB%A4%E8%A1%8C%E5%AF%B9%E6%AF%94)
 
 ### 1.4 Docker 的架构和概念空间是怎样的？
 
