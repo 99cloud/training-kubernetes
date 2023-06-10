@@ -464,36 +464,36 @@
 
 ```bash
 # 1. 关闭防火墙（在阿里云的 centos-7.9 镜像默认就是关闭的，不用做）
-$ systemctl stop firewalld.service
-$ systemctl disable firewalld.service
+systemctl stop firewalld.service
+systemctl disable firewalld.service
 
 # 2. 关闭 selinx （在阿里云的 centos-7.9 镜像默认就是关闭的，不用做）
 # 将 SELINUX=enforcing 改为 SELINUX=disabled
-$ vi /etc/selinux/config
+vi /etc/selinux/config
 
 # 立刻停止 selinux 
-$ setenforce=0
+setenforce=0
 
 # 3. 关闭 swap（在阿里云的 centos-7.9 镜像默认就是关闭的，不用做）
 # 注释掉 swapoff xxx ，避免重启后 swap 重新启用
-$ vi /etc/fstab
+vi /etc/fstab
 # 立刻停止 swap
-$ swapoff -a
+swapoff -a
 
 # 4.开启内核参数
 # 持久化激活内核模块 br_netfilter
-$ echo br_netfilter | tee -a /etc/modules
-$ modprobe br_netfilter
+echo br_netfilter | tee -a /etc/modules
+modprobe br_netfilter
 # 开启 ipv4 forward
-$ cat <<EOF > /etc/sysctl.d/k8s.conf
+cat <<EOF > /etc/sysctl.d/k8s.conf
 net.bridge.bridge-nf-call-ip6tables = 1
 net.bridge.bridge-nf-call-iptables = 1
 net.ipv4.ip_forward = 1
 EOF
 
 # 启动内核参数配置
-$ sysctl -p
-$ sysctl --system
+sysctl -p
+sysctl --system
 
 # 5. 配置 kubernetes repo 源, 这里我们使用阿里云的 repo
 cat <<EOF > /etc/yum.repos.d/kubernetes.repo
@@ -507,49 +507,60 @@ gpgkey=http://mirrors.aliyun.com/kubernetes/yum/doc/yum-key.gpg
         http://mirrors.aliyun.com/kubernetes/yum/doc/rpm-package-key.gpg
 EOF
 
-# 6. 移除之前安装的 docker 因为 1.23.3 的 k8s 版本不再支持 docker 这里为了实验方便我们先一改删除
-$ yum remove -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+# 6. [可选] 移除之前安装的 docker（可能有老版本的）
+yum remove -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
 
-# 7. 通过 docker 的 repo 来安装 containerd
-# 理论上我们只需要 containerd 但是安装 containerd 通过需要通过繁琐的 go 的编译
-# 我们这里直接利用 docker 的 repo 来安装 containerd 当然那同时也安装了 docker 但巧妙的是我们并不启用 docker
-$ yum install docker-ce docker-ce-cli containerd.io docker-compose-plugin -y
+# 7. 安装新版本的 docker
+yum install docker-ce docker-ce-cli containerd.io docker-compose-plugin -y
 
-# 开机启动 containerd
-$ systemctl enable containerd
+# 开机启动 containerd 和 docker 
+systemctl enable containerd --now
+systemctl enable docker --now
 
 # 初始化 containerd 配置
-$ containerd config default > /etc/containerd/config.toml
-
-# 更新 sandbox 镜像为 registry.aliyuncs.com/google_containers/pause:3.6
+containerd config default > /etc/containerd/config.toml
+vi /etc/containerd/config.toml
+# 更新 sandbox 镜像
 # sandbox_image = "registry.aliyuncs.com/google_containers/pause:3.6" 用国内的镜像仓库
-$ vi /etc/containerd/config.toml
+# 更新 SystemdCgroup，false 改成 true
+# SystemdCgroup = true
 
-# 启动 containerd
-$ systemctl start containerd
+vi /etc/docker/daemon.json
+# {
+#   "exec-opts": ["native.cgroupdriver=systemd"]
+# }
+
+# 重新启动 containerd 和 docker
+systemctl restart containerd
+systemctl restart docker
 
 # 8. 安装 kubernetes 1.23.3
-$ export k8s_version="1.23.3"
+export k8s_version="1.23.3"
 # 安装 1.23.3 的repo包
-$ yum install -y kubelet-${k8s_version}-0 kubeadm-${k8s_version}-0 kubectl-${k8s_version}-0  --disableexcludes=kubernetes
+yum install -y kubelet-${k8s_version}-0 kubeadm-${k8s_version}-0 kubectl-${k8s_version}-0  --disableexcludes=kubernetes
 
 # 启动 kubelet
-$ systemctl restart kubelet
-$ systemctl enable kubelet
+systemctl restart kubelet
+systemctl enable kubelet
 
 # 提前拉取镜像
-$ kubeadm config images pull --kubernetes-version 1.23.3 --image-repository registry.aliyuncs.com/google_containers
+kubeadm config images pull --kubernetes-version ${k8s_version} --image-repository registry.aliyuncs.com/google_containers
 
 # 安装 master
-$ kubeadm init --image-repository registry.aliyuncs.com/google_containers --kubernetes-version=v${k8s_version} --pod-network-cidr=10.244.0.0/16
+kubeadm init --image-repository registry.aliyuncs.com/google_containers --kubernetes-version=v${k8s_version} --pod-network-cidr=10.244.0.0/16
 
 # 配置 kubectl 的配置文件
-$ mkdir $HOME/.kube
-$ cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+mkdir $HOME/.kube
+cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 
 # 安装 calico
-$ kubectl apply -f https://gitee.com/dev-99cloud/lab-openstack/raw/master/src/ansible-cloudlab-centos/playbooks/roles/init04-prek8s/files/calico-${k8s_version}.yml
+kubectl apply -f https://gitee.com/dev-99cloud/lab-openstack/raw/master/src/ansible-cloudlab-centos/playbooks/roles/init04-prek8s/files/calico-${k8s_version}.yml
 ```
+
+上述部署可以让 K8S 对接 Docker，如果想直接对接 containerd，那么 kubeadm int 命令需要改成：`kubeadm init --cri-socket unix:///run/containerd/containerd.sock --image-repository registry.aliyuncs.com/google_containers --kubernetes-version=v${k8s_version} --pod-network-cidr=10.244.0.0/16
+`，参考 [Github](https://github.com/wu-wenxiang/lab-kubernetes/blob/master/doc/kubernetes-best-practices.md#3111-%E5%8D%95%E8%8A%82%E7%82%B9%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2) 或 [Gitee](https://gitee.com/wu-wen-xiang/lab-kubernetes/blob/master/doc/kubernetes-best-practices.md#3111-%E5%8D%95%E8%8A%82%E7%82%B9%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2)
+
+如果要重新安装，可以 `kubeadm reset -f`
 
 - 检查集群状态
 
