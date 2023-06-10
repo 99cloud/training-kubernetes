@@ -130,7 +130,7 @@
 
     ```bash
     # 移除旧的 docker 版本
-    $ yum remove docker \
+    yum remove docker \
                   docker-client \
                   docker-client-latest \
                   docker-common \
@@ -139,19 +139,19 @@
                   docker-logrotate \
                   docker-engine
 
-    $ yum install -y yum-utils
+    yum install -y yum-utils
 
-    $ yum-config-manager \
+    yum-config-manager \
     --add-repo \
     https://download.docker.com/linux/centos/docker-ce.repo
 
-    $ yum install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+    yum install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
 
     # 设置为开机启动并且立刻启动服务
-    $ systemctl enable docker --now
+    systemctl enable docker --now
 
     # run hello-world
-    $ docker run hello-world
+    docker run hello-world
     ```
 
 #### 1.6.1.1 在 centos7 上构建镜像
@@ -243,7 +243,7 @@
     systemctl status docker
 
     # ubuntu 中需要把 docker 的 cgroup driver 改成 systemd
-    # !! centos 默认就是 systemd，不要修改这个文件，改了 docker 会起不来，保持 {} 就好
+    # !! centos 老版本的 docker 1.13 默认就是 systemd，不要修改这个文件，改了 docker 会起不来，保持 {} 就好，新版本的 docker 24+ 需要改
     vi /etc/docker/daemon.json
 
     {
@@ -526,9 +526,10 @@ vi /etc/containerd/config.toml
 # SystemdCgroup = true
 
 vi /etc/docker/daemon.json
-# {
-#   "exec-opts": ["native.cgroupdriver=systemd"]
-# }
+
+{
+  "exec-opts": ["native.cgroupdriver=systemd"]
+}
 
 # 重新启动 containerd 和 docker
 systemctl restart containerd
@@ -552,6 +553,7 @@ kubeadm init --image-repository registry.aliyuncs.com/google_containers --kubern
 # 配置 kubectl 的配置文件
 mkdir $HOME/.kube
 cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
 
 # 安装 calico
 kubectl apply -f https://gitee.com/dev-99cloud/lab-openstack/raw/master/src/ansible-cloudlab-centos/playbooks/roles/init04-prek8s/files/calico-${k8s_version}.yml
