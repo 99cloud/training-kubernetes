@@ -1124,8 +1124,8 @@ kubectl apply -f https://gitee.com/dev-99cloud/lab-openstack/raw/master/src/ansi
     kind: Pod
     metadata:
       name: static-web
-    labels:
-      role: myrole
+      labels:
+        role: myrole
     spec:
       containers:
       - name: web
