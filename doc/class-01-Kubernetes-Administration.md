@@ -1103,12 +1103,49 @@ kubectl apply -f https://gitee.com/dev-99cloud/lab-openstack/raw/master/src/ansi
 
     # 恢复备份的步骤
     # 1. 停止 ETCD 服务
-    # 2. 删除 ETCD 原存储 /var/lib/etcd/*
+    # 2. 删除 ETCD data 目录
     # 3. snapshot restore
     # 4. 重新启动 ETCD 服务
 
     etcdctl --cert="/etc/kubernetes/pki/apiserver-etcd-client.crt" --key="/etc/kubernetes/pki/apiserver-etcd-client.key" --cacert="/etc/kubernetes/pki/etcd/ca.crt" snapshot restore a.txt
     ```
+
+    备份恢复实验：
+
+    ```console
+    [root@ckalab003 ~]# etcdctl --cert="/etc/kubernetes/pki/apiserver-etcd-client.crt" --key="/etc/kubernetes/pki/apiserver-etcd-client.key" --cacert="/etc/kubernetes/pki/etcd/ca.crt" put /firstkey-1 test1
+    OK
+
+    [root@ckalab003 ~]# etcdctl --cert="/etc/kubernetes/pki/apiserver-etcd-client.crt" --key="/etc/kubernetes/pki/apiserver-etcd-client.key" --cacert="/etc/kubernetes/pki/etcd/ca.crt" get /firstkey-1
+    /firstkey-1
+    test1
+
+    [root@ckalab003 ~]# etcdctl --endpoints=https://127.0.0.1:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt  --cert=/etc/kubernetes/pki/etcd/server.crt --key=/etc/kubernetes/pki/etcd/server.key snapshot save backup1
+    ...
+    Snapshot saved at backup1
+
+    [root@ckalab003 ~]# etcdctl --cert="/etc/kubernetes/pki/apiserver-etcd-client.crt" --key="/etc/kubernetes/pki/apiserver-etcd-client.key" --cacert="/etc/kubernetes/pki/etcd/ca.crt" put /firstkey-2 test2
+    OK
+
+    [root@ckalab003 ~]# etcdctl --cert="/etc/kubernetes/pki/apiserver-etcd-client.crt" --key="/etc/kubernetes/pki/apiserver-etcd-client.key" --cacert="/etc/kubernetes/pki/etcd/ca.crt" get /firstkey-2
+    /firstkey-2
+    test2
+
+    [root@ckalab003 ~]# mv /etc/kubernetes/manifests/etcd.yaml .
+    [root@ckalab003 ~]# rm -rf /var/lib/etcd/*
+    [root@ckalab003 ~]# etcdctl --cacert=/etc/kubernetes/pki/etcd/ca.crt  --cert=/etc/kubernetes/pki/etcd/server.crt --key=/etc/kubernetes/pki/etcd/server.key snapshot restore backup1 --data-dir /var/lib/etcd
+    ...
+    2023-06-17T17:35:25+08:00	info	snapshot/v3_snapshot.go:272	restored snapshot	{"path": "backup1", "wal-dir": "/var/lib/etcd/member/wal", "data-dir": "/var/lib/etcd", "snap-dir": "/var/lib/etcd/member/snap"}
+
+    [root@ckalab003 ~]# mv ./etcd.yaml /etc/kubernetes/manifests/
+
+    [root@ckalab003 ~]# etcdctl --endpoints=https://127.0.0.1:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt  --cert=/etc/kubernetes/pki/etcd/server.crt --key=/etc/kubernetes/pki/etcd/server.key get /firstkey-1
+    /firstkey-1
+    test1
+    [root@ckalab003 ~]# etcdctl --endpoints=https://127.0.0.1:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt  --cert=/etc/kubernetes/pki/etcd/server.crt --key=/etc/kubernetes/pki/etcd/server.key get /firstkey-2
+    ```
+
+    `/firstkey-1` 能看到而 `/firstkey-2` 看不到，符合预期
 
 ### 3.9 什么是静态 Pod？
 
