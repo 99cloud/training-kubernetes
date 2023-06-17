@@ -471,7 +471,7 @@ systemctl disable firewalld.service
 # 将 SELINUX=enforcing 改为 SELINUX=disabled
 vi /etc/selinux/config
 
-# 立刻停止 selinux 
+# 立刻停止 selinux
 setenforce=0
 
 # 3. 关闭 swap（在阿里云的 centos-7.9 镜像默认就是关闭的，不用做）
@@ -513,7 +513,7 @@ yum remove -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
 # 7. 安装新版本的 docker
 yum install docker-ce docker-ce-cli containerd.io docker-compose-plugin -y
 
-# 开机启动 containerd 和 docker 
+# 开机启动 containerd 和 docker
 systemctl enable containerd --now
 systemctl enable docker --now
 
@@ -1099,8 +1099,15 @@ kubectl apply -f https://gitee.com/dev-99cloud/lab-openstack/raw/master/src/ansi
     etcdctl --cert="/etc/kubernetes/pki/apiserver-etcd-client.crt" --key="/etc/kubernetes/pki/apiserver-etcd-client.key" --cacert="/etc/kubernetes/pki/etcd/ca.crt" --endpoints=https://127.0.0.1:2379 get --prefix ""
 
     # backup & restore
-    etcdctl --cert="/etc/kubernetes/pki/apiserver-etcd-client.crt" --key="/etc/kubernetes/pki/apiserver-etcd-client.key" --cacert="/etc/kubernetes/pki/etcd/ca.crt" --endpoints=https://127.0.0.1:2379 snapshot save a.txt
-    # etcdctl --cert="/etc/kubernetes/pki/apiserver-etcd-client.crt" --key="/etc/kubernetes/pki/apiserver-etcd-client.key" --cacert="/etc/kubernetes/pki/etcd/ca.crt" --endpoints=https://127.0.0.1:2379 snapshot restore a.txt
+    etcdctl --cert="/etc/kubernetes/pki/apiserver-etcd-client.crt" --key="/etc/kubernetes/pki/apiserver-etcd-client.key" --cacert="/etc/kubernetes/pki/etcd/ca.crt" snapshot save a.txt
+
+    # 恢复备份的步骤
+    # 1. 停止 ETCD 服务
+    # 2. 删除 ETCD 原存储 /var/lib/etcd/*
+    # 3. snapshot restore
+    # 4. 重新启动 ETCD 服务
+
+    etcdctl --cert="/etc/kubernetes/pki/apiserver-etcd-client.crt" --key="/etc/kubernetes/pki/apiserver-etcd-client.key" --cacert="/etc/kubernetes/pki/etcd/ca.crt" snapshot restore a.txt
     ```
 
 ### 3.9 什么是静态 Pod？
@@ -1172,7 +1179,7 @@ kubectl apply -f https://gitee.com/dev-99cloud/lab-openstack/raw/master/src/ansi
 ### 4.1 什么是 K8S 的 3A？
 
 - Authentication / Authorization / Admission
-- K8S 的认证过程？Authentication、Authorization（ RBRA / ABAC / WebHook ）、Admission Controller
+- K8S 的认证过程？Authentication、Authorization（ RBAC / ABAC / WebHook ）、Admission Controller
 
 ### 4.2 怎么配置 kubectl？
 
@@ -1421,6 +1428,16 @@ kubectl apply -f https://gitee.com/dev-99cloud/lab-openstack/raw/master/src/ansi
 
     root@CKA003:~# kubectl apply -f nginx-deployment.yaml --token=eyJhbGciOiJSUzI1NiIsImtpZCI6InRBUkJ6bkxQMHNHSi1MejR4T2ZtYk43b1Y0S2M3MXZOMTMtQmtOaHpsbXMifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJrdWJlLXN5c3RlbSIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VjcmV0Lm5hbWUiOiJzYS1jbHVzdGVyLWFkbWluLXRva2VuLWs5eGZwIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQubmFtZSI6InNhLWNsdXN0ZXItYWRtaW4iLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC51aWQiOiIxMWRlYjhkZC01NjI1LTRkNzUtYWQ0NC0zYmVlZjFiY2Q5OTUiLCJzdWIiOiJzeXN0ZW06c2VydmljZWFjY291bnQ6a3ViZS1zeXN0ZW06c2EtY2x1c3Rlci1hZG1pbiJ9.Dr1aOVdwAXO_BPXlJAohKBjoxRhMmTWyfVy2AP3-D0V-2jzdzWKoEP_17wnAS3FP-hxuOtTr3XWN0zM4oAI8-CeXtP7AdB0sqZ9P7Wnp2s88DqDUNK0JUuYGke3js9xd44Bt5vhtRovNEMYEnLXj_NLOunW33f4g46ep4NvQpNGTd48BcgzFhiiWuXLKKGGoOZGrWlkXqyofE4li83B3D08oW-hjP4S0JBBXqmzpa0_PYi-hkPbirmn9J7F-oQd0So05uAzZROHSd7n8INlYwbJx2zRF8PKipscxu47ddEumr6R9b8qDDVolP5iawqFPeDTt9lOY7OdgEaVcL651UQ
     deployment.apps/nginx-deployment created
+    ```
+
+    如果 kubectl 不加 `--token`，那么用的是 `.kube/config` 里 current context 的用户，可以试试把 --token=xxxx 后面的内容写错，会提示认证不通过的。
+
+    也可以把 token 直接写到 `.kube/config` 里去，这样和直接在命令行中加 `--token` 是一样的：
+
+    ```bash
+    kubectl config set-credentials account --token=eyJhbGciOiJSUzI1NiIsImtpZCI6InRBUkJ6bkxQMHNHSi1MejR4T2ZtYk43b1Y0S2M3MXZOMTMtQmtOaHpsbXMifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJrdWJlLXN5c3RlbSIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VjcmV0Lm5hbWUiOiJzYS1jbHVzdGVyLWFkbWluLXRva2VuLWs5eGZwIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQubmFtZSI6InNhLWNsdXN0ZXItYWRtaW4iLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC51aWQiOiIxMWRlYjhkZC01NjI1LTRkNzUtYWQ0NC0zYmVlZjFiY2Q5OTUiLCJzdWIiOiJzeXN0ZW06c2VydmljZWFjY291bnQ6a3ViZS1zeXN0ZW06c2EtY2x1c3Rlci1hZG1pbiJ9.Dr1aOVdwAXO_BPXlJAohKBjoxRhMmTWyfVy2AP3-D0V-2jzdzWKoEP_17wnAS3FP-hxuOtTr3XWN0zM4oAI8-CeXtP7AdB0sqZ9P7Wnp2s88DqDUNK0JUuYGke3js9xd44Bt5vhtRovNEMYEnLXj_NLOunW33f4g46ep4NvQpNGTd48BcgzFhiiWuXLKKGGoOZGrWlkXqyofE4li83B3D08oW-hjP4S0JBBXqmzpa0_PYi-hkPbirmn9J7F-oQd0So05uAzZROHSd7n8INlYwbJx2zRF8PKipscxu47ddEumr6R9b8qDDVolP5iawqFPeDTt9lOY7OdgEaVcL651UQ
+    kubectl config set-context account-context --cluster=kubernetes --user=account
+    kubectl config use-context account-context
     ```
 
 ## Lesson 05: K8S Schedule
@@ -1908,7 +1925,7 @@ my-nginx.default.svc.cluster.local. 30 IN A	10.98.172.84
 
     # 在 ingress-nginx-controller service 的 spec 下添加，10.0.0.118 为节点内网 ip :
     #   externalIPs:
-    #   - 10.0.0.118 
+    #   - 10.0.0.118
 
     # spec:
     #  externalIPs:
