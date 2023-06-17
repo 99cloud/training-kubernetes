@@ -1147,6 +1147,12 @@ kubectl apply -f https://gitee.com/dev-99cloud/lab-openstack/raw/master/src/ansi
 
     `/firstkey-1` 能看到而 `/firstkey-2` 看不到，符合预期
 
+    多集群的恢复：
+
+    ```bash
+    etcdctl --name ckalab001 --initial-cluster ckalab001=https://139.224.191.4:2380 --initial-cluster-token etcd-cluster --cert=/etc/kubernetes/pki/etcd/server.crt --key=/etc/kubernetes/pki/etcd/server.key --cacert=/etc/kubernetes/pki/etcd/ca.crt --initial-advertise-peer-urls https://139.224.191.4:2380 snapshot restore /root/backup-1 --data-dir /var/lib/etcd
+    ```
+
 ### 3.9 什么是静态 Pod？
 
 - [Static Pod](https://kubernetes.io/docs/tasks/configure-pod-container/static-pod/)
