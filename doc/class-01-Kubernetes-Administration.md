@@ -1828,6 +1828,8 @@ Toleration 和 Taint 结合，可以让特定节点只允许运行特定 pod，�
 - [Storage Classes](https://kubernetes.io/docs/concepts/storage/storage-classes/)
 - [Dynamic Volume Provisioning](https://kubernetes.io/docs/concepts/storage/dynamic-provisioning/)
     - [NFS](../src/config-lab/README.md#3-集成-nfs-存储) storage class
+    - [Dynamic Local 实验](https://gitee.com/wu-wen-xiang/lab-kubernetes/blob/master/doc/kubernetes-best-practices.md#45-local-%E5%92%8C%E5%8A%A8%E6%80%81%E5%88%86%E9%85%8D)
+    - [NFS 实验](https://gitee.com/wu-wen-xiang/lab-kubernetes/blob/master/doc/kubernetes-best-practices.md#42-%E5%AF%B9%E6%8E%A5-nfs-%E5%92%8C-nas)
 
 ### 6.4 实验：ConfigMap / Secret / PV & PVC / StorageClass
 
