@@ -1647,7 +1647,7 @@ Node Selector 实际是节点亲和，用于将 pod 部署到特定节点
         effect: "NoSchedule"
     ```
 
-- 如果不用 node selector，而是直接用 nodeName，可以无视 NoSchedule Taint，可以被调度。但调度上去之后，会被 NoExcute Taint 驱逐。
+- 如果不用 node selector，而是直接用 nodeName，可以无视 NoSchedule Taint，可以被调度。但调度上去之后，会被 NoExecute Taint 驱逐。
 
     ```yaml
     apiVersion: v1
