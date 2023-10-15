@@ -1,5 +1,9 @@
 # Kubernetes-Administration
 
+## 注意 ⚠️
+
+- **未经允许，禁止转载**
+
 ## 1. Prefix
 
 - 授课时长：
