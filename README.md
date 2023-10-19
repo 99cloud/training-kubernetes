@@ -35,3 +35,4 @@
 - [课程 01: Kubernetes-Administration](doc/class-01-Kubernetes-Administration.md)
 - [课程 02: Kubernetes-Development](doc/class-02-Kubernetes-Development.md)
 - [课程 03: 边缘容器云解决方案](doc/class-03-Kubernetes-Edge-Solutions.md)
+- [课程 04: Kubernetes 安全注意事项](doc/class-04-Kubernetes-Security-Specialist.md)
