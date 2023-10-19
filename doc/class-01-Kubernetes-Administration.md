@@ -4,7 +4,7 @@
 
 - **未经允许，禁止转载**
 
-## 1. Prefix
+## Prefix
 
 - 授课时长：
     - 上午：9:30 至 12:00
@@ -15,7 +15,7 @@
     - 基础的 linux 知识 -- 权限、文件系统、服务
     - systemd 的基础操作 -- 重启、关闭、启动、重载、查看 systemd 的服务
 
-## 2. Catalog
+## Catalog
 
 | Date | Time | Title | Content |
 | ---- | ---- | ----- | ------- |
