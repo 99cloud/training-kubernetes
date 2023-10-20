@@ -1033,6 +1033,135 @@ $ kubectl apply -f test-ns.yaml
 
 ## 5. Kube-APIServer 的安全防护
 
+### 5.1 章节梗概
+
+- kube-apiserver 关键参数
+- 开启 kube-apiserver 的审计日志
+- RBAC 基于角色的访问控制
+- 容器安全策略（PSP，Pod Security Policies）
+- 服务账户令牌（ServiceAccount Token）
+
+### 5.2 kube-apiserver 关键参数
+
+kube-apiserver 是整个 k8s 的 api 接口，所有和 k8s 打交道的服务都需要通过它，所以的安全也是非常重要的。
+
+- --advertise-address -- 用来指定 kube-apiserver 的地址，如果不指定的话，他会使用 --bind-address 的值，如果 --bind-address 也没有指定的话， 这里会涉及到 kube-apiserver 在网络层面上被攻击平面的问题，通常我们的 kube-apiserver 一般都只对内网开放，所以通过合理的设置 --advertise-address 来限制 kube-apiserver 的访问范围是非常重要的，比如我们 internet 访问的地址段是 10.0.0.0/24，集群管理网段 172.25.0.0/24 ,那么我们的 kube-apiserver 的 --advertise-address 应该设置为 172.25.0.x 而不是 10.0.0.x 或者 0.0.0.0 ,并且网络链路上应该尽可能避免 10.0.0.0/24 和 172.25.0.0/24 互通。
+- --allow-privileged -- 这个参数是用来控制是否允许 pod 使用特权模式，如果设置为 false 的话，那么所有的 pod 都不能使用特权模式，如果设置为 true 的话，那么所有的 pod 都可以使用特权模式，如果设置为未定义的话，那么所有的 pod 都不能使用特权模式，但是可以通过 pod security policy 来允许特权模式，所以这个参数的设置和 pod security policy 是有关系的，如果我们的集群中没有开启 pod security policy 的话，那么这个参数的设置就是非常重要的，因为特权模式的 pod 可以访问 host 上的敏感数据，如果我们的集群中开启了 pod security policy 的话，那么这个参数的设置就不是那么重要了，因为 pod security policy 可以限制 pod 使用特权模式
+  - 需要考量的问题 -- 如果设成 false 有可能吗？ 从我个人你经验来看做不到，因为比如像 cni 这些 pod 很多都需要特权模式下来运行，所以这个问题落到了具体的 pod 上的安全层面了
+- --authorization-mode --  授权模式，目前这块其实没有太多安全方面的配置需要调整，因为目前 k8s 支持的授权模式都是基于 RBAC 的，所以这个参数的设置和 RBAC 的设置是一致的，一般我们这里配置都是 `Node,RBAC` , Node 是用来授权 kubelet 的，RBAC 是用来授权 kube-apiserver 的访问权限的
+- --client-ca-file -- 这个指向了初始化集群时的 ca 证书的物理位置，如果有攻击者恶意替换了这个位置或者证书文件没，会导致整个集群都不可用的状态
+- --enable-admission-plugins -- 开启准入控制器，这个参数的设置和 Admission Controllers 的设置是一致的，一般我们这里配置都是 `NodeRestriction` , 有很多种类型的准入控制器，但会调几个跟安全相关的来阐述
+  -  NodeRestriction -- 这个准入控制器是用来限制 kubelet 不允许 kubelet 不能通过 kube-apiserver 来删除 node 对象，这样可以防止攻击者通过攻占某个节点的 kubelet 来删除整个集群的 node 对象，从而导致整个集群不可用
+  - AlwaysPullImages -- 这个准入控制器是用来强制要求 pod 的 image 必须每次都是从镜像仓库拉取，忽略本地的镜像，可以有效防止有人在某台服务器上将一个正常的镜像替换成恶意的镜像。
+  - EventRateLimit -- 这个准入控制器是用来限制每秒钟 kube-apiserver 接收的 event 数量，可以有效防止攻击者通过大量的 event 来攻击 kube-apiserver。
+  - ImagePolicyWebhook -- 这个准入控制器是用来检查 pod 的 image 是否符合自定义的安全策略，即将验证 image 的合法性委托给一个外置的服务来完成，通常会和 `Open Policy Agent  GateKeeper` 配合来使用。
+- --enable-bootstrap-token-auth -- 当这个设置为 true 时会增加 kube-apiserver 认证的风险，攻击者可以利用这个 token 加入恶意的节点到集群中，所以这个参数的设置应该是 false。
+
+### 5.3 审计日志
+
+在被攻击后追溯攻击者的行为也是重要的一部分的工作，如果 kube-apiserver 没有开启 audit 那么基本就很难追溯攻击者到底在 k8s 中做了什么，所以开启 audit 是非常重要的。审计日志有以下级别：
+
+- None - don't log events that match this rule./不记录任何事件
+- Metadata - log request metadata (requesting user, timestamp, resource, verb, etc.) but not request or response body./记录请求元数据（请求用户、时间戳、资源、动词等），但不记录请求或响应正文。
+- Request - log event metadata and request body but not response body. This does not apply for non-resource requests./记录事件元数据和请求正文，但不记录响应正文。这不适用于非资源请求。
+- RequestResponse - log event metadata, request and response bodies. This does not apply for non-resource requests./记录事件元数据、请求和响应正文。这不适用于非资源请求。
+
+```console
+# 创建 audit 日志目录
+$ sudo mkdir -p /etc/kubernetes/audit
+$ sudo bash -c 'cat <<EOF > /etc/kubernetes/audit/audit-policy.yaml
+apiVersion: audit.k8s.io/v1
+kind: Policy
+rules:
+- level: Metadata # 注意我们之类等级使用 Metadata 就能满足我们需求
+EOF'
+
+$ sudo mkdir -p /var/log/kubernetes/audit
+$ sudo touch /var/log/kubernetes/audit/audit.log
+# 重新配置 kube-apiserver,添加红色部分的内容到该文件中
+# 保存后 kube-apiserver 会重新启动
+# 如果 1 分钟都没有启动成功，请查看日志到 /var/log/pod/kube-system_kube-apiserverxxxxx
+$ sudo vi /etc/kubernetes/kube-apiserver.yaml
+```
+
+```yaml
+# command 中加入
+  - command:
+    - kube-apiserver
+    ...
+    - --audit-policy-file=/etc/kubernetes/audit/audit-policy.yaml
+    - --audit-log-path=/var/log/kubernetes/audit/audit.log
+    - --audit-log-maxage=30 # 旧的审计日志最多保留多少天
+    - --audit-log-maxbackup=10 # 最多有多少份 audit 会被保留，比如 auduit.log 写满了 100m 会被保留并改名为类似于 audit202302022xxx.log
+    - --audit-log-maxsize=100 # 当前审计日志文件 audit.log 到达多少 m 后被改名后保存
+    ...
+    volumeMounts:
+    ...
+    - mountPath: /etc/kubernetes/audit
+      name: k8s-audit-config
+      readOnly: true
+    - mountPath: /var/log/kubernetes/audit
+      name: k8s-audit-log
+      readOnly: false
+  volumes:
+  ...
+  - hostPath:
+      path: /var/log/kubernetes/audit
+      type: DirectoryOrCreate
+    name: k8s-audit-log
+  - hostPath:
+      path: /etc/kubernetes/audit
+      type: DirectoryOrCreate
+    name: k8s-audit-config
+```
+
+### 5.4 RBAC 基于角色的权限管理
+
+这里我们不阐述具体的配置，应该有 cka 基础都能了解 `clusterrole, role` 的作用域了。
+
+我们要给出的建议是，不要因为屠简单将 `clusterrole -- cluster-admin` 直接赋予某个用户，这样会导致这个用户拥有整个集群的所有权限，这样的话，如果这个用户的 token 泄露了，那么攻击者就可以通过这个 token 来做任何事情，所以我们应该根据实际的业务场景来给用户分配合适的权限，比如说我们的运维人员只需要管理某个 namespace 下的资源，那么我们就可以给他分配一个 `role` 来管理这个 namespace 下的资源，而不是直接给他分配 `clusterrole -- cluster-admin`。
+
+### 5.5 Pod 安全策略（PSP，Pod Security Policies）
+
+pod 安全策略是用过批量修改满足特定条件的 pod 的安全选项的，比如 在 namespace ns1 下的所有 pod 都需要 `drop_capability=CAP_SYS_ADMIN`，即使 pod 使用了 特权模式 运行也会被强制修改为 `drop_capability=CAP_SYS_ADMIN`，这样就可以有效防止攻击者通过攻占某个 pod 来获取到 host 上的 root 权限，从而导致整个集群不可用。通常管理员可以配置 Pod Security Policies 指向某个 namespace。
+
+但是值得注意的是这个功能已经被标记为 deprecated 了，所以我们应该尽快的使用 Admission Controllers 来替代 [Pod Security Policies](https://kubernetes.io/docs/concepts/security/pod-security-admission/) 目前这并不是考试的内容。
+
+### 5.6 服务账户令牌（Service Account Token）
+
+这个是用来授权 pod 访问 kube-apiserver 的，所以这个 token 的安全性也是非常重要的，如果这个 token 泄露了，那么攻击者就可以通过这个 token 来做任何事情，所以我们应该定期的轮换这个 token，比如每个月轮换一次，这样即使这个 token 泄露了，比如由于不正确的配置导致攻击者将有 cluster-admin 权限的 service account 的 token 挂载到了 `恶意的 pod` 中， 那么他很容易通过 InClusterConfig() 方法轻易获取到访问 kube-apiserver 中所有的 api group 的所有的权限，他可以轻易删掉 node 对象和其他任何对象，对集群造成很大的破坏。
+
+```bash
+# 生成一个模板 
+kubectl create sa correct-sa -n task2 --dry-run=client -o yaml > task2-temp-sa.yaml
+# 确保配置如下 
+vi task2-temp-sa.yaml
+```
+
+```yaml
+# task2-temp-sa.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: correct-sa
+  namespace: task2
+automountServiceAccountToken: false # 注意这里要是 false 默认是 true
+```
+
+```bash
+# 创建 sa
+kubectl create -f  task2-temp-sa.yaml
+
+# 修改改 pod
+# 将 serviceAccountName: sa-not-exist 噶成 serviceAccountName: correct-sa
+vi /tmp/task2/pod.yaml 
+
+# 创建 pod
+kubectl create -f /tmp/task2/pod.yaml
+
+# all set
+```
+
 ## 6. 网络
 
 ## 7. 工作负载考虑事项
