@@ -17,79 +17,78 @@
 | Date | Time | Title | Content |
 | ---- | ---- | ----- | ------- |
 
-* kubernetes 安全/cks
-  * 概述
-  * 课程概述
-  * 什么是安全
-  * 云安全
-    * cncf 项目安全相关
-    * 安全考量原则
-    * 理解攻击面
-    * 攻击类别
-    * 攻击源
-    * 主动/被动 攻击
-    * 安全方面的网上资源
-      * NIST Cybersecurity Framework
-      * High Value Asset Protection
-      * National Checklist Program
-      * CIS Benchmarks
-      * kube-bench
-    * 企业安全文化
-      * 开发组安全文化
-      * 安全组文化
-  * k8s 风险面
-    * 来自镜像的风险
-      * 私有镜像仓库 -- 愤怒的员工
-      * 公网镜像的风险 -- 理解镜像的供应链
-      * 应对策略
-    * 运行镜像引擎的风险考量 -- container runtime
-      * gvisor
-      * kata
-      * firecrack
-    * 来自于软件安装包的风险考量
-      * 应对策略
+- 概述
+- 课程概述
+- 什么是安全
+- 云安全
+  - cncf 项目安全相关
+  - 安全考量原则
+  - 理解攻击面
+  - 攻击类别
+  - 攻击源
+  - 主动/被动 攻击
+  - 安全方面的网上资源
+    - NIST Cybersecurity Framework
+    - High Value Asset Protection
+    - National Checklist Program
+    - CIS Benchmarks
+    - kube-bench
+  - 企业安全文化
+    - 开发组安全文化
+    - 安全组文化
+- k8s 风险面
+  - 来自镜像的风险
+    - 私有镜像仓库 -- 愤怒的员工
+    - 公网镜像的风险 -- 理解镜像的供应链
+    - 应对策略
+  - 运行镜像引擎的风险考量 -- container runtime
+    - gvisor
+    - kata
+    - firecrack
+  - 来自于软件安装包的风险考量
+    - 应对策略
         * The Update Framework (TUF)
         * Notary
-  * 搭建 k8s 集群前的安全事考量
-    * 找到内核的风险点 CVE
-    * 利用内核功能抵御攻击
-    * 搭建多节点集群
-  * 加固集群访问安全
-    * 加固 kube-apiserver
-    * 开启审计日志
-    * 合理使用 RBAC
-    * 使用 Pod Security Policies
-    * etcd 的安全
-    * 加密 secret 数据
-    * 合理使用 admission controller
-    * 使用 serviceaccount
-  * 加固 k8s 集群网络安全
-    * 网络漏洞扫描
-    * 阻止 pod 跨 namespace 访问
-    * 服务网格的产品的考量
-    * 尽可能的使用  mTLS
-  * k8s 工作负载的安全加固和考量
-    * 下载一个镜像前的考量
-    * 运行一个容器前的考量
-    * 保护容器 container layer 的安全
-    * 容器运行后的安全分析
-    * crd 和 operator 的安全考量
-    * 容器运行中安全工具介绍
-      * seccomp
-      * selinux
-      * apparmor
-  * 问题风险发现
-    * 理解攻击的生命周期
-      * 理解 kill chain
-    * 风险管控的 checklist
-    * 被攻击后的应对策略
-      * 被攻击后的应对策略 -- 报告机制
-      * 涉及违法的应对策略
-      * 建立紧急应对小组
-      * 完善的故障报告
-    * 入侵检测
-      * 主机入侵检查
-      * 网络入侵检查
+- 搭建 k8s 集群前的安全事考量
+  - 找到内核的风险点 CVE
+  - 利用内核功能抵御攻击
+  - 搭建多节点集群
+- 加固集群访问安全
+  - 加固 kube-apiserver
+  - 开启审计日志
+  - 合理使用 RBAC
+  - 使用 Pod Security Policies
+  - etcd 的安全
+  - 加密 secret 数据
+  - 合理使用 admission controller
+  - 使用 serviceaccount
+- 加固 k8s 集群网络安全
+  - 网络漏洞扫描
+  - 阻止 pod 跨 namespace 访问
+  - 服务网格的产品的考量
+  - 尽可能的使用  mTLS
+- k8s 工作负载的安全加固和考量
+  - 下载一个镜像前的考量
+  - 运行一个容器前的考量
+  - 保护容器 container layer 的安全
+  - 容器运行后的安全分析
+  - crd 和 operator 的安全考量
+  - 容器运行中安全工具介绍
+    - seccomp
+    - selinux
+    - apparmor
+- 问题风险发现
+  - 理解攻击的生命周期
+    - 理解 kill chain
+  - 风险管控的 checklist
+  - 被攻击后的应对策略
+    - 被攻击后的应对策略 -- 报告机制
+    - 涉及违法的应对策略
+    - 建立紧急应对小组
+    - 完善的故障报告
+  - 入侵检测
+    - 主机入侵检查
+    - 网络入侵检查
 
 ## 1. 课程介绍
 
@@ -998,6 +997,40 @@ gatekeeper-controller-manager-5b96bd668-hvkp8   1/1          Running   0        
 
 # 创建一个规则来拒绝 namepsace 的创建
 $ cat <<EOF > gk-ns-constraintTemplate.yaml
+apiVersion: templates.gatekeeper.sh/v1beta1
+kind: ConstraintTemplate
+metadata:
+  name: k8srequiredlabels
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sRequiredLabels
+      validation:
+        openAPIV3Schema:
+          properties:
+            labels:
+              type: array
+              items: string
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8srequiredlabels
+
+        violation[{"msg": msg, "details": {"missing_labels": missing}}] {
+          provided := {label | input.review.object.metadata.labels[label]}
+          required := {label | label := input.parameters.labels[_]}
+          missing := required - provided
+          count(missing) > 0
+          msg := sprintf("You must provide labels: %v", [missing])
+        }
+EOF
+
+# 创建一个 constraint 模板，模板不会生效，只有创建了 constraint 对象才会生效
+$ kubeclt apply -f gk-ns-constraintTemplate.yaml
+
+# 创建一个 constraint 对象
+$ cat <<EOF > gk-ns-constraint.yaml
 apiVersion: constraints.gatekeeper.sh/v1beta1
 kind: K8sRequiredLabels
 metadata:
@@ -1011,8 +1044,9 @@ spec:
     labels: ["gk-ns"]
 EOF
 
-# 创建一个 constraint 对象
-$ kubeclt apply -f gk-ns-constraintTemplate.yaml
+# 这行命令之后，所有的 namespace 创建时都必须带有 gk-ns 的 label
+$ kubectl apply -f gk-ns-constraint.yaml
+
 
 # 创建一个 namespace， 这个请求将被拒绝
 $ kubectl create ns test-ns
@@ -1025,10 +1059,69 @@ metadata:
   name: test-ns
   labels:
     gk-ns: xxx
+EOF 
+
+# 创建 namespace , 因为这个 namespace 有 gk-ns: xxx 的 label 所以这个请求可以被允许
+$ kubectl apply -f test-ns.yaml
+
+# 创建一个 image 规则的模板，这个规则 模板会接收实列中的对应字段 registry 来作为判断 pod 启动时的 image 是否合法
+$ cat <<EOF > gk-ns-constraintTemplate.yaml
+apiVersion: templates.gatekeeper.sh/v1beta1
+kind: ConstraintTemplate
+metadata:
+  name: k8srequiredregistry 
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sRequiredRegistry
+      validation:
+        openAPIV3Schema:
+          properties:
+            image:
+              type: string
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8srequiredregistry
+        violation[{"msg": msg, "details": {"Registry must be": required}}] {
+          input.review.object.kind == "Pod"
+          some i
+          image := input.review.object.spec.containers[i].image
+          required := input.parameters.registry
+          not startswith(image,required)
+          msg := sprintf("Forbidden registry: %v", [image])
+        }
+  EOF
+
+# 创建一个 constraint 对象，这个对象会拒绝所有的 image 以 registry.docker.io 开头的 pod
+$ cat <<EOF > gk-image-constraint.yaml
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sRequiredRegistry
+metadata:
+  name: only-quay-images
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+  parameters:
+    registry: "quay.io/"
+  EOF
+
+# 创建一个 pod，这个 pod 的 image 是以 registry.docker.io 开头的，所以这个请求会被拒绝
+$ cat <<EOF > test-pod.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pod
+spec:
+  containers:
+  - name: test-pod
+    image: registry.docker.io/nginx
 EOF
 
-# 创建 namespace
-$ kubectl apply -f test-ns.yaml
+$ kubectl create -f test-pod.yaml
 ```
 
 ## 5. Kube-APIServer 的安全防护
@@ -1164,8 +1257,554 @@ kubectl create -f /tmp/task2/pod.yaml
 
 ## 6. 网络
 
+### 6.1 应用的网络防护
+
+注意事项：
+
+1. 不受约束的攻击平面 -- 如果我们的应用没有对外的防火墙来保护的话，那么攻击的路径和行为将很难被追溯,如下图攻击者直接攻击了集群中的某台的主机，然后通过这个主机攻击集群中的其他主机，管理员很恩找到完整的攻击发起的路径
+
+    ![bypassfirewall](images/chapter-6-1.png)
+1. 防火墙 -- 我们考虑整个 k8s 集群是一个黑盒子的的话，每个访问的入口点都应该尽可能经过防火墙，防火墙可以是软件比如 firewalld 或者是一些硬件防火墙，因为防火墙都能足够强大的日志记录功能，可以方便追溯到攻击的来源和详细数据，并且配合防火墙规则我们可以很容易安全需求，比如不允许访问 22 端口等措施
+
+    ![bypassfirewall](images/chapter-6-2.png)
+1. k8s 网络面的安全风险 -- 在下图中，我们可以看到用户在最左侧通过网络访问一个负载均衡组件比如一个 nginx 或者 硬件设备 f5 ,然后请求被分流到了内部的 ingress(图中使用了 envoy 当然可以其他选项 nginx 我们这里不做讨论)，流量到达节点后如果改 pod 不在这个节点，cni (图中使用了 calico) 将流量转发到其他节点上，然后 pod 通过网络链接 ceph 之类的存储服务，这个过程中我们可以看到有很多的网络链接，每个链接都有可能被攻击。
+
+    ![bypassfirewall](images/chapter-6-3.png)
+1. k8s 网络面安全职责划分 -- 如下图所示，负载均衡都是在集群外部的组件，当你选择使用软件的负载均衡比如 nginx 或者 haproxy 时，你可以选择使用 iptables 或者 ipvs 来做安全防护，当然可以选择不做任何配置，而是在更前端配置一台防火墙来在那里完成各种安全配置就如同你使用 F5 作为负载均衡时那样
+
+    ![bypassfirewall](images/chapter-6-4.png)
+1. k8s 侧的网络安全防护 -- 我们可以使用 network policy 来实现,比如下面 2 个例子是一个关闭所有入口流量的网络策略，另一个则是过滤了一些流量，这些策略都是在 pod 层面的
+
+```yaml
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: deny-all # 策略名称
+  namespace: prod-ns # 策略所在的命名空间，即策略作用的范围
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+
+# 一个更复杂的网络策略的例子
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: deny-partial # 策略名称
+  namespace: prod-ns # 策略所在的命名空间，即策略作用的范围
+spec:
+  podSelector:
+    matchLabels:
+      app: scooter # 策略作用的对象，这里是 app=scooter 的 pod
+      role: db # 和策略作用的对象，这里是 role=db 的 pod
+  ingress: # 入口流量的策略
+  - from:
+    - podSelector: # 允许来自 app=scooter, role=search 的 pod 的流量
+        matchLabels:
+          app: scooter
+          role: search
+    - podSelector: # 允许来自 app=scooter, role=api 的 pod 的流量
+        matchLabels:
+          app: scooter
+          role: api
+    - podSelector: # 允许来自 app=inventory, role=web 的 pod 的流量
+        matchLabels:
+          app: inventory
+          role: web
+```
+
+```yaml
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: deny-all
+  namespace: prod-ns
+spec:
+  podSelector:
+    matchLabels:
+      app: scooter
+      role: db
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: scooter
+          role: search
+    - podSelector:
+        matchLabels:
+          app: scooter
+          role: api
+    - podSelector:
+        matchLabels:
+          app: inventory
+          role: web
+```
+
+### 6.2 lab
+
+#### 6.2.1 lab1 配置 ingress 自签名证书
+
+这个练习是让我们给 ingress 添加一个 tls 证书，我们使用自签名证书来完成这个练习，所有验证最后结果是我们 curl -k 来信任该证书，生产中我们可以使用 let's encrypt 来颁发证书，则不再需要 curl -k 来忽略证书发布方的认证
+
+```bash
+# 部署 ingress
+$ kubectl apply -f ../src/cks/chapter-6/ingress-deploy.yaml
+
+#  检验结果
+$ kubectl -n ingress-nginx get pod --field-selector=status.phase=Running
+# 输出
+NAME                                        READY   STATUS    RESTARTS      AGE
+ingress-nginx-controller-7f97f76d55-vxrw8   1/1     Running   1 (84s ago)   10m
+
+$ kubectl get svc -n ingress-nginx
+NAME                                 TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)                      AGE
+ingress-nginx-controller             LoadBalancer   10.233.19.143   <pending>     80:32077/TCP,443:30022/TCP   6m4s
+ingress-nginx-controller-admission   ClusterIP      10.233.38.200   <none>        443/TCP                      6m4s
+
+# 创建 ingress 规则
+$ cat <<EOF > ingress-instance.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tester
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: example.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: tester
+                port:
+                  number: 80
+EOF
+
+$ kubectl create -f ingress-instance.yaml
+
+# 检查 ingress 是否生效
+$ kubectl get ing
+# 输出
+NAME     CLASS   HOSTS        ADDRESS   PORTS   AGE
+tester   nginx   example.io             80      23s
+
+# 创建一个 nginx pod 用于测试
+$ kubectl create deployment tester --image nginx:alpine
+# 发布服务
+$ kubectl expose deployment tester --port=80
+
+# 验证整体流程
+$ curl http://10.0.0.10:32077 -H'Host: example.io'
+# 输出
+<!DOCTYPE html>
+<html>
+<head>
+<title>Welcome to nginx!</title>
+<style>
+html { color-scheme: light dark; }
+body { width: 35em; margin: 0 auto;
+font-family: Tahoma, Verdana, Arial, sans-serif; }
+</style>
+</head>
+<body>
+<h1>Welcome to nginx!</h1>
+<p>If you see this page, the nginx web server is successfully installed and
+working. Further configuration is required.</p>
+
+<p>For online documentation and support please refer to
+<a href="http://nginx.org/">nginx.org</a>.<br/>
+Commercial support is available at
+<a href="http://nginx.com/">nginx.com</a>.</p>
+
+<p><em>Thank you for using nginx.</em></p>
+</body>
+</html>
+
+# 颁发证书
+$ openssl req -x509 \-newkey rsa:2048 \-keyout example.key \-out example.out \-days 365 \-nodes \-subj "/C=US/ST=Ohio/L=Columbus/O=LFtraining/CN=example.io"
+
+# 创建 secret
+$ kubectl create secret tls example \--key="example.key" \--cert="example.out"
+
+# 更新 ingress 规则
+$ kubectl delete -f ingress-instance.yaml
+$ cp ingress-instance.yaml ingress-instance-tls.yaml
+# vi ingress-instance-tls.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tester
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - example.io
+    secretName: example
+  rules:
+    - host: example.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: tester
+                port:
+                  number: 80
+      https:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: tester
+                port:
+                  number: 443
+
+# 验证整体流程,注意我们要用 Ingres https 对应的端口 30022
+$ curl http://example.io:30022 -k --resolve example.io:30022:10.0.0.10
+# 输出
+<!DOCTYPE html>
+<html>
+<head>
+<title>Welcome to nginx!</title>
+<style>
+html { color-scheme: light dark; }
+body { width: 35em; margin: 0 auto;
+font-family: Tahoma, Verdana, Arial, sans-serif; }
+</style>
+</head>
+<body>
+<h1>Welcome to nginx!</h1>
+<p>If you see this page, the nginx web server is successfully installed and
+working. Further configuration is required.</p>
+
+<p>For online documentation and support please refer to
+<a href="http://nginx.org/">nginx.org</a>.<br/>
+Commercial support is available at
+<a href="http://nginx.com/">nginx.com</a>.</p>
+
+<p><em>Thank you for using nginx.</em></p>
+</body>
+</html>
+```
+
 ## 7. 工作负载考虑事项
+
+### 7.1 章节梗概
+
+- 静态分析
+- 动态分析
+- 主动防御措施
+
+### 7.2 在运行容器上生产环境之前的安全防御
+
+之前我们已经讨论过了一些镜像供应链上的风险，现在我们来讨论下，整体在正式运行一个容器之前比较符合安全的规范的动作，如下图一个镜像被放置到镜像仓库钱，应该经历 2 个检查后 -- 静态分析和动态分析，然后才能被放到镜像仓库中，然后才能被使用
+
+![bypassfirewall](images/chapter-7-1.png)
+
+#### 7.2.1 静态分析
+
+静态分析（Static Analysis）是指在运行容器之前对容器镜像进行分析，以便发现容器镜像中的安全问题，比如容器镜像中是否包含了恶意软件，是否包含了不安全的软件，是否包含了不安全的配置等，这些都是我们在运行容器之前需要考虑的问题，通常我们可以通过以下工具来进行静态分析
+
+- docker bench -- Docker 一直在维护 [Docker Bench](https://github.com/docker/docker-bench-security)，这是一个类似于 kube-bench 的工具，可以在不需要成为 Kubernetes 集群的一部分的情况下运行它来调查镜像。这个工具叫做 docker-bench-security。输出和检查类似，但没有包含对每个问题的建议修复。Docker Bench 工具现在落后于 CIS 几个版本，自从 Mirantis 接管 Docker 并承诺继续开源项目以来，它就没有更新过。它可能会在将来的某个时候更新和更新。
+- clair -- [clair](https://github.com/quay/clair) -- 这个工具是由 Quay.io 开发的，现在是 Red Hat 拥有的公司。该工具分为两部分，有三个功能部分。
+  - 第一阶段是索引，它从提交给 Clair 的清单开始。Clair 使用此信息下载像层(image layer)，并在每一次层扫描它们并生成 IndexReport。
+  - 第二阶段是匹配，当 IndexReport 与已知漏洞进行比较时。这些是定期下载的。请注意，在启动 Clair 之后，您可能必须等待下载才能进行匹配。(在国内会比较慢)
+  - 第三阶段是在 IndexReport 中发现漏洞时。根据通知的配置，一般会打印出来，当然我们可以配置 action 来做对应的处理
+- trivy -- [trivy](https://github.com/aquasecurity/trivy) trivy 是一个简单而全面的容器漏洞扫描程序。每次运行 trivy 时，它都会检索更完整的 vuln-list 进行分析。由于此列表是从 Alpine Linux 下载的，因此在分析 Alpine 和 RHEL/CentOS 时最完整。在大型环境中，您可能希望设置自己的 vuln-list 服务器，然后在客户端模式下使用 trivy 并传递服务器的地址和端口。这不会下载数据库，而是引用服务器上的公共数据库。这也有助于在空气隔离的环境中，在外部系统上下载列表，检查内容，然后在受保护的服务器上手动安装列表。Trivy 并且可以很方便的和 ci 集成。（也是考试中会出现的知识点）
+
+#### 7.2.2 动态分析
+
+完成了镜像静态的扫描后，下一个阶段就是“动态分析”（Dynamic Analysis）比如这个是否在访问那些敏感的 system call api 等，我们可以利用工具比如 perf 和 ftrace Linux 命令有助于在运行时跟踪和分析进程。Tracee 程序可以用来执行类似的跟踪，使用 eBPF 程序来观察系统调用和事件。它还可以用于查看进程使用的内存，并提取二进制文件以完全了解程序正在处理的内容。
+
+如何在 k8s 里实现动态分析 -- 我们可以通过使用 mutating webhook , 针对 pod 我们可以在每个 pod 启动的 yaml 里添加一个 init container 来做动态扫描, 下面是一个 MutatingWebhookConfiguration 的例子，他将 pod  创建动作指向了一个服务 dns 名 `webhook-k8s-pod-mutator-webhook.kube-system.svc` ，在对应服务里我们控制需要用 `client-go` 去获取到这个 pod 然后在 containers 里添加一个 init container 去执行 trivy 二进制文件即可，如果执行结果有问题怎退出这个 pod 的创建，`但是同时这样的安全策略会带来额外的资源开销`
+
+```yaml
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+creationTimestamp: "2023-08-23T07:09:42Z"
+generation: 1
+name: webhook-k8s-pod-mutator-webhook
+resourceVersion: "44527"
+uid: cfa743e5-c99c-4793-b1e9-cf6d997b4f9a
+webhooks:
+- admissionReviewVersions:
+- v1
+clientConfig:
+    caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURGekNDQWYrZ0F3SUJBZ0lDQitRd0RRWUpLb1pJaHZjTkFRRUxCUUF3SFRFYk1Ca0dBMVVFQ2hNU2F6aHoKTFhCdlpDMXRkWFJoZEc5eUxtbHZNQjRYRFRJek1EZ3lNekEzTURrME1Wb1hEVEkwTURneU16QTNNRGswTVZvdwpIVEViTUJrR0ExVUVDaE1TYXpoekxYQnZaQzF0ZFhSaGRHOXlMbWx2TUlJQklqQU5CZ2txaGtpRzl3MEJBUUVGCkFBT0NBUThBTUlJQkNnS0NBUUVBcGJPYk1Wbm1QU0MyWGRveFMxRjFaNmxrdnpmRnNkRGs0Mkh1UnhGY2tFT00KZk43cW1LbzY3S1krME54eWZKWUhjVU1nRVFFUnR1dUJBQVJhN1JTcXFadDdNeEk0SlRKa0MrSWNxd2xSKzhySApMSXpEVm0xa3hnS2psOTZsY0xiSXIzWWxIdDNmc3VIc3Y5SWhjb3hQZnZROFJUVm1aWWdHZXhkWjJTdldQQ05WClZBR0IvRXdzR1NXRi9DZFVGZDdqY0V2TXBNamczclhwVVFqTGN0WERrWUxwa1VCbklCOUczK0RjdHJRQVEvb3AKQlRVYklFV08zMjlSODVhN3ZsaGQxV1ErQTN0dG44U0RmS1gvTVpvcnk3dXl2QTluMnMvUU1NR1J5bHhYL3ZNRgpWbmdVbnZQNGhZcy9oRWpBeWJQL0kwYUtLUVFtdmlHMXA1Q1pJNFp1V1FJREFRQUJvMkV3WHpBT0JnTlZIUThCCkFmOEVCQU1DQW9Rd0hRWURWUjBsQkJZd0ZBWUlLd1lCQlFVSEF3SUdDQ3NHQVFVRkJ3TUJNQThHQTFVZEV3RUIKL3dRRk1BTUJBZjh3SFFZRFZSME9CQllFRlAycDZoSmNwWmRoekNpZ0U4SE1rNFFFTXZiYk1BMEdDU3FHU0liMwpEUUVCQ3dVQUE0SUJBUUJRMkxZUVl4LzJ6dmtFd0dsamdqaExUNjd5WEZpSVdOWnBPaHFUSlFmVythU0d2Ry84Ckg0UzhFamxxQkpxSVk2UUFPYmR2MXB0cjZkZUtucmo2MkNISE55emNpYlExa0o0MndpV25pZFFtNXVhU1BYZUIKRk1DdHNIVjVtWnpRRDQycHkzQVY0R2ltSUZiTk9CZkVkU2dLbHVBTk9KSVZWOE9ZRk1sYXI1b2loZUdWdm42UQp0RlI0UTQrOEZ4LzJHM2o0M2xVckc5R1I1T0IrZ1BQd2N2TGlXcXVEeHgrUlJpb3RPeEZQRnRMR1RGU0poQ0NKCk9mQy9hTk1ZZXdWSEJrc1BiN3pGeFUrZHpTRnNxamswRFVGbGM5bEQ4LzlkWCt4dEQzNUtSd08xd1VIZUFrZ2gKaWdvd1poemh1R2xtMkhpdjF0RVY4N25mbEhXUGRPZE9HUVM4Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+    service:
+    name: webhook-k8s-pod-mutator-webhook
+    namespace: kube-system
+    path: /mutate
+    port: 443
+failurePolicy: Ignore
+matchPolicy: Equivalent
+name: webhook.k8s-pod-mutator.io
+namespaceSelector:
+    matchExpressions:
+    - key: control-plane
+    operator: DoesNotExist
+    - key: kube-system
+    operator: DoesNotExist
+objectSelector: {}
+reinvocationPolicy: Never
+rules:
+- apiGroups:
+    - ""
+    apiVersions:
+    - v1
+    operations:
+    - CREATE
+    resources:
+    - pods
+    scope: '*'
+sideEffects: None
+timeoutSeconds: 2
+```
+
+Tracee -- [Tracee](https://github.com/aquasecurity/tracee) 是一个工具，允许实时监视系统调用和内核事件。虽然所有操作都将被跟踪，但您可以通过 grep 来缩小范围，以便将其缩小到特定的 pod。显示的信息具有精确的时间戳、uts_name、UID、PID、返回代码、事件和参数。
+
+Falco -- [Falco](https://falco.org/docs/) 是一个更大更全的框架，他有若干个组件来监视 system call,并且支持针对某个特定的容器制定特定的规则，更细化比如容器写或读取了 `/usr/bin , /etc/` 等关键目录， 有比如容器发起了 `ssh scp` 命令都会被捕捉到， 当这个容器违反了规则，则你会输出到日志或者通过 grcp 协议调用某些 api 这里我们可以是一个告警消息接受平台，把这些消息接受下来进一部处理
+
+![bypassfirewall](images/chapter-7-2.png)
+
+#### 7.2.3 主动防御（change containers）
+
+安全人员希望容器一旦运行后不应该有任何的更改，但现实中很难被实现，比如一个 mysql 的容器需要将数据写入他挂在的目录里的 data 文件里，又同时需要写入 binlog 对应的目录，当然我们是可以在 k8s 做到将 容器 的 container layer 做成 readonly ，所以我们可能需要从更底层来主动防御会来的更可行，比如如果容器访问了一个 fork() system call api 是不符合我们的安全预期的，那么这个请求应该被拒绝，幸运的是我们可以借助以下这些工具来实现
+
+- seccomp -- 主要是通过限制应用的能够访问的 system call 的 api 来实现安全限制，早期的版本套用了 seccomp 的应用只能访问这个 4 个 system call api 分别是 `read(), write(), exit(), and sigreturn()` ,在最近的版本利用了 ebpf 技术，可以实现通过字符串来制定应用可以访问那些 system call api，在 k8s 中使用 seccomp 如果违反了设置这个 pod 将呈现为 `CrashLoopBackoff` 的状态。
+- selinux --  SELinux 最初由美国国家安全局（National Security Administration）使用一家名为 Tresys 的公司开发。红帽公司也是早期的合作伙伴，它帮助开发和集成软件，用于政府和军事应用。它一直是 RHEL 的重要组成部分，这为它带来了大量的使用基础。在操作上，SELinux 是一组安全规则，用于确定哪些进程可以访问系统上的哪些文件、目录、端口和其他项目。由于 Linux 中的所有对象都是某种类型的“文件”，而所有的操作都是某种类型的“进程”，因此 SELinux 可以用来控制一切。
+- AppArmor -- (`考试内容`)AppArmor 是 SELinux 的替代 LSM（Linux 安全模块）。对它的支持已经被纳入 Linux 内核，自 2006 年以来。它已经被 SUSE、Ubuntu 和其他发行版使用。AppArmor 通过提供强制访问控制（MAC）来补充传统的 UNIX 自主访问控制（DAC）模型。除了手动指定配置文件之外，AppArmor 还包括学习模式，在该模式下，配置文件的违规行为被记录，但不会被阻止。然后可以根据程序的典型行为将此日志转换为配置文件。
+  - 增补了 DAC 的不足(Unix discretionary access control)
+  - 主要实现思路通过 MAC (mandatory access control)
+  - 从 linux kernel mainline 2.6.36 开始，AppArmor 就被合并到了 linux kernel 中
+
+AppArmor 加载查询：
+
+```console
+$ sudo aa-status
+apparmor module is loaded.
+32 profiles are loaded.
+32 profiles are in enforce mode.
+   /snap/snapd/18357/usr/lib/snapd/snap-confine
+   /snap/snapd/18357/usr/lib/snapd/snap-confine//mount-namespace-capture-helper
+   /snap/snapd/19457/usr/lib/snapd/snap-confine
+   /snap/snapd/19457/usr/lib/snapd/snap-confine//mount-namespace-capture-helper
+   /usr/bin/man
+   /usr/lib/NetworkManager/nm-dhcp-client.action
+   /usr/lib/NetworkManager/nm-dhcp-helper
+   /usr/lib/connman/scripts/dhclient-script
+   /usr/lib/snapd/snap-confine
+   /usr/lib/snapd/snap-confine//mount-namespace-capture-helper
+   /{,usr/}sbin/dhclient
+   cri-containerd.apparmor.d
+   lsb_release
+   man_filter
+   man_groff
+   nvidia_modprobe
+   nvidia_modprobe//kmod
+   snap-update-ns.lxd
+   snap.lxd.activate
+   snap.lxd.benchmark
+   snap.lxd.buginfo
+   snap.lxd.check-kernel
+   snap.lxd.daemon
+   snap.lxd.hook.configure
+   snap.lxd.hook.install
+   snap.lxd.hook.remove
+   snap.lxd.lxc
+   snap.lxd.lxc-to-lxd
+   snap.lxd.lxd
+   snap.lxd.migrate
+   snap.lxd.user-daemon
+   tcpdump
+0 profiles are in complain mode.
+0 profiles are in kill mode.
+0 profiles are in unconfined mode.
+10 processes have profiles defined.
+10 processes are in enforce mode.
+   /usr/local/bin/kube-scheduler (5312) cri-containerd.apparmor.d
+   /usr/local/bin/kube-apiserver (5335) cri-containerd.apparmor.d
+   /usr/local/bin/kube-controller-manager (5354) cri-containerd.apparmor.d
+   /usr/local/bin/etcd (5384) cri-containerd.apparmor.d
+   /sbin/tini (6699) cri-containerd.apparmor.d
+   /code/calico-typha (6716) cri-containerd.apparmor.d
+   /code/apiserver (7380) cri-containerd.apparmor.d
+   /code/apiserver (7532) cri-containerd.apparmor.d
+   /usr/bin/kube-controllers (7624) cri-containerd.apparmor.d
+   /usr/local/bin/operator (8161) cri-containerd.apparmor.d
+0 processes are in complain mode.
+0 processes are unconfined but have a profile defined.
+0 processes are in mixed mode.
+0 processes are in kill mode.
+
+# journalctl -xf
+```
+
+### 7.3 lab
+
+#### 7.3.1 lab1-trivy
+
+分别使用镜像 `nginx:latest` 和 `alpine:latest` 启动 2 个 pod 在 namespace chapter-7 下， 然后用 trivy 对他们的镜像进行一个扫描
+
+```bash
+# 创建 namespace
+kubectl create ns chapter-7
+
+cat <<EOF > chapter7-pod1.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: chapter7-pod1
+  namespace: chapter-7
+spec:
+  containers:
+  - name: chapter7-container1
+    image: nginx
+EOF
+
+cat <<EOF > chapter7-pod2.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: chapter7-pod2
+  namespace: chapter-7
+spec:
+  containers:
+  - name: chapter7-container2
+    image: alpine
+EOF
+
+kubectl create -f chapter7-pod1.yaml
+kubectl create -f chapter7-pod2.yaml
+
+image_list=`kubectl get po -n chapter-7  --output=custom-columns="IMAGE:.spec.containers[*].image" | sed -n '1!p'`
+for i in $image_list;do trivy image --skip-db-update  -s 'HIGH,CRITICAL' $i;done
+```
+
+```log
+2023-08-03T00:56:07.143Z	INFO	Vulnerability scanning is enabled
+2023-08-03T00:56:07.143Z	INFO	Secret scanning is enabled
+2023-08-03T00:56:07.143Z	INFO	If your scanning is slow, please try '--scanners vuln' to disable secret scanning
+2023-08-03T00:56:07.143Z	INFO	Please see also https://aquasecurity.github.io/trivy/v0.43/docs/scanner/secret/#recommendation for faster secret detection
+2023-08-03T00:56:10.327Z	INFO	Detected OS: debian
+2023-08-03T00:56:10.327Z	INFO	Detecting Debian vulnerabilities...
+2023-08-03T00:56:10.351Z	INFO	Number of language-specific files: 0
+
+nginx (debian 12.1)
+
+Total: 3 (HIGH: 3, CRITICAL: 0)
+
+┌───────────────┬────────────────┬──────────┬───────────────────┬───────────────┬───────────────────────────────────────────────────────────┐
+│    Library    │ Vulnerability  │ Severity │ Installed Version │ Fixed Version │                           Title                           │
+├───────────────┼────────────────┼──────────┼───────────────────┼───────────────┼───────────────────────────────────────────────────────────┤
+│ libde265-0    │ CVE-2023-27103 │ HIGH     │ 1.0.11-1          │               │ Libde265 v1.0.11 was discovered to contain a heap buffer  │
+│               │                │          │                   │               │ overflow via ...                                          │
+│               │                │          │                   │               │ https://avd.aquasec.com/nvd/cve-2023-27103                │
+├───────────────┼────────────────┤          ├───────────────────┼───────────────┼───────────────────────────────────────────────────────────┤
+│ libldap-2.5-0 │ CVE-2023-2953  │          │ 2.5.13+dfsg-5     │               │ null pointer dereference in ber_memalloc_x function       │
+│               │                │          │                   │               │ https://avd.aquasec.com/nvd/cve-2023-2953                 │
+├───────────────┼────────────────┤          ├───────────────────┼───────────────┼───────────────────────────────────────────────────────────┤
+│ perl-base     │ CVE-2023-31484 │          │ 5.36.0-7          │               │ CPAN.pm before 2.35 does not verify TLS certificates when │
+│               │                │          │                   │               │ downloading distributions over...                         │
+│               │                │          │                   │               │ https://avd.aquasec.com/nvd/cve-2023-31484                │
+└───────────────┴────────────────┴──────────┴───────────────────┴───────────────┴───────────────────────────────────────────────────────────┘
+2023-08-03T00:56:11.019Z	INFO	Vulnerability scanning is enabled
+2023-08-03T00:56:11.019Z	INFO	Secret scanning is enabled
+2023-08-03T00:56:11.019Z	INFO	If your scanning is slow, please try '--scanners vuln' to disable secret scanning
+2023-08-03T00:56:11.019Z	INFO	Please see also https://aquasecurity.github.io/trivy/v0.43/docs/scanner/secret/#recommendation for faster secret detection
+2023-08-03T00:56:14.200Z	INFO	Detected OS: alpine
+2023-08-03T00:56:14.200Z	INFO	Detecting Alpine vulnerabilities...
+2023-08-03T00:56:14.204Z	INFO	Number of language-specific files: 0
+
+
+alpine (alpine 3.18.2)
+
+Total: 0 (HIGH: 0, CRITICAL: 0)
+```
+
+#### 7.3.2 lab2-appamora
+
+使用镜像 `nginx` 来创建一个 pod 在 namespace -- chapter-7 中，然后创建一个 appamora 规则拒绝这个 pod 的任何写操作
+
+```bash
+# 注意如果你有多节点的话，需要在每个节点上都执行这个命令，除非你启动 pod 时指定了 nodeSelector
+sudo bash -c 'cat <<EOF > /etc/apparmor.d/chapter7-profile1
+#include <tunables/global>
+profile k8s-apparmor-chapter7-pod3-deny-write flags=(attach_disconnected) {
+  #include <abstractions/base>
+
+  file,
+
+  # Deny all file writes.
+  deny /** w,
+}
+EOF'
+
+cat <<EOF > chapter7-pod3.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: chapter7-pod3
+  namespace: chapter-7
+  annotations:
+    container.apparmor.security.beta.kubernetes.io/chapter7-container3: localhost/k8s-apparmor-chapter7-pod3-deny-write # 添加这一行
+spec:
+  containers:
+  - name: chapter7-container3
+    image: nginx
+EOF
+
+
+kubectl create -f chapter7-pod3.yaml
+```
 
 ## 8. 问题检测
 
-## 9. Domain 审查
+### 8.1 攻击的生命周期
+
+![bypassfirewall](images/chapter-8-1.png)
+
+- reconnaissance/侦查阶段 -- `攻击者通过各种方式侦查目标，比如扫描端口，探测服务等，甚至可能是攻击者直接通过请 it 人员喝酒聊天来套取必要信息`，之所以要这么做是因为他需要了解整个系统的拓扑结构，以及各个组件的版本信息，这些信息都是他后续攻击的基础，这个阶段完成的越周全，攻击者的攻击成功效率就越高，比如如果攻击者了解到整个环境都是用了 cgroup v1 则，攻击者会尝试使用 `notify_on_release` 来进行容器越狱攻击，通常这个节点是比较容易能够被探测到的
+- control/控制 -- 一旦掌握的必要信息就可以开始控制目标了。这个阶段攻击者通过各种手段植入攻击工具等，随着被控制的主机越来越多攻击也越来越难被发现
+- target attainment/目标达成 -- 达打某些目标，比如获取某些敏感信息，或者是破坏某些服务，这个阶段攻击者会尽可能的深入到系统中，比如攻击者可以通过控制某些 pod 来获取到某些敏感信息，或者是通过控制某些 pod 来破坏某些服务
+
+kill chain 攻击的生命周期的细化 -- 我们细化为 7 个详细的步骤
+
+![bypassfirewall](images/chapter-8-2.png)
+
+1. reconnaissance -- 之前已经阐述过了，这里不再重复阐述
+1. weaponization/武器化 -- 武器化是指攻击者将攻击工具打包成可执行的文件，比如攻击者可以将攻击工具打包成一个 docker 镜像，然后通过 docker run 来执行，这样可以方便攻击者在不同的环境中使用，又或者伪装成一个 pdf 文件，然后通过邮件发送给目标用户，当用户打开这个 pdf 文件时，攻击工具就会被执行，这样攻击者就可以控制用户的主机了
+1. delivery/传递 -- 传递是指攻击者将武器化的攻击工具传递给目标，比如攻击者可以通过邮件发送给目标用户，或者是通过其他方式传递给目标用户，这个阶段攻击者需要考虑的是如何让目标用户打开这个文件，比如攻击者可以通过社交工程的方式来让目标用户打开这个文件，比如攻击者可以通过邮件发送给目标用户，邮件内容是一个 pdf 文件， 一旦打开了这个文件，攻击者就可以进入 Exploitation 阶段。又或者攻击程序攻占 usb 被攻击者拿着 usb 插入自己的主机，一旦插入，攻击者就可以控制被攻击者的主机了
+1. Exploitation/攻占漏洞 -- 一旦攻击脚本/weaponization 进入到目标主机，攻击者就可以开始攻占漏洞了，比如攻击者可以通过攻占漏洞来获取到目标主机的 root 权限，然后攻击者就可以控制目标主机了
+1. Installation/安装恶意软件 -- 一旦攻占漏洞成功活得 root 权限后，攻击者就可以安装恶意软件了，比如攻击者可以安装一个后门程序，然后攻击者就可以随时进入到目标主机了
+1. Command and Control/控制 -- 一旦安装了恶意软件，攻击者就可以控制目标主机了，比如攻击者可以通过恶意软件来控制目标主机，比如攻击者可以通过恶意软件来获取目标主机的敏感信息，比如攻击者可以通过恶意软件来破坏目标主机的服务
+1. Actions on Objectives/达成目标 -- 一旦攻击者控制了目标主机，攻击者就可以达成目标了，比如攻击者可以通过控制目标主机来获取目标主机的敏感信息，比如攻击者可以通过控制目标主机来破坏目标主机的服务
+
+### 8.2 被攻击的应对策略
+
+- 良好的应对数据泄漏的策略 -- 在应对敏感数据泄漏时，企业应有完善的流程来应对，比如在发现敏感数据泄漏时，应该立即通知相关人员，然后对泄漏的数据进行分析，找出泄漏的原因，然后对泄漏的数据进行清理，最后对泄漏的原因进行修复，这个过程中应该有专门的人员来负责，而不是让所有人都来处理，这样会导致处理效率低下，而且容易出错。
+- 周期性的备份 -- 我们应定义进行备份，比如对 k8s 的 etcd 数据库进备份，并定期举行灾难恢复演练，这样可以保证在出现灾难时，我们可以快速的恢复到正常状态。
+- 紧急应对小组 -- 企业应该组件紧急应对小组，专门应对敏感数据泄漏，这样可以保证在出现敏感数据泄漏时，可以快速的应对，而不是让所有人都来处理，这样会导致处理效率低下，而且容易出错。
+- 法律层面的应对 -- 对应不同程度信息泄露，有时我们可能需要警察的介入，但是不同的国家会有不同的处理方式，比如在中国没有明确的规定在什么规模下数据泄漏下需要报警处理，但在美国不同程度的泄漏甚至需要上报 FBI 等机构，所以在应对数据泄漏时，我们需要了解当地的法律法规，以便我们可以更好的应对。
+
+### 8.3 入侵检测系统
+
+传染入侵检测系统：
+
+- 主机入侵检测系统/Host Intrusion Detection Systems (HIDS) -- 我们可以利用 HIDS 工具来进行检测，他们周期性在本地节点中进行扫描工作来检测是否是被入侵， 比如开源的有 [Tripwire](https://github.com/Tripwire/tripwire-open-source) 和 [OSSEC](https://www.ossec.net/)
+- 网络入侵检测系统/Network Intrusion Detection Systems (NIDS) -- 比如 [SNORT](https://snort.org/snort3) 和 [Suricata](https://suricata-ids.org/)
+
+AI 反入侵工具：通过 AI 来检测入侵，就如果反到系统一样，会比我们人类反应更快，经过大量学习后这些 AI 反入侵工具可以自动的检测出入侵，比如：
+
+- [NeuVector](https://neuvector.com/)
+- [StackRox](https://www.stackrox.com/) 
+- 其它
