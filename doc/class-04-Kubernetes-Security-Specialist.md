@@ -1138,16 +1138,16 @@ $ kubectl create -f test-pod.yaml
 
 kube-apiserver 是整个 k8s 的 api 接口，所有和 k8s 打交道的服务都需要通过它，所以的安全也是非常重要的。
 
-- --advertise-address -- 用来指定 kube-apiserver 的地址，如果不指定的话，他会使用 --bind-address 的值，如果 --bind-address 也没有指定的话， 这里会涉及到 kube-apiserver 在网络层面上被攻击平面的问题，通常我们的 kube-apiserver 一般都只对内网开放，所以通过合理的设置 --advertise-address 来限制 kube-apiserver 的访问范围是非常重要的，比如我们 internet 访问的地址段是 10.0.0.0/24，集群管理网段 172.25.0.0/24 ,那么我们的 kube-apiserver 的 --advertise-address 应该设置为 172.25.0.x 而不是 10.0.0.x 或者 0.0.0.0 ,并且网络链路上应该尽可能避免 10.0.0.0/24 和 172.25.0.0/24 互通。
-- --allow-privileged -- 这个参数是用来控制是否允许 pod 使用特权模式，如果设置为 false 的话，那么所有的 pod 都不能使用特权模式，如果设置为 true 的话，那么所有的 pod 都可以使用特权模式，如果设置为未定义的话，那么所有的 pod 都不能使用特权模式，但是可以通过 pod security policy 来允许特权模式，所以这个参数的设置和 pod security policy 是有关系的，如果我们的集群中没有开启 pod security policy 的话，那么这个参数的设置就是非常重要的，因为特权模式的 pod 可以访问 host 上的敏感数据，如果我们的集群中开启了 pod security policy 的话，那么这个参数的设置就不是那么重要了，因为 pod security policy 可以限制 pod 使用特权模式
-  - 需要考量的问题 -- 如果设成 false 有可能吗？ 从我个人你经验来看做不到，因为比如像 cni 这些 pod 很多都需要特权模式下来运行，所以这个问题落到了具体的 pod 上的安全层面了
+- --advertise-address -- 用来指定 kube-apiserver 的地址，如果不指定的话，他会使用 --bind-address 的值，如果 --bind-address 也没有指定的话， 这里会涉及到 kube-apiserver 在网络层面上被攻击平面的问题，通常我们的 kube-apiserver 一般都只对内网开放，所以通过合理的设置 --advertise-address 来限制 kube-apiserver 的访问范围是非常重要的，比如我们 internet 访问的地址段是 10.0.0.0/24，集群管理网段 172.25.0.0/24，那么我们的 kube-apiserver 的 --advertise-address 应该设置为 172.25.0.x 而不是 10.0.0.x 或者 0.0.0.0，并且网络链路上应该尽可能避免 10.0.0.0/24 和 172.25.0.0/24 三层互通。
+- --allow-privileged -- 这个参数是用来控制是否允许 pod 使用特权模式，默认值是 False。如果设置为 true 的话，那么所有的 pod 都可以使用特权模式。如果设置为 False 的话，那么所有的 pod 都不能使用特权模式。通过 pod security policy 允许以更小的细粒度来限制用户或者 pod 是否具备特权模式（特权模式的 pod 可以访问 host 上的敏感数据）
+  - 需要考量的问题 -- 如果设成 false 有可能吗？ 从我个人你经验来看做不到，因为比如像 cni 这些 pod 很多都需要特权模式下来运行。
 - --authorization-mode --  授权模式，目前这块其实没有太多安全方面的配置需要调整，因为目前 k8s 支持的授权模式都是基于 RBAC 的，所以这个参数的设置和 RBAC 的设置是一致的，一般我们这里配置都是 `Node,RBAC` , Node 是用来授权 kubelet 的，RBAC 是用来授权 kube-apiserver 的访问权限的
 - --client-ca-file -- 这个指向了初始化集群时的 ca 证书的物理位置，如果有攻击者恶意替换了这个位置或者证书文件没，会导致整个集群都不可用的状态
 - --enable-admission-plugins -- 开启准入控制器，这个参数的设置和 Admission Controllers 的设置是一致的，一般我们这里配置都是 `NodeRestriction` , 有很多种类型的准入控制器，但会调几个跟安全相关的来阐述
   -  NodeRestriction -- 这个准入控制器是用来限制 kubelet 不允许 kubelet 不能通过 kube-apiserver 来删除 node 对象，这样可以防止攻击者通过攻占某个节点的 kubelet 来删除整个集群的 node 对象，从而导致整个集群不可用
   - AlwaysPullImages -- 这个准入控制器是用来强制要求 pod 的 image 必须每次都是从镜像仓库拉取，忽略本地的镜像，可以有效防止有人在某台服务器上将一个正常的镜像替换成恶意的镜像。
   - EventRateLimit -- 这个准入控制器是用来限制每秒钟 kube-apiserver 接收的 event 数量，可以有效防止攻击者通过大量的 event 来攻击 kube-apiserver。
-  - ImagePolicyWebhook -- 这个准入控制器是用来检查 pod 的 image 是否符合自定义的安全策略，即将验证 image 的合法性委托给一个外置的服务来完成，通常会和 `Open Policy Agent  GateKeeper` 配合来使用。
+  - ImagePolicyWebhook -- 这个准入控制器是用来检查 pod 的 image 是否符合自定义的安全策略，即将验证 image 的合法性委托给一个外置的服务来完成，通常会和 `Open Policy Agent GateKeeper` 配合来使用。
 - --enable-bootstrap-token-auth -- 当这个设置为 true 时会增加 kube-apiserver 认证的风险，攻击者可以利用这个 token 加入恶意的节点到集群中，所以这个参数的设置应该是 false。
 
 ### 5.3 审计日志
@@ -1212,13 +1212,13 @@ $ sudo vi /etc/kubernetes/kube-apiserver.yaml
 
 这里我们不阐述具体的配置，应该有 cka 基础都能了解 `clusterrole, role` 的作用域了。
 
-我们要给出的建议是，不要因为屠简单将 `clusterrole -- cluster-admin` 直接赋予某个用户，这样会导致这个用户拥有整个集群的所有权限，这样的话，如果这个用户的 token 泄露了，那么攻击者就可以通过这个 token 来做任何事情，所以我们应该根据实际的业务场景来给用户分配合适的权限，比如说我们的运维人员只需要管理某个 namespace 下的资源，那么我们就可以给他分配一个 `role` 来管理这个 namespace 下的资源，而不是直接给他分配 `clusterrole -- cluster-admin`。
+我们要给出的建议是，不要因为地简单将 `clusterrole -- cluster-admin` 直接赋予某个用户，这样会导致这个用户拥有整个集群的所有权限，如果这个用户的 token 泄露了，那么攻击者就可以通过这个 token 来做任何事情。所以我们应该根据实际的业务场景来给用户分配合适的权限，比如说我们的运维人员只需要管理某个 namespace 下的资源，那么我们就可以给他分配一个 `role` 来管理这个 namespace 下的资源，而不是直接给他分配 `clusterrole -- cluster-admin`。
 
 ### 5.5 Pod 安全策略（PSP，Pod Security Policies）
 
 pod 安全策略是用过批量修改满足特定条件的 pod 的安全选项的，比如 在 namespace ns1 下的所有 pod 都需要 `drop_capability=CAP_SYS_ADMIN`，即使 pod 使用了 特权模式 运行也会被强制修改为 `drop_capability=CAP_SYS_ADMIN`，这样就可以有效防止攻击者通过攻占某个 pod 来获取到 host 上的 root 权限，从而导致整个集群不可用。通常管理员可以配置 Pod Security Policies 指向某个 namespace。
 
-但是值得注意的是这个功能已经被标记为 deprecated 了，所以我们应该尽快的使用 Admission Controllers 来替代 [Pod Security Policies](https://kubernetes.io/docs/concepts/security/pod-security-admission/) 目前这并不是考试的内容。
+但是值得注意的是这个功能[在 1.21 被标记为 deprecated，在 K8S 1.25 以后的版本中被彻底移除](https://kubernetes.io/docs/concepts/security/pod-security-policy/)，所以我们应该尽快的使用 Admission Controllers 来替代 [Pod Security Policies](https://kubernetes.io/docs/concepts/security/pod-security-admission/) 。目前这并不是考试的内容。
 
 ### 5.6 服务账户令牌（Service Account Token）
 
@@ -1524,50 +1524,24 @@ Commercial support is available at
 
 完成了镜像静态的扫描后，下一个阶段就是“动态分析”（Dynamic Analysis）比如这个是否在访问那些敏感的 system call api 等，我们可以利用工具比如 perf 和 ftrace Linux 命令有助于在运行时跟踪和分析进程。Tracee 程序可以用来执行类似的跟踪，使用 eBPF 程序来观察系统调用和事件。它还可以用于查看进程使用的内存，并提取二进制文件以完全了解程序正在处理的内容。
 
-如何在 k8s 里实现动态分析 -- 我们可以通过使用 mutating webhook , 针对 pod 我们可以在每个 pod 启动的 yaml 里添加一个 init container 来做动态扫描, 下面是一个 MutatingWebhookConfiguration 的例子，他将 pod  创建动作指向了一个服务 dns 名 `webhook-k8s-pod-mutator-webhook.kube-system.svc` ，在对应服务里我们控制需要用 `client-go` 去获取到这个 pod 然后在 containers 里添加一个 init container 去执行 trivy 二进制文件即可，如果执行结果有问题怎退出这个 pod 的创建，`但是同时这样的安全策略会带来额外的资源开销`
+如何在 k8s 里实现动态分析 -- 我们可以通过使用 mutating webhook（针对 pod），我们可以在每个 pod 启动的 yaml 里添加一个 init container 来做业务启动前的动态扫描, 下面是一个 MutatingWebhookConfiguration 的例子，他将 pod  创建动作指向了一个服务 dns 名 `my-webhook.example.com`（kube-system 是 MutatingWebhookConfiguration 所在的），在对应服务里我们控制需要用 `client-go` 去获取到这个 pod，然后在 containers 里添加一个 init container 去执行 trivy 二进制文件即可，如果执行结果有问题怎退出这个 pod 的创建，`但是同时这样的安全策略会带来额外的资源开销`。
 
 ```yaml
+This example shows a mutating webhook that would match a CREATE of any resource (but not subresources) with the label foo: bar:
+
 apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
-metadata:
-creationTimestamp: "2023-08-23T07:09:42Z"
-generation: 1
-name: webhook-k8s-pod-mutator-webhook
-resourceVersion: "44527"
-uid: cfa743e5-c99c-4793-b1e9-cf6d997b4f9a
 webhooks:
-- admissionReviewVersions:
-- v1
-clientConfig:
-    caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURGekNDQWYrZ0F3SUJBZ0lDQitRd0RRWUpLb1pJaHZjTkFRRUxCUUF3SFRFYk1Ca0dBMVVFQ2hNU2F6aHoKTFhCdlpDMXRkWFJoZEc5eUxtbHZNQjRYRFRJek1EZ3lNekEzTURrME1Wb1hEVEkwTURneU16QTNNRGswTVZvdwpIVEViTUJrR0ExVUVDaE1TYXpoekxYQnZaQzF0ZFhSaGRHOXlMbWx2TUlJQklqQU5CZ2txaGtpRzl3MEJBUUVGCkFBT0NBUThBTUlJQkNnS0NBUUVBcGJPYk1Wbm1QU0MyWGRveFMxRjFaNmxrdnpmRnNkRGs0Mkh1UnhGY2tFT00KZk43cW1LbzY3S1krME54eWZKWUhjVU1nRVFFUnR1dUJBQVJhN1JTcXFadDdNeEk0SlRKa0MrSWNxd2xSKzhySApMSXpEVm0xa3hnS2psOTZsY0xiSXIzWWxIdDNmc3VIc3Y5SWhjb3hQZnZROFJUVm1aWWdHZXhkWjJTdldQQ05WClZBR0IvRXdzR1NXRi9DZFVGZDdqY0V2TXBNamczclhwVVFqTGN0WERrWUxwa1VCbklCOUczK0RjdHJRQVEvb3AKQlRVYklFV08zMjlSODVhN3ZsaGQxV1ErQTN0dG44U0RmS1gvTVpvcnk3dXl2QTluMnMvUU1NR1J5bHhYL3ZNRgpWbmdVbnZQNGhZcy9oRWpBeWJQL0kwYUtLUVFtdmlHMXA1Q1pJNFp1V1FJREFRQUJvMkV3WHpBT0JnTlZIUThCCkFmOEVCQU1DQW9Rd0hRWURWUjBsQkJZd0ZBWUlLd1lCQlFVSEF3SUdDQ3NHQVFVRkJ3TUJNQThHQTFVZEV3RUIKL3dRRk1BTUJBZjh3SFFZRFZSME9CQllFRlAycDZoSmNwWmRoekNpZ0U4SE1rNFFFTXZiYk1BMEdDU3FHU0liMwpEUUVCQ3dVQUE0SUJBUUJRMkxZUVl4LzJ6dmtFd0dsamdqaExUNjd5WEZpSVdOWnBPaHFUSlFmVythU0d2Ry84Ckg0UzhFamxxQkpxSVk2UUFPYmR2MXB0cjZkZUtucmo2MkNISE55emNpYlExa0o0MndpV25pZFFtNXVhU1BYZUIKRk1DdHNIVjVtWnpRRDQycHkzQVY0R2ltSUZiTk9CZkVkU2dLbHVBTk9KSVZWOE9ZRk1sYXI1b2loZUdWdm42UQp0RlI0UTQrOEZ4LzJHM2o0M2xVckc5R1I1T0IrZ1BQd2N2TGlXcXVEeHgrUlJpb3RPeEZQRnRMR1RGU0poQ0NKCk9mQy9hTk1ZZXdWSEJrc1BiN3pGeFUrZHpTRnNxamswRFVGbGM5bEQ4LzlkWCt4dEQzNUtSd08xd1VIZUFrZ2gKaWdvd1poemh1R2xtMkhpdjF0RVY4N25mbEhXUGRPZE9HUVM4Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
-    service:
-    name: webhook-k8s-pod-mutator-webhook
-    namespace: kube-system
-    path: /mutate
-    port: 443
-failurePolicy: Ignore
-matchPolicy: Equivalent
-name: webhook.k8s-pod-mutator.io
-namespaceSelector:
-    matchExpressions:
-    - key: control-plane
-    operator: DoesNotExist
-    - key: kube-system
-    operator: DoesNotExist
-objectSelector: {}
-reinvocationPolicy: Never
-rules:
-- apiGroups:
-    - ""
-    apiVersions:
-    - v1
-    operations:
-    - CREATE
-    resources:
-    - pods
-    scope: '*'
-sideEffects: None
-timeoutSeconds: 2
+- name: my-webhook.example.com
+  objectSelector:
+    matchLabels:
+      foo: bar
+  rules:
+  - operations: ["CREATE"]
+    apiGroups: ["*"]
+    apiVersions: ["*"]
+    resources: ["*"]
+    scope: "*"
 ```
 
 Tracee -- [Tracee](https://github.com/aquasecurity/tracee) 是一个工具，允许实时监视系统调用和内核事件。虽然所有操作都将被跟踪，但您可以通过 grep 来缩小范围，以便将其缩小到特定的 pod。显示的信息具有精确的时间戳、uts_name、UID、PID、返回代码、事件和参数。
@@ -1762,7 +1736,6 @@ spec:
   - name: chapter7-container3
     image: nginx
 EOF
-
 
 kubectl create -f chapter7-pod3.yaml
 ```
