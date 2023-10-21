@@ -1182,6 +1182,21 @@ spec:
     name: backend
 ```
 
+然后创建 pod，检测 pod 中是否可以通过 service token 与 k8s apiserver 通信
+
+```bash
+# 创建 pod
+kubectl create -f /tmp/task2/pod.yaml
+```
+
+自动挂载的 service token 的 pod 可以做很多事，比如 get secret
+
+```bash
+k -n restricted get pod -o yaml | grep automountServiceAccountToken
+
+curl https://kubernetes.default/api/v1/namespaces/restricted/secrets -H "Authorization: Bearer $(cat /run/secrets/kubernetes.io/serviceaccount/token)" -k
+```
+
 ### 5.7 lab
 
 #### 5.7.1 lab1 审计日志
@@ -1273,18 +1288,6 @@ cat audit.log | grep -v '"level":"RequestResponse"' | wc -l
 
 # shows RequestResponse level entries are only for system:nodes
 cat audit.log | grep '"level":"RequestResponse"' | grep -v "system:nodes" | wc -l
-```
-
-# 创建 pod
-kubectl create -f /tmp/task2/pod.yaml
-```
-
-自动挂载的 service token 的 pod 可以做很多事，比如 get secret
-
-```bash
-k -n restricted get pod -o yaml | grep automountServiceAccountToken
-
-curl https://kubernetes.default/api/v1/namespaces/restricted/secrets -H "Authorization: Bearer $(cat /run/secrets/kubernetes.io/serviceaccount/token)" -k
 ```
 
 ## 6. 网络
