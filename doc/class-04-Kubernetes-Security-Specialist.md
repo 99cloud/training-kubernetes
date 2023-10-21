@@ -1549,17 +1549,17 @@ Commercial support is available at
 静态分析（Static Analysis）是指在运行容器之前对容器镜像进行分析，以便发现容器镜像中的安全问题，比如容器镜像中是否包含了恶意软件，是否包含了不安全的软件，是否包含了不安全的配置等，这些都是我们在运行容器之前需要考虑的问题，通常我们可以通过以下工具来进行静态分析
 
 - docker bench -- Docker 一直在维护 [Docker Bench](https://github.com/docker/docker-bench-security)，这是一个类似于 kube-bench 的工具，可以在不需要成为 Kubernetes 集群的一部分的情况下运行它来调查镜像。这个工具叫做 docker-bench-security。输出和检查类似，但没有包含对每个问题的建议修复。Docker Bench 工具现在落后于 CIS 几个版本，自从 Mirantis 接管 Docker 并承诺继续开源项目以来，它就没有更新过。它可能会在将来的某个时候更新和更新。
-- clair -- [clair](https://github.com/quay/clair) -- 这个工具是由 Quay.io 开发的，现在是 Red Hat 拥有的公司。该工具分为两部分，有三个功能部分。
+- [clair](https://github.com/quay/clair) -- 这个工具是由 Quay.io 开发的，现在是 Red Hat 拥有的公司。该工具分为两部分，有三个功能部分。
   - 第一阶段是索引，它从提交给 Clair 的清单开始。Clair 使用此信息下载像层(image layer)，并在每一次层扫描它们并生成 IndexReport。
   - 第二阶段是匹配，当 IndexReport 与已知漏洞进行比较时。这些是定期下载的。请注意，在启动 Clair 之后，您可能必须等待下载才能进行匹配。(在国内会比较慢)
   - 第三阶段是在 IndexReport 中发现漏洞时。根据通知的配置，一般会打印出来，当然我们可以配置 action 来做对应的处理
-- trivy -- [trivy](https://github.com/aquasecurity/trivy) trivy 是一个简单而全面的容器漏洞扫描程序。每次运行 trivy 时，它都会检索更完整的 vuln-list 进行分析。由于此列表是从 Alpine Linux 下载的，因此在分析 Alpine 和 RHEL/CentOS 时最完整。在大型环境中，您可能希望设置自己的 vuln-list 服务器，然后在客户端模式下使用 trivy 并传递服务器的地址和端口。这不会下载数据库，而是引用服务器上的公共数据库。这也有助于在空气隔离的环境中，在外部系统上下载列表，检查内容，然后在受保护的服务器上手动安装列表。Trivy 并且可以很方便的和 ci 集成。（也是考试中会出现的知识点）
+- [trivy](https://github.com/aquasecurity/trivy) 是一个简单而全面的容器漏洞扫描程序。每次运行 trivy 时，它都会检索更完整的 vuln-list 进行分析。由于此列表是从 Alpine Linux 下载的，因此在分析 Alpine 和 RHEL/CentOS 时最完整。在大型环境中，您可能希望设置自己的 vuln-list 服务器，然后在客户端模式下使用 trivy 并传递服务器的地址和端口。这不会下载数据库，而是引用服务器上的公共数据库。这也有助于在空气隔离的环境中，在外部系统上下载列表，检查内容，然后在受保护的服务器上手动安装列表。Trivy 并且可以很方便的和 ci 集成。（也是考试中会出现的知识点）
 
 #### 7.2.2 动态分析
 
 完成了镜像静态的扫描后，下一个阶段就是“动态分析”（Dynamic Analysis）比如这个是否在访问那些敏感的 system call api 等，我们可以利用工具比如 perf 和 ftrace Linux 命令有助于在运行时跟踪和分析进程。Tracee 程序可以用来执行类似的跟踪，使用 eBPF 程序来观察系统调用和事件。它还可以用于查看进程使用的内存，并提取二进制文件以完全了解程序正在处理的内容。
 
-如何在 k8s 里实现动态分析 -- 我们可以通过使用 mutating webhook（针对 pod），我们可以在每个 pod 启动的 yaml 里添加一个 init container 来做业务启动前的动态扫描, 下面是一个 MutatingWebhookConfiguration 的例子，他将 pod  创建动作指向了一个服务 dns 名 `my-webhook.example.com`（kube-system 是 MutatingWebhookConfiguration 所在的），在对应服务里我们控制需要用 `client-go` 去获取到这个 pod，然后在 containers 里添加一个 init container 去执行 trivy 二进制文件即可，如果执行结果有问题怎退出这个 pod 的创建，`但是同时这样的安全策略会带来额外的资源开销`。
+如何在 k8s 里实现动态分析 -- 我们可以通过使用 mutating webhook（针对 pod），我们可以在每个 pod 启动的 yaml 里添加一个 init container 来做业务启动前的动态扫描, 下面是一个 MutatingWebhookConfiguration 的例子，他将 pod 创建动作指向了一个服务 dns 名 `my-webhook.example.com`，在对应服务里我们控制需要用 `client-go` 去获取到这个 pod，然后在 containers 里添加一个 init container 去执行 trivy 二进制文件即可，如果执行结果有问题就退出这个 pod 的创建，`但是同时这样的安全策略会带来额外的资源开销`。
 
 ```yaml
 This example shows a mutating webhook that would match a CREATE of any resource (but not subresources) with the label foo: bar:
@@ -1579,9 +1579,9 @@ webhooks:
     scope: "*"
 ```
 
-Tracee -- [Tracee](https://github.com/aquasecurity/tracee) 是一个工具，允许实时监视系统调用和内核事件。虽然所有操作都将被跟踪，但您可以通过 grep 来缩小范围，以便将其缩小到特定的 pod。显示的信息具有精确的时间戳、uts_name、UID、PID、返回代码、事件和参数。
+[Tracee](https://github.com/aquasecurity/tracee) 是一个工具，允许实时监视系统调用和内核事件。虽然所有操作都将被跟踪，但您可以通过 grep 来缩小范围，以便将其缩小到特定的 pod。显示的信息具有精确的时间戳、uts_name、UID、PID、返回代码、事件和参数。
 
-Falco -- [Falco](https://falco.org/docs/) 是一个更大更全的框架，他有若干个组件来监视 system call,并且支持针对某个特定的容器制定特定的规则，更细化比如容器写或读取了 `/usr/bin , /etc/` 等关键目录， 有比如容器发起了 `ssh scp` 命令都会被捕捉到， 当这个容器违反了规则，则你会输出到日志或者通过 grcp 协议调用某些 api 这里我们可以是一个告警消息接受平台，把这些消息接受下来进一部处理
+[Falco](https://falco.org/docs/) 是一个更大更全的框架，他有若干个组件来监视 system call,并且支持针对某个特定的容器制定特定的规则，更细化比如容器写或读取了 `/usr/bin, /etc/` 等关键目录， 有比如容器发起了 `ssh scp` 命令都会被捕捉到， 当这个容器违反了规则，则你会输出到日志或者通过 grcp 协议调用某些 api 这里我们可以是一个告警消息接受平台，把这些消息接受下来进一部处理
 
 ![bypassfirewall](images/chapter-7-2.png)
 
@@ -1754,9 +1754,9 @@ alpine (alpine 3.18.2)
 Total: 0 (HIGH: 0, CRITICAL: 0)
 ```
 
-#### 7.3.2 lab2-appamora
+#### 7.3.2 lab2-apparmor
 
-使用镜像 `nginx` 来创建一个 pod 在 namespace -- chapter-7 中，然后创建一个 appamora 规则拒绝这个 pod 的任何写操作
+使用镜像 `nginx` 来创建一个 pod 在 namespace -- chapter-7 中，然后创建一个 apparmor 规则拒绝这个 pod 的任何写操作
 
 ```bash
 # 注意如果你有多节点的话，需要在每个节点上都执行这个命令，除非你启动 pod 时指定了 nodeSelector
