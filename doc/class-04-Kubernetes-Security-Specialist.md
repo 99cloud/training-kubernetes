@@ -842,7 +842,7 @@ metadata:
   name: test-ns
   labels:
     gk-ns: xxx
-EOF 
+EOF
 
 # 创建 namespace , 因为这个 namespace 有 gk-ns: xxx 的 label 所以这个请求可以被允许
 $ kubectl apply -f test-ns.yaml
@@ -852,7 +852,7 @@ $ cat <<EOF > gk-ns-constraintTemplate.yaml
 apiVersion: templates.gatekeeper.sh/v1beta1
 kind: ConstraintTemplate
 metadata:
-  name: k8srequiredregistry 
+  name: k8srequiredregistry
 spec:
   crd:
     spec:
@@ -933,6 +933,93 @@ kube-apiserver 是整个 k8s 的 api 接口，所有和 k8s 打交道的服务�
   - ImagePolicyWebhook -- 这个准入控制器是用来检查 pod 的 image 是否符合自定义的安全策略，即将验证 image 的合法性委托给一个外置的服务来完成，通常会和 `Open Policy Agent GateKeeper` 配合来使用。
 - --enable-bootstrap-token-auth -- 当这个设置为 true 时会增加 kube-apiserver 认证的风险，攻击者可以利用这个 token 加入恶意的节点到集群中，所以这个参数的设置应该是 false。
 
+#### 5.2.1 lab：启用 API server 认证
+
+操作如下：
+
+- 使用 Node,RBAC 授权模式和 NodeRestriction 准入控制器
+
+    ```yaml
+    vi /etc/kubernetes/manifests/kube-apiserver.yaml
+    # 确保以下内容
+    - --authorization-mode=Node,RBAC
+    - --enable-admission-plugins=NodeRestriction
+    - --client-ca-file=/etc/kubernetes/pki/ca.crt
+    - --enable-bootstrap-token-auth=true
+    ```
+
+- 删除 system:anonymous 的 ClusterRolebinding 角色绑定，取消匿名用户的集群管理员权限
+
+    ```bash
+    kubectl delete clusterrolebinding system:anonymous
+    ```
+
+#### 5.2.2 lab：ImagePolicyWebhook
+
+实验如下：
+
+1. 修改控制器配置文件，将未找到有效后端时的默认拒绝改为默认不拒绝
+
+    `vi /etc/kubernetes/epconfig/admission_configuration.json`
+
+    ```json
+    {
+
+    "imagePolicy": {
+        "kubeConfigFile": "/etc/kubernetes/epconfig/kubeconfig.yaml",
+        "allowTTL": 50,
+        "denyTTL": 50,
+        "retryBackoff": 500,
+        "defaultAllow": false
+    }
+    }
+    ```
+
+2. 修改控制器访问 webhook server 的 kubeconfig
+
+    `vi /etc/kubernetes/epconfig/kubeconfig.yaml`
+
+    修改如下内容
+
+    ```yaml
+    apiVersion: v1
+    kind: Config
+    clusters:
+    - cluster:
+        certificate-authority: /etc/kubernetes/epconfig/webhook.pem
+        server: https://acme.local:8082/image_policy  # web hook server 的地址
+    name: bouncer_webhook
+    # 以下省略
+    ```
+
+3. 启用 ImagePolicyWebhook
+
+    `vi /etc/kubernetes/manifests/kube-apiserver.yaml`
+
+    ```yaml
+    # 启用 ImagePolicyWebhook
+    - --enable-admission-plugins=NodeRestriction,ImagePolicyWebhook
+    # 指定准入控制器配置文件
+    - --admission-control-config-file=/etc/kubernetes/epconfig/admission_configuration.json
+    # mount
+        volumeMounts:
+        - mountPath: /etc/kubernetes/epconfig
+        name: epconfig
+    # 映射 volumes
+    volumes:
+        - name: epconfig
+        hostPath:
+        path: /etc/kubernetes/epconfig
+    ```
+
+4. 测试是否生效
+
+    ```bash
+    systemctl daemon-reload
+    systemctl restart kubelet
+    kubectl apply -f /cks/img/web1.yaml
+    ```
+
 ### 5.3 审计日志
 
 在被攻击后追溯攻击者的行为也是重要的一部分的工作，如果 kube-apiserver 没有开启 audit 那么基本就很难追溯攻击者到底在 k8s 中做了什么，所以开启 audit 是非常重要的。审计日志有以下级别：
@@ -1003,16 +1090,65 @@ pod 安全策略是用过批量修改满足特定条件的 pod 的安全选项�
 
 但是值得注意的是这个功能[在 1.21 被标记为 deprecated，在 K8S 1.25 以后的版本中被彻底移除](https://kubernetes.io/docs/concepts/security/pod-security-policy/)，所以我们应该尽快的使用 Admission Controllers 来替代 [Pod Security Policies](https://kubernetes.io/docs/concepts/security/pod-security-admission/) 。目前这并不是考试的内容。
 
+实验如下：
+
+1. 创建 psp
+
+    ```yaml
+    apiVersion: policy/v1beta1
+    kind: PodSecurityPolicy
+    metadata:
+    name: restrict-policy
+    spec:
+    privileged: false
+    seLinux:
+        rule: RunAsAny
+    supplementalGroups:
+        rule: RunAsAny
+    runAsUser:
+        rule: RunAsAny
+    fsGroup:
+        rule: RunAsAny
+    volumes:
+    - '*'
+    ```
+
+2. 创建 clusterrole，使用 psp
+
+    `kubectl create clusterrole restrict-access-role --verb=use --resource=psp --resource-name=restrict-policy`
+
+3. 创建 serviceaccount
+
+    `kubectl create sa psp-denial-sa -n staging`
+
+4. 绑定 clusterrole 到 serviceaccount
+
+    `kubectl create clusterrolebinding dany-access-bind --clusterrole=restrict-access-role --serviceaccount=staging:psp-denial-sa`
+
+5. 启用 PSP
+
+    ```yaml
+    vi /etc/kubernetes/manifests/kube-apiserver.yaml
+    # 确保有以下内容：
+    - --enable-admission-plugins=NodeRestriction,PodSecurityPolicy
+    ```
+
 ### 5.6 服务账户令牌（Service Account Token）
 
 这个是用来授权 pod 访问 kube-apiserver 的，所以这个 token 的安全性也是非常重要的，如果这个 token 泄露了，那么攻击者就可以通过这个 token 来做任何事情，所以我们应该定期的轮换这个 token，比如每个月轮换一次，这样即使这个 token 泄露了，比如由于不正确的配置导致攻击者将有 cluster-admin 权限的 service account 的 token 挂载到了 `恶意的 pod` 中， 那么他很容易通过 InClusterConfig() 方法轻易获取到访问 kube-apiserver 中所有的 api group 的所有的权限，他可以轻易删掉 node 对象和其他任何对象，对集群造成很大的破坏。
 
 ```bash
-# 生成一个模板 
+# 生成一个模板
 kubectl create sa correct-sa -n task2 --dry-run=client -o yaml > task2-temp-sa.yaml
-# 确保配置如下 
+# 确保配置如下
 vi task2-temp-sa.yaml
 ```
+
+serviceaccount 有个选项 automountServiceAccountToken, 这个选项决定是否自动挂载 secret 到 pod。
+
+有这个选项，我们可以控制 pod 创建并绑定 serviceaccount 时，不自动挂载对应的 secret，这样 pod 就没有权限访问 apiserver，提高了业务 pod 的安全性。
+
+可以在 serviceaccount 和 pod 的 spec 里设置。serviceaccount 里的设置是全局的，pod 的设置会覆盖 serviceaccount 里的设置。
 
 ```yaml
 # task2-temp-sa.yaml
@@ -1021,21 +1157,134 @@ kind: ServiceAccount
 metadata:
   name: correct-sa
   namespace: task2
-automountServiceAccountToken: false # 注意这里要是 false 默认是 true
+automountServiceAccountToken: false # 注意这里要是 false，默认是 true
 ```
 
 ```bash
 # 创建 sa
 kubectl create -f  task2-temp-sa.yaml
 
-# 修改改 pod
-# 将 serviceAccountName: sa-not-exist 噶成 serviceAccountName: correct-sa
-vi /tmp/task2/pod.yaml 
+# 修改 pod
+# 将 serviceAccountName: sa-not-exist 改成 serviceAccountName: correct-sa
+vi /tmp/task2/pod.yaml
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: backend
+  namespace: qa
+spec:
+  serviceAccountName: correct-sa
+  containers:
+  - image: nginx:1.9
+    imagePullPolicy: IfNotPresent
+    name: backend
+```
+
+### 5.7 lab
+
+#### 5.7.1 lab1 审计日志
+
+编写日志审计策略文件
+
+```yaml
+apiVersion: audit.k8s.io/v1
+kind: Policy
+omitStages:
+- "RequestReceived"
+rules:
+- level: RequestResponse
+    resources:
+    - group: ""
+    resources: ["namespaces"]
+
+- level: Request
+    resources:
+    - group: ""
+    resources: ["persistentvolumes"]
+    namespaces: ["front-apps"]
+
+- level: Metadata
+    resources:
+    - group: ""
+    resources: ["secrets", "configmaps"]
+
+- level: Metadata
+    omitStages:
+    - "RequestReceived"
+```
+
+修改 kube-apiserver.yaml 配置文件，启用日志审计策略，日志策略配置文件位置、日志文件存储位置、循环周期。
+
+```bash
+vi /etc/kubernetes/manifests/kube-apiserver.yaml
+```
+
+```yaml
+# 设置日志审计策略文件在 pod 里的 mount 位置
+- --audit-policy-file=/etc/kubernetes/logpolicy/sample-policy.yaml
+
+# 设置日志文件存储位置
+- --audit-log-path=/var/log/kubernetes/audit-logs.txt
+
+# 设置日志文件循环
+- --audit-log-maxage=10
+- --audit-log-maxbackup=2
+
+# mount 日志策略和日志文件的
+volumeMounts:
+- mountPath: /etc/kubernetes/logpolicy/sample-policy.yaml
+    name: audit
+    readOnly: true
+- mountPath: /var/log/kubernetes/audit-logs.txt
+    name: audit-log
+    readOnly: false
+volumes:
+- name: audit
+    hostPath:
+    path: /etc/kubernetes/logpolicy/sample-policy.yaml
+    type: File
+- name: audit-log
+    hostPath:
+    path: /var/log/kubernetes/audit-logs.txt
+    type: FileOrCreate
+```
+
+重启 API Server 来检查 audit.log
+
+```bash
+cd /etc/kubernetes/manifests/
+mv kube-apiserver.yaml ..
+watch crictl ps # wait for apiserver gone
+truncate -s 0 /etc/kubernetes/audit/logs/audit.log
+mv ../kube-apiserver.yaml .
+
+cat audit.log | tail | jq
+
+# shows Secret entries
+cat audit.log | grep '"resource":"secrets"' | wc -l
+
+# confirms Secret entries are only of level Metadata
+cat audit.log | grep '"resource":"secrets"' | grep -v '"level":"Metadata"' | wc -l
+
+# shows RequestResponse level entries
+cat audit.log | grep -v '"level":"RequestResponse"' | wc -l
+
+# shows RequestResponse level entries are only for system:nodes
+cat audit.log | grep '"level":"RequestResponse"' | grep -v "system:nodes" | wc -l
+```
 
 # 创建 pod
 kubectl create -f /tmp/task2/pod.yaml
+```
 
-# all set
+自动挂载的 service token 的 pod 可以做很多事，比如 get secret
+
+```bash
+k -n restricted get pod -o yaml | grep automountServiceAccountToken
+
+curl https://kubernetes.default/api/v1/namespaces/restricted/secrets -H "Authorization: Bearer $(cat /run/secrets/kubernetes.io/serviceaccount/token)" -k
 ```
 
 ## 6. 网络
@@ -1410,6 +1659,20 @@ apparmor module is loaded.
 
 #### 7.3.1 lab1-trivy
 
+trivy 的操作，在考试和实际使用场景中都是三板斧：
+
+```bash
+# 获取镜像名
+kubect get pod XXXX -n kamino -o yaml | grep image
+# 扫描镜像
+trivy imagename | grep (HIGH|CRITICAL)
+trivy nginx:1.16.1-alpine | grep -E 'CVE-2020-10878|CVE-2020-1967'
+# 删除 pod
+kubectl delete po XXXX
+```
+
+完整的实验如下：
+
 分别使用镜像 `nginx:latest` 和 `alpine:latest` 启动 2 个 pod 在 namespace chapter-7 下， 然后用 trivy 对他们的镜像进行一个扫描
 
 ```bash
@@ -1505,7 +1768,9 @@ profile k8s-apparmor-chapter7-pod3-deny-write flags=(attach_disconnected) {
   deny /** w,
 }
 EOF'
+```
 
+```yaml
 cat <<EOF > chapter7-pod3.yaml
 apiVersion: v1
 kind: Pod
@@ -1513,7 +1778,7 @@ metadata:
   name: chapter7-pod3
   namespace: chapter-7
   annotations:
-    container.apparmor.security.beta.kubernetes.io/chapter7-container3: localhost/k8s-apparmor-chapter7-pod3-deny-write # 添加这一行
+    container.apparmor.security.beta.kubernetes.io/chapter7-container3: localhost/k8s-apparmor-chapter7-pod3-deny-write # 添加这一行，该注解表示加载对应的 apparmor profile。
 spec:
   containers:
   - name: chapter7-container3
@@ -1562,5 +1827,22 @@ kill chain 攻击的生命周期的细化 -- 我们细化为 7 个详细的步�
 AI 反入侵工具：通过 AI 来检测入侵，就如果反到系统一样，会比我们人类反应更快，经过大量学习后这些 AI 反入侵工具可以自动的检测出入侵，比如：
 
 - [NeuVector](https://neuvector.com/)
-- [StackRox](https://www.stackrox.com/) 
+- [StackRox](https://www.stackrox.com/)
 - 其它
+
+## 9. Exam Tips
+
+用 k 代替 kubectl，减少敲键盘
+
+```bash
+alias k=kubectl
+```
+
+其它小窍门：
+
+- 善用考试软件提供的 notepad 功能，先把 yaml 文件或命令写到 notepad 里，再粘贴到 terminal 里
+- 别忘了 `kubectl apply -f`
+- 别忘了 set context & ssh，别忘了退出 ssh
+- 别忘了 log 文件一般放在外面
+- 修改文件之前先 cp
+- 修改 k8s 对象之前，先导出 yaml
