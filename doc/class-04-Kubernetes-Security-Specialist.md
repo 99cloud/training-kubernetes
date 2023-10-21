@@ -1756,6 +1756,8 @@ Total: 0 (HIGH: 0, CRITICAL: 0)
 
 #### 7.3.2 lab2-apparmor
 
+参考：<https://kubernetes.io/zh-cn/docs/tutorials/security/apparmor/>，有完整的例子。
+
 使用镜像 `nginx` 来创建一个 pod 在 namespace -- chapter-7 中，然后创建一个 apparmor 规则拒绝这个 pod 的任何写操作
 
 ```bash
@@ -1772,6 +1774,8 @@ profile k8s-apparmor-chapter7-pod3-deny-write flags=(attach_disconnected) {
 }
 EOF'
 ```
+
+上述 `deny /** w` 表示 deny 所有文件的写操作，更多的语法在：<https://gitlab.com/apparmor/apparmor/-/wikis/QuickProfileLanguage#rule-modifiers>，比如：`deny /path/to/file2,      w` 表示 deny write to /path/to/file2, without logging
 
 ```yaml
 cat <<EOF > chapter7-pod3.yaml
