@@ -4,185 +4,185 @@
 
 1. 系统准备 centos 7.6/7.7
 1. 整个部署过程是先部署一个 All-In-One 节点，然后添加一个 Worker 节点
-1.   2 台机器都是 2C/4G
+1. 2 台机器都是 2C/4G
 1. 关闭 firewalld 和 selinux
 
 ## 安装 docker
 
 1. 下载 docker 的 yum 源
 
-    ```bash
-    sudo curl -o /etc/yum.repos.d/docker-ce.repo  https://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
-    ```
+   ```bash
+   sudo curl -o /etc/yum.repos.d/docker-ce.repo  https://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
+   ```
 
 2. 安装 docker
 
-    ```console
-    [root@k8s-cluster2-master ~]# sudo yum install docker-ce -y
+   ```console
+   [root@k8s-cluster2-master ~]# sudo yum install docker-ce -y
 
-    # 目前 docker 版本是 19.03.05
-    [root@k8s-cluster2-master ~]# docker --version
-    Docker version 19.03.5, build 633a0ea
-    ```
+   # 目前 docker 版本是 19.03.05
+   [root@k8s-cluster2-master ~]# docker --version
+   Docker version 19.03.5, build 633a0ea
+   ```
 
 3. 配置 Docker 使用 systemd 作为默认 Cgroup 驱动
 
-    ```bash
-    cat <<EOF > /etc/docker/daemon.json
-    {
-       "exec-opts": ["native.cgroupdriver=systemd"]
-    }
-    EOF
-    ```
+   ```bash
+   cat <<EOF > /etc/docker/daemon.json
+   {
+      "exec-opts": ["native.cgroupdriver=systemd"]
+   }
+   EOF
+   ```
 
 4. 启动 docker
 
-    ```bash
-    sudo systemctl start docker && sudo systemctl enable docker
-    ```
+   ```bash
+   sudo systemctl start docker && sudo systemctl enable docker
+   ```
 
 ## 安装 kubeadm，kubectl，kubelet
 
 1. 设置阿里的 kubeadm 源
 
-    ```bash
-    # root 用户直接使用cat即可
-    cat > /etc/yum.repos.d/kubernetes.repo << EOF
-    [kubernetes]
-    name=Kubernetes Repo
-    baseurl=https://mirrors.aliyun.com/kubernetes/yum/repos/kubernetes-el7-x86_64/
-    gpgcheck=1
-    gpgkey=https://mirrors.aliyun.com/kubernetes/yum/doc/rpm-package-key.gpg
-    enable=1
-    EOF
-    #非root用户，使用sudo vi  /etc/yum.repos.d/kubernetes.repo
-    [kubernetes]
-    name=Kubernetes Repo
-    baseurl=https://mirrors.aliyun.com/kubernetes/yum/repos/kubernetes-el7-x86_64/
-    gpgcheck=1
-    gpgkey=https://mirrors.aliyun.com/kubernetes/yum/doc/rpm-package-key.gpg
-    enable=1
-    ```
+   ```bash
+   # root 用户直接使用cat即可
+   cat > /etc/yum.repos.d/kubernetes.repo << EOF
+   [kubernetes]
+   name=Kubernetes Repo
+   baseurl=https://mirrors.aliyun.com/kubernetes/yum/repos/kubernetes-el7-x86_64/
+   gpgcheck=1
+   gpgkey=https://mirrors.aliyun.com/kubernetes/yum/doc/rpm-package-key.gpg
+   enable=1
+   EOF
+   #非root用户，使用sudo vi  /etc/yum.repos.d/kubernetes.repo
+   [kubernetes]
+   name=Kubernetes Repo
+   baseurl=https://mirrors.aliyun.com/kubernetes/yum/repos/kubernetes-el7-x86_64/
+   gpgcheck=1
+   gpgkey=https://mirrors.aliyun.com/kubernetes/yum/doc/rpm-package-key.gpg
+   enable=1
+   ```
 
 2. 安装 kubeadm 等
 
-    ```bash
-    sudo yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
-    # https://github.com/kubernetes/kubeadm/issues/954
-    ```
+   ```bash
+   sudo yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
+   # https://github.com/kubernetes/kubeadm/issues/954
+   ```
 
 3. 设置 kubelet 开机自启动
 
-    ```bash
-    systemctl enable --now kubelet
-    ```
+   ```bash
+   systemctl enable --now kubelet
+   ```
 
 4. load k8s image 离线镜像（可选）
 
-    ```bash
-    # 假设 k8simg.tar 为 docker image 的压缩包，离线提供。
-    sudo docker load < k8simg.tar
-    ```
+   ```bash
+   # 假设 k8simg.tar 为 docker image 的压缩包，离线提供。
+   sudo docker load < k8simg.tar
+   ```
 
    [下载链接](https://seafile.sh.99cloud.net/f/829d5212ca404db2a908/?dl=1)
 
 5. 关闭 swap 分区（如果有的话）
 
-    ```bash
-    swapoff -a
-    # 注释掉 /etc/fstab 中的自动挂载。
-    ```
+   ```bash
+   swapoff -a
+   # 注释掉 /etc/fstab 中的自动挂载。
+   ```
 
 6. 设置内核参数
 
-    ```console
-    # 使用 root 账户，或者使用 sudo 执行以下命令。
-    [root@k8s-master ~]# cat /proc/sys/net/bridge/bridge-nf-call-iptables
-    0
-    [root@k8s-master ~]# cat /proc/sys/net/bridge/bridge-nf-call-ip6tables
-    0
-    # 如果这两个值为 1,则不需要操作，如果是 0，按照如下修改
-    [root@k8s-master ~]# echo "net.bridge.bridge-nf-call-iptables = 1" >>/etc/sysctl.conf
-    [root@k8s-master ~]# echo "net.bridge.bridge-nf-call-ip6tables = 1" >>/etc/sysctl.conf
-    # 使生效
-    [root@k8s-master ~]# sysctl -p
-    ```
+   ```console
+   # 使用 root 账户，或者使用 sudo 执行以下命令。
+   [root@k8s-master ~]# cat /proc/sys/net/bridge/bridge-nf-call-iptables
+   0
+   [root@k8s-master ~]# cat /proc/sys/net/bridge/bridge-nf-call-ip6tables
+   0
+   # 如果这两个值为 1,则不需要操作，如果是 0，按照如下修改
+   [root@k8s-master ~]# echo "net.bridge.bridge-nf-call-iptables = 1" >>/etc/sysctl.conf
+   [root@k8s-master ~]# echo "net.bridge.bridge-nf-call-ip6tables = 1" >>/etc/sysctl.conf
+   # 使生效
+   [root@k8s-master ~]# sysctl -p
+   ```
 
 ## 部署 k8s 集群
 
 1. 使用 kubeadm 初始化集群
 
-    ```bash
-    # 网络插件使用的是 flannel
-    kubeadm init --pod-network-cidr=10.244.0.0/16
-    ```
+   ```bash
+   # 网络插件使用的是 flannel
+   kubeadm init --pod-network-cidr=10.244.0.0/16
+   ```
 
 2. 根据提示拷贝配置文件到对应的目录
 
-    ```bash
-    mkdir -p $HOME/.kube
-    sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-    sudo chown $(id -u):$(id -g) $HOME/.kube/config
-    ```
+   ```bash
+   mkdir -p $HOME/.kube
+   sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+   sudo chown $(id -u):$(id -g) $HOME/.kube/config
+   ```
 
 3. 完成后部署网络插件
 
-    ```bash
-    kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/62e44c867a2846fefb68bd5f178daf4da3095ccb/Documentation/kube-flannel.yml
-    ```
+   ```bash
+   kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/62e44c867a2846fefb68bd5f178daf4da3095ccb/Documentation/kube-flannel.yml
+   ```
 
 4. 检查部署之后的环境
 
-    ```console
-    [root@k8s-master ~]# kubectl get nodes
-    NAME                STATUS   ROLES    AGE   VERSION
-    openshift2.shared   Ready    master   69m   v1.15.3
-    [root@k8s-master ~]# kubectl get pods --all-namespaces
-    NAMESPACE     NAME                                        READY   STATUS        RESTARTS   AGE
-    kube-system   coredns-5c98db65d4-5wgb6                    1/1     Running       0          68m
-    kube-system   coredns-5c98db65d4-fv6nb                    1/1     Running       0          68m
-    kube-system   etcd-openshift2.shared                      1/1     Running       0          68m
-    kube-system   kube-apiserver-openshift2.shared            1/1     Running       0          67m
-    kube-system   kube-controller-manager-openshift2.shared   1/1     Running       0          68m
-    kube-system   kube-flannel-ds-amd64-vfhn2                 1/1     Running       0          63m
-    kube-system   kube-proxy-vvgjv                            1/1     Running       0          68m
-    kube-system   kube-scheduler-openshift2.shared            1/1     Running       0          67m
-    ```
+   ```console
+   [root@k8s-master ~]# kubectl get nodes
+   NAME                STATUS   ROLES    AGE   VERSION
+   openshift2.shared   Ready    master   69m   v1.15.3
+   [root@k8s-master ~]# kubectl get pods --all-namespaces
+   NAMESPACE     NAME                                        READY   STATUS        RESTARTS   AGE
+   kube-system   coredns-5c98db65d4-5wgb6                    1/1     Running       0          68m
+   kube-system   coredns-5c98db65d4-fv6nb                    1/1     Running       0          68m
+   kube-system   etcd-openshift2.shared                      1/1     Running       0          68m
+   kube-system   kube-apiserver-openshift2.shared            1/1     Running       0          67m
+   kube-system   kube-controller-manager-openshift2.shared   1/1     Running       0          68m
+   kube-system   kube-flannel-ds-amd64-vfhn2                 1/1     Running       0          63m
+   kube-system   kube-proxy-vvgjv                            1/1     Running       0          68m
+   kube-system   kube-scheduler-openshift2.shared            1/1     Running       0          67m
+   ```
 
 ## 添加节点
 
 1. 在另一台机器上，完成上述“部署 k8s 集群”之前所有操作
 2. 在 master 执行 kubeadm init 之后会有加入集群的提示，如下图
 
-    ![join](../images/join.png)
+   ![join](../images/join.png)
 
 3. 内容如下：
 
-    ```console
-    [centos@k8s-slave ~]$ kubeadm join 192.168.11.15:6443 --token 8lrj88.951kc5gn2hgrppts --discovery-token-ca-cert-hash
-    sha256:eaf73dff349a3e2b7ba91961a89eed4617746fb8d85d7e79761b32106cb640b6
-    ```
+   ```console
+   [centos@k8s-slave ~]$ kubeadm join 192.168.11.15:6443 --token 8lrj88.951kc5gn2hgrppts --discovery-token-ca-cert-hash
+   sha256:eaf73dff349a3e2b7ba91961a89eed4617746fb8d85d7e79761b32106cb640b6
+   ```
 
 4. 如果没有保存上一个步骤，则执行如下命令获取（ 在 master 节点上 ）
 
-    ```console
-    # 获取token
-    [centos@k8s-master ~]# kubeadm token list
-    # 获取 ca 的 hash 值
-    [centos@k8s-master ~]# openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //'
-    ```
+   ```console
+   # 获取token
+   [centos@k8s-master ~]# kubeadm token list
+   # 获取 ca 的 hash 值
+   [centos@k8s-master ~]# openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //'
+   ```
 
 5. 拼接 join 命令
 
-    ```bash
-    # 使用上面查询到的结果，分别替代 `$token` 和 `$ca_hash` 值
-    [centos@k8s-worker ~]# kubeadm join $master_ip:6443 --token $token --discovery-token-ca-cert-hash sha256:$ca_hash
-    ```
+   ```bash
+   # 使用上面查询到的结果，分别替代 `$token` 和 `$ca_hash` 值
+   [centos@k8s-worker ~]# kubeadm join $master_ip:6443 --token $token --discovery-token-ca-cert-hash sha256:$ca_hash
+   ```
 
 6. 查看版本
 
-    ```console
-    [root@k8s-cluster2-master ~]# kubectl version
-    Client Version: version.Info{Major:"1", Minor:"17", GitVersion:"v1.17.0", GitCommit:"70132b0f130acc0bed193d9ba59dd186f0e634cf", GitTreeState:"clean", BuildDate:"2019-12-07T21:20:10Z", GoVersion:"go1.13.4", Compiler:"gc", Platform:"linux/amd64"}
-    Server Version: version.Info{Major:"1", Minor:"17", GitVersion:"v1.17.0", GitCommit:"70132b0f130acc0bed193d9ba59dd186f0e634cf", GitTreeState:"clean", BuildDate:"2019-12-07T21:12:17Z", GoVersion:"go1.13.4", Compiler:"gc", Platform:"linux/amd64"}
-    ```
+   ```console
+   [root@k8s-cluster2-master ~]# kubectl version
+   Client Version: version.Info{Major:"1", Minor:"17", GitVersion:"v1.17.0", GitCommit:"70132b0f130acc0bed193d9ba59dd186f0e634cf", GitTreeState:"clean", BuildDate:"2019-12-07T21:20:10Z", GoVersion:"go1.13.4", Compiler:"gc", Platform:"linux/amd64"}
+   Server Version: version.Info{Major:"1", Minor:"17", GitVersion:"v1.17.0", GitCommit:"70132b0f130acc0bed193d9ba59dd186f0e634cf", GitTreeState:"clean", BuildDate:"2019-12-07T21:12:17Z", GoVersion:"go1.13.4", Compiler:"gc", Platform:"linux/amd64"}
+   ```

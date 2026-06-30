@@ -1,11 +1,12 @@
 # AWS 环境部署高可用 Kubernetes 集群
 
-两种方案 [https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/ha-topology/](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/ha-topology/)：
+两种方案
+[https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/ha-topology/](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/ha-topology/)：
 
-+ 堆叠 etcd 拓扑，在 master 节点上托管 etcd 集群
-    ![](https://d33wubrfki0l68.cloudfront.net/d1411cded83856552f37911eb4522d9887ca4e83/b94b2/images/kubeadm/kubeadm-ha-topology-stacked-etcd.svg)
-+ 外置 etcd 集群，etcd 与 master 节点分离
-    ![](https://d33wubrfki0l68.cloudfront.net/ad49fffce42d5a35ae0d0cc1186b97209d86b99c/5a6ae/images/kubeadm/kubeadm-ha-topology-external-etcd.svg)
+- 堆叠 etcd 拓扑，在 master 节点上托管 etcd 集群
+  ![](https://d33wubrfki0l68.cloudfront.net/d1411cded83856552f37911eb4522d9887ca4e83/b94b2/images/kubeadm/kubeadm-ha-topology-stacked-etcd.svg)
+- 外置 etcd 集群，etcd 与 master 节点分离
+  ![](https://d33wubrfki0l68.cloudfront.net/ad49fffce42d5a35ae0d0cc1186b97209d86b99c/5a6ae/images/kubeadm/kubeadm-ha-topology-external-etcd.svg)
 
 **这里采用堆叠 etcd 拓扑也就是第一种。**
 
@@ -13,46 +14,48 @@
 
 ![](https://docs.aws.amazon.com/zh_cn/vpc/latest/userguide/images/nat-gateway-diagram.png)
 
-+ VPC 10.0.0.0/16
-+ 子网
+- VPC 10.0.0.0/16
+- 子网
 
-    | subnet | CIDR | 路由表 |
-    | --- | --- | --- |
-    | sub1 | 10.0.0.0/24 | custom |
-    | sub2 | 10.0.1.0/24 | main |
-+ 网关
-    + Internet 网关
-    + NAT 网关（选中 sub1 子网，需要分配弹性 IP）
-+ 配置路由表
-    + main
+  | subnet | CIDR        | 路由表 |
+  | ------ | ----------- | ------ |
+  | sub1   | 10.0.0.0/24 | custom |
+  | sub2   | 10.0.1.0/24 | main   |
+- 网关
+  - Internet 网关
+  - NAT 网关（选中 sub1 子网，需要分配弹性 IP）
+- 配置路由表
+  - main
 
-        | Destination | Target |
-        | --- | --- |
-        | 10.0.0.0/16 | local |
-        | 0.0.0.0/0 | NAT 网关 |
-    + custom
+    | Destination | Target   |
+    | ----------- | -------- |
+    | 10.0.0.0/16 | local    |
+    | 0.0.0.0/0   | NAT 网关 |
+  - custom
 
-        | Destination | Target |
-        | --- | --- |
-        | 10.0.0.0/16 | local |
-        | 0.0.0.0/0 | Internet 网关 |
-+ 实例（推荐 3 master 节点 3+ worker 节点）
+    | Destination | Target        |
+    | ----------- | ------------- |
+    | 10.0.0.0/16 | local         |
+    | 0.0.0.0/0   | Internet 网关 |
+- 实例（推荐 3 master 节点 3+ worker 节点）
 
-    | hostname | 私有 IP | 公有 IP | OS |
-    | --- | --- | --- | --- |
-    | bastion | 10.0.0.100 | 3.114.12.155 | CentOS |
-    | kube-master-1 | 10.0.1.100 | | CentOS |
-    | kube-master-2 | 10.0.1.101 | | CentOS |
-    | kube-master-3 | 10.0.1.102 | | CentOS |
-    | kube-worker-1 | 10.0.1.200 | | CentOS |
-    | kube-worker-2 | 10.0.1.201 | | CentOS |
-+ 负载均衡器（必须使用）
-    + 内部使用
-    + VPC 选中 sub2
-    + 添加侦听器 TCP 6443 端口
-    + 目标组选择 IP 10.0.1.100（master0）
+  | hostname      | 私有 IP    | 公有 IP      | OS     |
+  | ------------- | ---------- | ------------ | ------ |
+  | bastion       | 10.0.0.100 | 3.114.12.155 | CentOS |
+  | kube-master-1 | 10.0.1.100 |              | CentOS |
+  | kube-master-2 | 10.0.1.101 |              | CentOS |
+  | kube-master-3 | 10.0.1.102 |              | CentOS |
+  | kube-worker-1 | 10.0.1.200 |              | CentOS |
+  | kube-worker-2 | 10.0.1.201 |              | CentOS |
+- 负载均衡器（必须使用）
+  - 内部使用
+  - VPC 选中 sub2
+  - 添加侦听器 TCP 6443 端口
+  - 目标组选择 IP 10.0.1.100（master0）
 
-**需要确保负载均衡器只路由到 master0 上的 6443 端口。这是因为 kubeadm 将使用负载均衡器 IP 执行健康检查。由于 master0 是第一个单独配置的，其他 master 不会运行 apiserver，这将导致 kubeadm 无限期地挂起。**
+**需要确保负载均衡器只路由到 master0 上的 6443 端口。这是因为 kubeadm 将使用负载均衡器 IP
+执行健康检查。由于 master0 是第一个单独配置的，其他 master 不会运行 apiserver，这将导致 kubeadm
+无限期地挂起。**
 
 ## 部署前准备（手动或者使用 Ansible 来完成）
 
@@ -60,50 +63,50 @@
 
 1. 安装 Docker
 
-        yum install -y yum-utils \
-            device-mapper-persistent-data \
-            lvm2
-        yum-config-manager \
-            --add-repo \
-            https://download.docker.com/linux/centos/docker-ce.repository
-        yum install -y docker-ce
+       yum install -y yum-utils \
+           device-mapper-persistent-data \
+           lvm2
+       yum-config-manager \
+           --add-repo \
+           https://download.docker.com/linux/centos/docker-ce.repository
+       yum install -y docker-ce
 
 2. 配置 Docker 使用 systemd 作为默认 Cgroup 驱动
 
-        cat <<EOF > /etc/docker/daemon.json
-        {
-            "exec-opts": ["native.cgroupdriver=systemd"]
-        }
-        EOF
+       cat <<EOF > /etc/docker/daemon.json
+       {
+           "exec-opts": ["native.cgroupdriver=systemd"]
+       }
+       EOF
 
 3. 启动 Docker
 
-        systemctl start docker
-        systemctl enable docker
+       systemctl start docker
+       systemctl enable docker
 
 ### 2. Kubernetes
 
 1. 安装 Kubernetes 相关应用程序
 
-        cat <<EOF > /etc/yum.repos.d/kubernetes.repo
-        [kubernetes]
-        name=Kubernetes
-        baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
-        enabled=1
-        gpgcheck=1
-        repo_gpgcheck=1
-        gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
-        exclude=kube*
-        EOF
-        setenforce 0 # disable SELinux
-        sudo sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
-        yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
-        systemctl enable --now kubelet
+       cat <<EOF > /etc/yum.repos.d/kubernetes.repo
+       [kubernetes]
+       name=Kubernetes
+       baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+       enabled=1
+       gpgcheck=1
+       repo_gpgcheck=1
+       gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+       exclude=kube*
+       EOF
+       setenforce 0 # disable SELinux
+       sudo sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
+       yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
+       systemctl enable --now kubelet
 
 2. 关闭系统交换区
 
-        swapoff -a
-        sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
+       swapoff -a
+       sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
 
 > 或者使用 [kubeadm-ansible](https://github.com/crazytaxii/kubeadm-ansible) 完成部署前准备（可选）
 
@@ -121,14 +124,15 @@
     networking:
     podSubnet: ${CIDR}
 
-+ `kubernetesVersion` 设置想要使用的 Kubernetes 版本，推荐使用 `stable`
-+ `controlPlaneEndpoint` 设置负载均衡器的 DNS 域名或地址和端口
+- `kubernetesVersion` 设置想要使用的 Kubernetes 版本，推荐使用 `stable`
+- `controlPlaneEndpoint` 设置负载均衡器的 DNS 域名或地址和端口
 
-> 有些 CNI 网络插件比如 [Calico](https://github.com/projectcalico/calico) 需要另外设置一个 CIDR，[Weave](https://www.weave.works/) 这样的就不需要。
+> 有些 CNI 网络插件比如 [Calico](https://github.com/projectcalico/calico) 需要另外设置一个
+> CIDR，[Weave](https://www.weave.works/) 这样的就不需要。
 
     sudo kubeadm init --config=kubeadm-config.yaml --upload-certs
 
-+ `--upload-certs` 用来把控制节点所共享的证书上传到集群。
+- `--upload-certs` 用来把控制节点所共享的证书上传到集群。
 
 安装完成后 Kubeadm 的输出：
 
@@ -159,15 +163,17 @@
     kubeadm join api-lb-574e65695cb56b54.elb.ap-northeast-1.amazonaws.com:6443 --token dum7wt.8wwa3mpfzmum1620 \
         --discovery-token-ca-cert-hash sha256:52a3719a16e2f6e2417afd0a8c8be709ec4f28442491be4c89835db47e49b2b3
 
-+ 把两个 `join` 命令记下来，其他节点加入集群要用到
-+ 当 `kubeadm init` 带上 `--upload-certs` 时，master0 节点的证书会被加密并保存在 `kubeadm-certs` Secret 中
+- 把两个 `join` 命令记下来，其他节点加入集群要用到
+- 当 `kubeadm init` 带上 `--upload-certs` 时，master0 节点的证书会被加密并保存在 `kubeadm-certs`
+  Secret 中
 
 > `kubeadm-certs` Secret 两小时后将失效
 
 ### 2. 部署 CNI 网络插件
 
-+ Calico `kubectl apply -f https://docs.projectcalico.org/v3.8/manifests/calico.yaml`
-+ Flannel `kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml`
+- Calico `kubectl apply -f https://docs.projectcalico.org/v3.8/manifests/calico.yaml`
+- Flannel
+  `kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml`
 
 测试 master0 节点是否正常：
 
@@ -182,8 +188,8 @@
         --discovery-token-ca-cert-hash sha256:52a3719a16e2f6e2417afd0a8c8be709ec4f28442491be4c89835db47e49b2b3 \
         --control-plane --certificate-key 77d7258ce9581174082cabb9905e0e28adf3f0e8238edfa035545de8203b4b30
 
-+ `--control-plane` 使 `kubeadm join` 创建一个新的控制节点
-+ `--certificate-key ...` 将从集群中的 `kubeadm-certs` Secret 下载证书并解密
+- `--control-plane` 使 `kubeadm join` 创建一个新的控制节点
+- `--certificate-key ...` 将从集群中的 `kubeadm-certs` Secret 下载证书并解密
 
 ### 4. 将其他工作节点加入集群
 
@@ -231,5 +237,5 @@
 
 ## 参考文档
 
-+ [Options for Highly Available topology](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/ha-topology/)
-+ [Creating Highly Available clusters with kubeadm](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/high-availability/)
+- [Options for Highly Available topology](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/ha-topology/)
+- [Creating Highly Available clusters with kubeadm](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/high-availability/)

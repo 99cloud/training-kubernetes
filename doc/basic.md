@@ -1,6 +1,8 @@
 # kubeadm-calico-dual-stack-ha 实验
 
-`kubeadm calico dual stack`义在使用单 `cni` 插件的情况下实现 `ipv4 和 ipv6 双栈(dual stack)` 的高可用集群验证性项目,实验过程多为手动执行脚本，请大家仔细看清每步操作,因为是实验性质的所以有一些不是很关键的步骤会不是非常的严谨，比如 load balance 只有1个、并没有使用dns类似这种情况，但不影响整体的实验能走通。
+`kubeadm calico dual stack`义在使用单 `cni` 插件的情况下实现 `ipv4 和 ipv6 双栈(dual stack)`
+的高可用集群验证性项目,实验过程多为手动执行脚本，请大家仔细看清每步操作,因为是实验性质的所以有一些不是很关键的步骤会不是非常的严谨，比如
+load balance 只有1个、并没有使用dns类似这种情况，但不影响整体的实验能走通。
 
 ## 实验环境架构图
 
@@ -29,27 +31,27 @@ $ reboot
 ```
 
 2. 创建虚拟机
-    - 虚拟机镜像: CentOS-7-x86_64-Minimal-1810.iso
-    - 创建`kvm guest`磁盘
+   - 虚拟机镜像: CentOS-7-x86_64-Minimal-1810.iso
+   - 创建`kvm guest`磁盘
 
-    ```console
-    # 创建负载均衡的虚拟磁盘
-    $ qemu-img create -f qcow2 -o size=30G /mnt/diskB/lb1.qcow2
-    # 创建负载均衡的虚拟机
-    $ virt-install --name lb1 --ram 2048 --disk /mnt/diskB/lb1.qcow2,format=qcow2 --vcpus 1 --network bridge=br-pod --vnc --noautoconsole --os-type=linux -c /var/lib/libvirt/images/CentOS-7-x86_64-Minimal-1810.iso --cpu host-model
+   ```console
+   # 创建负载均衡的虚拟磁盘
+   $ qemu-img create -f qcow2 -o size=30G /mnt/diskB/lb1.qcow2
+   # 创建负载均衡的虚拟机
+   $ virt-install --name lb1 --ram 2048 --disk /mnt/diskB/lb1.qcow2,format=qcow2 --vcpus 1 --network bridge=br-pod --vnc --noautoconsole --os-type=linux -c /var/lib/libvirt/images/CentOS-7-x86_64-Minimal-1810.iso --cpu host-model
 
-    # 创建 master 虚拟机
-    $ qemu-img create -f qcow2 -o size=30G /mnt/diskB/kubeadm-master1.qcow2
-    $ qemu-img create -f qcow2 -o size=30G /mnt/diskB/kubeadm-master2.qcow2
-    $ qemu-img create -f qcow2 -o size=30G /mnt/diskB/kubeadm-master3.qcow2
-    # 创建 master1,2,3 虚拟机
-    $ virt-install --name master1 --ram 4096 --disk /mnt/diskB/kubeadm-master1.qcow2,format=qcow2 --vcpus 2 --network bridge=br-pod --network bridge=br-pod6,model=virtio --vnc --noautoconsole --os-type=linux -c /var/lib/libvirt/images/CentOS-7-x86_64-Minimal-1810.iso --cpu host-model
-    $ virt-install --name master2 --ram 4096 --disk /mnt/diskB/kubeadm-master2.qcow2,format=qcow2 --vcpus 2 --network bridge=br-pod --network bridge=br-pod6,model=virtio --vnc --noautoconsole --os-type=linux -c /var/lib/libvirt/images/CentOS-7-x86_64-Minimal-1810.iso --cpu host-model
-    $ virt-install --name master3 --ram 4096 --disk /mnt/diskB/kubeadm-master3.qcow2,format=qcow2 --vcpus 2 --network bridge=br-pod --network bridge=br-pod6,model=virtio --vnc --noautoconsole --os-type=linux -c /var/lib/libvirt/images/CentOS-7-x86_64-Minimal-1810.iso --cpu host-model
+   # 创建 master 虚拟机
+   $ qemu-img create -f qcow2 -o size=30G /mnt/diskB/kubeadm-master1.qcow2
+   $ qemu-img create -f qcow2 -o size=30G /mnt/diskB/kubeadm-master2.qcow2
+   $ qemu-img create -f qcow2 -o size=30G /mnt/diskB/kubeadm-master3.qcow2
+   # 创建 master1,2,3 虚拟机
+   $ virt-install --name master1 --ram 4096 --disk /mnt/diskB/kubeadm-master1.qcow2,format=qcow2 --vcpus 2 --network bridge=br-pod --network bridge=br-pod6,model=virtio --vnc --noautoconsole --os-type=linux -c /var/lib/libvirt/images/CentOS-7-x86_64-Minimal-1810.iso --cpu host-model
+   $ virt-install --name master2 --ram 4096 --disk /mnt/diskB/kubeadm-master2.qcow2,format=qcow2 --vcpus 2 --network bridge=br-pod --network bridge=br-pod6,model=virtio --vnc --noautoconsole --os-type=linux -c /var/lib/libvirt/images/CentOS-7-x86_64-Minimal-1810.iso --cpu host-model
+   $ virt-install --name master3 --ram 4096 --disk /mnt/diskB/kubeadm-master3.qcow2,format=qcow2 --vcpus 2 --network bridge=br-pod --network bridge=br-pod6,model=virtio --vnc --noautoconsole --os-type=linux -c /var/lib/libvirt/images/CentOS-7-x86_64-Minimal-1810.iso --cpu host-model
 
-    # 打开 virt manager 可视化安装
-    $ virt-manager
-    ```
+   # 打开 virt manager 可视化安装
+   $ virt-manager
+   ```
 
 3. 配置虚拟机网卡
 
