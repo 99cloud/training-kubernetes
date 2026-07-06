@@ -1,10 +1,10 @@
 # 容器化技术与 K8S 详解及应用
 
-> **课程定位**：2 天 × 6 小时，以夯实基础为主，面向应用实践。\
-> **适用对象**：熟悉 Linux 基本操作；了解 IP、端口、HTTP；能阅读 YAML 更佳；**容器 / K8S
-> 零基础可学**。\
-> **版本说明**：本讲义以 **Kubernetes 1.30+** 为基线，重点标注 **1.33（Octarine）**
-> 及之后的新特性；已剔除 dockershim、Pod Security Policy（PSP）等过时内容。
+- **课程定位**：2 天 × 6 小时，以夯实基础为主，面向应用实践。
+- **适用对象**：熟悉 Linux 基本操作；了解 IP、端口、HTTP；能阅读 YAML 更佳；**容器 / K8S
+  零基础可学**。
+- **版本说明**：本讲义以 **Kubernetes 1.30+** 为基线，重点标注 **1.33（Octarine）**
+  及之后的新特性；不涉及 dockershim、Pod Security Policy（PSP）等过时内容。
 
 ## 注意 ⚠️
 
@@ -20,6 +20,11 @@
 | **交付形态**     | 线下，理论 + Demo 穿插，**实操占比约 50%**               |
 | **实验环境**     | KubeClipper 快速搭建集群；节点运行时为 **containerd**    |
 | **Prerequisite** | Linux 基本操作；IP / 端口 / HTTP 概念；YAML 基础（可选） |
+
+**相关讲义**：
+
+- [CKA 培训](class-01-Kubernetes-Administration.md)
+- [K8S 最佳实践](https://gitee.com/wu-wen-xiang/lab-kubernetes/blob/master/doc/kubernetes-best-practices.md)
 
 ### 本课不展开
 
@@ -43,7 +48,7 @@
 | **第 2 天** | 上午 | [3. 工作负载、存储与调度](#lesson-03-工作负载存储与调度) | DaemonSet/StatefulSet、PV/PVC、调度策略         |
 |             | 下午 | [4. 配置发布与运维概览](#lesson-04-配置发布与运维概览)   | ConfigMap/Secret、探针、排障、可观测、AIOps     |
 
-### 五条主线（对照大纲）
+### 课程主线（对照大纲）
 
 1. **容器与运行时** → [Lesson 01](#lesson-01-容器与运行时)
 2. **镜像与交付** → [1.5.1 镜像与交付](#151-镜像与交付dockerfile-最佳实践)
@@ -73,6 +78,8 @@
 
 # 第 1 天：容器运行时与 K8S 应用部署
 
+<a id="lesson-01-容器与运行时"></a>
+
 ## Lesson 01：容器与运行时
 
 ### 1.1 部署方式演进
@@ -86,7 +93,11 @@
 | 容器            | 进程级隔离、镜像小、秒级启动 | 需编排平台管理大规模集群         |
 | 容器编排（K8S） | 声明式、自愈、扩缩、服务发现 | 学习曲线、运维复杂度             |
 
-![部署方式演进](../images/container-evolution.png)
+![部署方式演进](images/container-evolution.png)
+
+![IaaS / PaaS / CaaS 分层（容器位于 CaaS）](images/caas-kaas-paas.png)
+
+![算力演进简史](images/computing-history.png)
 
 > 算力架构从集中式（大型机）→ 分布式（PC/云）→ 泛在式（云边协同）持续演进。容器与 K8S
 > 是**云计算下半场**「算力统一调度、接口统一（Kubernetes API）」的关键技术栈之一。详见
@@ -96,6 +107,7 @@
 
 - [What is a Container?](https://www.docker.com/resources/what-container/) — Docker 官方容器概念
 - [Kubernetes 是什么？](https://kubernetes.io/zh-cn/docs/concepts/overview/) — 官方概览
+- [边缘云与算力演进](https://gitee.com/wu-wen-xiang/lab-kubernetes/blob/master/doc/mec-edge-and-ai.md)
 
 ### 1.2 容器 vs 虚拟机
 
@@ -118,11 +130,14 @@
 - 需要与宿主机**不同内核**或**不同操作系统**
 - 需要硬件级隔离（如部分合规场景）→ 可进一步考虑 Kata Containers、gVisor 等安全容器
 
-![容器 vs 传统虚拟机](../images/katacontainers_traditionalvskata_diagram.jpg)
+![容器 vs 传统虚拟机](images/katacontainers_traditionalvskata_diagram.jpg)
+
+![Kata Containers 架构（安全容器）](images/katacontainers-architecture-diagram.jpg)
 
 **Reference**
 
-- [Kata Containers](https://katacontainers.io/learn/)
+- [Kata Containers](https://katacontainers.io/learn/) —
+  [一页纸 PDF](https://katacontainers.io/collateral/kata-containers-1pager.pdf)
 - [Namespaces](https://man7.org/linux/man-pages/man7/namespaces.7.html) — Linux man page
 - [Control Groups (cgroups)](https://www.kernel.org/doc/html/latest/admin-guide/cgroup-v2.html) —
   Linux 内核文档
@@ -136,7 +151,7 @@
 
 Pod 内 pause 容器与业务容器共享 net/ipc/uts namespace（可在节点上用 `/proc/<pid>/ns/` 观察）。
 
-![Kernel / User Mode 与 Namespace](../images/kernel-user-mode.png)
+![Kernel / User Mode 与 Namespace](images/kernel-user-mode.png)
 
 **Reference**
 
@@ -170,14 +185,16 @@ Docker 概念空间：
 | **Registry（仓库）**  | 镜像存储与分发（Docker Hub、Harbor 等） |
 | **Dockerfile**        | 声明式构建镜像的脚本                    |
 
-![Docker 底层技术](../images/docker-undertech.png)
+![Docker 底层技术](images/docker-undertech.png)
 
-![Docker 架构](../images/docker-arch.png)
+![Docker 架构](images/docker-arch.png)
 
 **Reference**
 
 - [Docker overview](https://docs.docker.com/engine/docker-overview/)
 - [Docker Get Started](https://docs.docker.com/get-started/)
+
+<a id="151-镜像与交付dockerfile-最佳实践"></a>
 
 #### 1.5.1 镜像与交付（Dockerfile 最佳实践）
 
@@ -275,6 +292,8 @@ curl http://127.0.0.1:5001/
 
 - [Dockerfile reference](https://docs.docker.com/reference/dockerfile/)
 - [lab-openstack docker-quickstart](https://github.com/99cloud/lab-openstack/tree/master/src/docker-quickstart)
+  / [Gitee 镜像](https://gitee.com/dev-99cloud/lab-openstack/tree/master/src/docker-quickstart)
+- [Docker 官方入门](https://docs.docker.com/get-started/)
 
 #### Docker 网络与存储（要点）
 
@@ -305,13 +324,17 @@ OCI Runtime (runc / kata / gVisor)
 Linux Kernel (Namespace + Cgroups)
 ```
 
-![K8S 经 CRI 调用 Docker（历史架构，dockershim 已移除）](../images/k8s-CRI-OCI-docker.png)
+![K8S 经 CRI 调用 Docker（历史架构，dockershim 已移除）](images/k8s-CRI-OCI-docker.png)
 
-![containerd 1.0 — 独立 cri-containerd 进程](../images/k8s-containerd-1-0.png)
+![containerd 1.0 — 独立 cri-containerd 进程](images/k8s-containerd-1-0.png)
 
-![containerd 1.1+ — CRI 插件内嵌](../images/k8s-containerd-1-1.png)
+![containerd 1.1+ — CRI 插件内嵌](images/k8s-containerd-1-1.png)
 
-![CRI-O 调用链](../images/k8s-cri-o-flow.png)
+![CRI-O 调用链](images/k8s-cri-o-flow.png)
+
+![CRI-O 架构（一）](images/k8s-cri-o-arch-1.png)
+
+![CRI-O 架构（二）](images/k8s-cri-o-arch-2.jpg)
 
 **重要变更（已过时内容剔除）**
 
@@ -325,7 +348,10 @@ Linux Kernel (Namespace + Cgroups)
 
 - [Container Runtimes](https://kubernetes.io/docs/setup/production-environment/container-runtimes/)
   — 官方运行时指南
-- [CRI API](https://github.com/kubernetes/cri-api)
+- [CRI API](https://github.com/kubernetes/cri-api) —
+  [cri-api/pkg/apis/services.go](https://github.com/kubernetes/cri-api/blob/master/pkg/apis/services.go)
+- [CRI-O 官网](https://cri-o.io/)
+- [kubernetes-best-practices — 容器运行时](https://gitee.com/wu-wen-xiang/lab-kubernetes/blob/master/doc/kubernetes-best-practices.md#2-容器运行时)
 
 #### 1.6.2 containerd 生态工具对比
 
@@ -335,13 +361,15 @@ Linux Kernel (Namespace + Cgroups)
 | **nerdctl** | Docker 兼容 CLI（`nerdctl run/build/ps`） | 习惯 Docker 命令的运维/开发                           |
 | **crictl**  | CRI 调试 CLI                              | **节点排障**：查 Pod/容器/镜像（与 kubelet 视角一致） |
 
-![containerd 与 K8S 对接（现行）](https://gitee.com/wu-wen-xiang/lab-kubernetes/raw/master/image/k8s-cri-containerd.png)
+![containerd 与 K8S 对接（现行）](images/k8s-cri-containerd.png)
 
-![Docker → containerd 演进](https://gitee.com/wu-wen-xiang/lab-kubernetes/raw/master/image/docker-and-kubernetes-use-containerd-2000-opt.png)
+![Docker → containerd 演进](images/docker-and-kubernetes-use-containerd-2000-opt.png)
 
-![命令行工具对比：crictl / ctr / nerdctl / podman](https://gitee.com/wu-wen-xiang/lab-kubernetes/raw/master/image/k8s-containerd-tools.png)
+![命令行工具对比：crictl / ctr / nerdctl / podman](images/k8s-containerd-tools.png)
 
-![CRI 技术栈总览](https://gitee.com/wu-wen-xiang/lab-kubernetes/raw/master/image/k8s-cri-tools.png)
+![CRI 技术栈总览](images/k8s-cri-tools.png)
+
+![containerd 生态（CRI / CNI / CSI 等）](images/containerd-eco-system.jpeg)
 
 #### crictl 配置要点
 
@@ -390,6 +418,9 @@ ctr -n k8s.io images list
 - [nerdctl](https://github.com/containerd/nerdctl)
 - [containerd](https://containerd.io/)
 - [kubernetes-best-practices — Containerd 和命令行工具](https://gitee.com/wu-wen-xiang/lab-kubernetes/blob/master/doc/kubernetes-best-practices.md#22-containerd)
+  /
+  [命令行对比表](https://gitee.com/wu-wen-xiang/lab-kubernetes/blob/master/doc/kubernetes-best-practices.md#222-命令行对比)
+- [Map crictl to Docker CLI](https://kubernetes.io/zh-cn/docs/tasks/debug/debug-cluster/crictl/#映射-crictl-到-docker-命令)
 
 #### 实验：节点侧对照理解容器视图
 
@@ -409,6 +440,8 @@ sudo crictl inspect $(sudo crictl ps -q --name nginx | head -1) | jq .info.runti
 ```
 
 ---
+
+<a id="lesson-02-k8s-架构与首批部署"></a>
 
 ## Lesson 02：K8S 架构与首批部署
 
@@ -458,16 +491,17 @@ K8S 是**容器编排平台**，核心价值：
 | **kube-proxy**               | 工作节点         | 维护 Service 的 iptables/IPVS 规则 |
 | **Container Runtime**        | 工作节点         | containerd / CRI-O                 |
 
-![Kubernetes 架构](../images/k8s-architecture.png)
+![Kubernetes 架构](images/k8s-architecture.png)
 
 K8S 源自 Google Borg 的编排思想，但架构与 API 完全独立设计：
 
-![Borg 架构（K8S 思想渊源）](../images/borg-arch.png)
+![Borg 架构（K8S 思想渊源）](images/borg-arch.png)
 
 **Reference**
 
 - [Kubernetes 组件](https://kubernetes.io/zh-cn/docs/concepts/architecture/#%E6%A6%82%E8%BF%B0)
 - [Node Components](https://kubernetes.io/zh-cn/docs/concepts/architecture/#node-components)
+- [OpenShift 与 K8S 关系概览](https://developers.redhat.com/learn/openshift)
 
 ### 2.4 声明式模型与 Controller 原理（重点）
 
@@ -492,11 +526,11 @@ K8S 源自 Google Borg 的编排思想，但架构与 API 完全独立设计：
   Reconcile：创建/更新/删除资源直到一致
 ```
 
-![控制回路（Control Loop）](https://gitee.com/wu-wen-xiang/lab-kubernetes/raw/master/image/kubernetes-co-loop.webp)
+![控制回路（Control Loop）](images/kubernetes-co-loop.webp)
 
-![Controller 调谐循环](https://gitee.com/wu-wen-xiang/lab-kubernetes/raw/master/image/kubernetes-controller-loop.webp)
+![Controller 调谐循环](images/kubernetes-controller-loop.webp)
 
-![Informer 边缘触发](https://gitee.com/wu-wen-xiang/lab-kubernetes/raw/master/image/kubernetes-controller-trigger.png)
+![Informer 边缘触发](images/kubernetes-controller-trigger.png)
 
 Kubernetes 的核心是**控制理论**：控制器定期（或通过 Informer **边缘触发**）比较 **Spec（期望状态）**
 与 **Status（实际状态）**，驱动调谐直到误差为零。kube-controller-manager 整合了
@@ -539,6 +573,8 @@ ReplicaSet、Deployment、Node 等数十种内置控制器。
 | 离线安装     | ✅          | ✅     | ✅      |
 | 基于 kubeadm | ✅          | ✅     | ✅      |
 
+![K8S 集群拓扑（概念）](images/kubeadm-cluster.png)
+
 **Reference**
 
 - [KubeClipper 官网](https://kubeclipper.io/)
@@ -550,7 +586,7 @@ ReplicaSet、Deployment、Node 等数十种内置控制器。
 
 ```bash
 # 1. 安装 kcctl
-curl -sfL https://oss.kubeclipper.io/get-kubeclipper.sh | bash -
+curl -sfLk https://oss.kubeclipper.io/get-kubeclipper.sh | bash -
 
 # 2. 单机 All-in-One 部署 KubeClipper（实验环境）
 kcctl deploy
@@ -659,6 +695,9 @@ kubectl describe pod nginx
 **Reference**
 
 - [Pods](https://kubernetes.io/docs/concepts/workloads/pods/)
+- [Get started with Kubernetes using Python](https://kubernetes.io/blog/2019/07/23/get-started-with-kubernetes-using-python/)
+  — 示例源码 [hello-python](https://github.com/JasonHaley/hello-python) /
+  [本仓库 src](https://gitee.com/dev-99cloud/training-kubernetes/tree/master/src/hello-python)
 
 #### Deployment
 
@@ -712,7 +751,7 @@ kubectl scale deployment hello-python --replicas=5
 
 为一组 Pod 提供稳定访问入口（ClusterIP / NodePort / LoadBalancer）。
 
-![Ingress 与 Service 关系（概念）](https://gitee.com/wu-wen-xiang/lab-kubernetes/raw/master/image/ingress-service.drawio.svg)
+![Ingress 与 Service 关系（概念）](images/ingress-service.drawio.svg)
 
 | 类型             | 说明                         | 典型场景          |
 | ---------------- | ---------------------------- | ----------------- |
@@ -752,12 +791,25 @@ kubectl run curl --image=curlimages/curl -it --rm -- \
 **Reference**
 
 - [Service](https://kubernetes.io/docs/concepts/services-networking/service/)
+- [Connect Applications with Services](https://kubernetes.io/docs/tutorials/services/connect-applications-service/)
 - [DNS for Services and Pods](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/)
 - [EndpointSlices](https://kubernetes.io/docs/concepts/services-networking/endpoint-slices/)
+- [MetalLB](https://metallb.universe.tf/) — 裸金属 LoadBalancer 实现
+- [kubernetes-best-practices — 网络管理](https://gitee.com/wu-wen-xiang/lab-kubernetes/blob/master/doc/kubernetes-best-practices.md#5-网络管理)
 
 #### 实验：完整部署 Web 应用
 
+> 也可直接使用本仓库示例：
+> [src/hello-python](https://gitee.com/dev-99cloud/training-kubernetes/tree/master/src/hello-python)
+> （含 `main.py`、`Dockerfile`、`deployment.yaml`）。
+
 ```bash
+# 可选：下载 hello-python 示例
+wget https://gitee.com/dev-99cloud/training-kubernetes/raw/master/src/hello-python/main.py
+wget https://gitee.com/dev-99cloud/training-kubernetes/raw/master/src/hello-python/requirements.txt
+wget https://gitee.com/dev-99cloud/training-kubernetes/raw/master/src/hello-python/Dockerfile
+wget https://gitee.com/dev-99cloud/training-kubernetes/raw/master/src/hello-python/deployment.yaml
+
 # 1. 构建镜像并推送到可访问的 Registry（或使用 imagePullPolicy: Never + 预加载镜像）
 # 2. 部署 Deployment + Service
 kubectl apply -f deployment.yaml -f service.yaml
@@ -775,6 +827,8 @@ kubectl get endpointslice -l kubernetes.io/service-name=hello-python-svc
 ---
 
 # 第 2 天：工作负载、存储、调度与综合实践
+
+<a id="lesson-03-工作负载存储与调度"></a>
 
 ## Lesson 03：工作负载、存储与调度
 
@@ -953,6 +1007,7 @@ kubectl exec -it app-with-pvc -- cat /data/test.txt   # 应输出 hello-pv
 - [Storage Classes](https://kubernetes.io/docs/concepts/storage/storage-classes/)
 - [Dynamic Volume Provisioning](https://kubernetes.io/docs/concepts/storage/dynamic-provisioning/)
 - [CSI（Container Storage Interface）](https://kubernetes-csi.github.io/docs/)
+- [kubernetes-best-practices — 存储管理](https://gitee.com/wu-wen-xiang/lab-kubernetes/blob/master/doc/kubernetes-best-practices.md#4-存储管理)
 
 ### 3.3 调度策略入门
 
@@ -1027,8 +1082,11 @@ spec:
 - [Taints and Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/)
 - [Assign Pods to Nodes using Node Affinity](https://kubernetes.io/docs/tasks/configure-pod-container/assign-pods-nodes-using-node-affinity/)
 - [Inter-pod affinity and anti-affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity)
+- [class-01 — K8S 调度](class-01-Kubernetes-Administration.md#lesson-05-k8s-schedule)
 
 ---
+
+<a id="lesson-04-配置发布与运维概览"></a>
 
 ## Lesson 04：配置发布与运维概览
 
@@ -1098,6 +1156,8 @@ kubectl create secret generic db-secret \
 - [ConfigMap](https://kubernetes.io/docs/concepts/configuration/configmap/)
 - [Secret](https://kubernetes.io/docs/concepts/configuration/secret/)
 - [Configure a Pod to Use a ConfigMap](https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/)
+
+<a id="411-私有镜像拉取imagepullsecrets重点"></a>
 
 #### 4.1.1 私有镜像拉取：imagePullSecrets（重点）
 
@@ -1306,7 +1366,7 @@ sudo nsenter -t $PID -n tcpdump -i eth0 -nn port 80
 
 #### 扩展机制全景
 
-![OpenShift 与 K8S 扩展生态对比](../images/openshift-k8s.svg)
+![OpenShift 与 K8S 扩展生态对比](images/openshift-k8s.svg)
 
 ```
 Kubernetes 核心 API
@@ -1330,7 +1390,7 @@ Kubernetes 核心 API
 - **Ingress**：单一资源，注解驱动，功能有限
 - **Gateway API**：角色分离（GatewayClass/Gateway/HTTPRoute），表达能力更强；生产级网关本课不展开
 
-![Gateway / Ingress 概念对比](https://gitee.com/wu-wen-xiang/lab-kubernetes/raw/master/image/apigateway-servicediscover.png)
+![Gateway / Ingress 概念对比](images/apigateway-servicediscover.png)
 
 **Reference**
 
@@ -1338,6 +1398,8 @@ Kubernetes 核心 API
 - [Operator pattern](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/)
 - [Ingress Controllers](https://kubernetes.io/docs/concepts/services-networking/ingress-controllers/)
 - [Gateway API](https://gateway-api.sigs.k8s.io/)
+
+<a id="45-运维与可观测性概览"></a>
 
 ### 4.5 运维与可观测性概览
 
@@ -1365,6 +1427,8 @@ Pod/Node ──metrics──▶ Exporter / cAdvisor / kube-state-metrics
                               │ pull
                          Prometheus ──▶ Grafana / Alertmanager
 ```
+
+![Grafana 监控大盘示例](images/dashbord.png)
 
 K8S 生态关键组件：
 
@@ -1441,6 +1505,8 @@ groups:
 
 ![多区域 / 多集群交付形态（概念）](images/multi-region-caas.png)
 
+![OpenShift 生产级 HA 部署参考](images/openshift-ha-deployment.png)
+
 | 交付方式              | 适用           | 本课定位                       |
 | --------------------- | -------------- | ------------------------------ |
 | **实验集群**          | 学习、PoC      | KubeClipper 快速搭建           |
@@ -1451,6 +1517,8 @@ groups:
 **4C 安全模型（Code / Container / Cluster / Cloud）**
 
 ![CNCF 4C 安全层级](images/what-is-security.png)
+
+![4C 安全模型详图](images/4c-1.png)
 
 生产环境安全是持续过程：从镜像供应链（Harbor 扫描、固定 tag）、运行时（PSS
 baseline/restricted）、集群（RBAC 概览、etcd 备份）到云平台（网络隔离）逐层加固。详见
@@ -1479,6 +1547,8 @@ kubectl label namespace dev \
 - [Pod Security Standards](https://kubernetes.io/docs/concepts/security/pod-security-standards/)
 - [Pod Security Admission](https://kubernetes.io/docs/concepts/security/pod-security-admission/)
 - [Backup etcd](https://kubernetes.io/docs/tasks/administer-cluster/configure-upgrade-etcd/#backing-up-an-etcd-cluster)
+- [kubernetes-best-practices — 安全相关](https://gitee.com/wu-wen-xiang/lab-kubernetes/blob/master/doc/kubernetes-best-practices.md#6-安全相关)
+- [class-04 — Kubernetes 安全](class-04-Kubernetes-Security-Specialist.md)
 
 #### 4.5.5 AIOps 与智能运维（概览）
 
@@ -1620,42 +1690,42 @@ kubectl uncordon <node>
 
 ### 官方文档
 
-| 主题                    | 链接                                                            |
-| ----------------------- | --------------------------------------------------------------- |
-| Kubernetes 文档（中文） | https://kubernetes.io/zh-cn/docs/home/                          |
-| 概念 — 工作负载         | https://kubernetes.io/docs/concepts/workloads/                  |
-| 概念 — 存储             | https://kubernetes.io/docs/concepts/storage/                    |
-| 概念 — 调度             | https://kubernetes.io/docs/concepts/scheduling-eviction/        |
-| 概念 — 安全             | https://kubernetes.io/docs/concepts/security/                   |
-| Tasks — 配置 Pod        | https://kubernetes.io/docs/tasks/configure-pod-container/       |
-| Release Notes           | https://kubernetes.io/releases/                                 |
-| v1.33 发布说明          | https://kubernetes.io/blog/2025/04/23/kubernetes-v1-33-release/ |
+| 主题                    | 链接                                                                                                                               |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Kubernetes 文档（中文） | [https://kubernetes.io/zh-cn/docs/home/](https://kubernetes.io/zh-cn/docs/home/)                                                   |
+| 概念 — 工作负载         | [https://kubernetes.io/docs/concepts/workloads/](https://kubernetes.io/docs/concepts/workloads/)                                   |
+| 概念 — 存储             | [https://kubernetes.io/docs/concepts/storage/](https://kubernetes.io/docs/concepts/storage/)                                       |
+| 概念 — 调度             | [https://kubernetes.io/docs/concepts/scheduling-eviction/](https://kubernetes.io/docs/concepts/scheduling-eviction/)               |
+| 概念 — 安全             | [https://kubernetes.io/docs/concepts/security/](https://kubernetes.io/docs/concepts/security/)                                     |
+| Tasks — 配置 Pod        | [https://kubernetes.io/docs/tasks/configure-pod-container/](https://kubernetes.io/docs/tasks/configure-pod-container/)             |
+| Release Notes           | [https://kubernetes.io/releases/](https://kubernetes.io/releases/)                                                                 |
+| v1.33 发布说明          | [https://kubernetes.io/blog/2025/04/23/kubernetes-v1-33-release/](https://kubernetes.io/blog/2025/04/23/kubernetes-v1-33-release/) |
 
 ### 容器与运行时
 
-| 主题        | 链接                                         |
-| ----------- | -------------------------------------------- |
-| Docker 文档 | https://docs.docker.com/                     |
-| containerd  | https://containerd.io/                       |
-| nerdctl     | https://github.com/containerd/nerdctl        |
-| crictl      | https://github.com/kubernetes-sigs/cri-tools |
-| OCI         | https://opencontainers.org/                  |
+| 主题        | 链接                                                                                         |
+| ----------- | -------------------------------------------------------------------------------------------- |
+| Docker 文档 | [https://docs.docker.com/](https://docs.docker.com/)                                         |
+| containerd  | [https://containerd.io/](https://containerd.io/)                                             |
+| nerdctl     | [https://github.com/containerd/nerdctl](https://github.com/containerd/nerdctl)               |
+| crictl      | [https://github.com/kubernetes-sigs/cri-tools](https://github.com/kubernetes-sigs/cri-tools) |
+| OCI         | [https://opencontainers.org/](https://opencontainers.org/)                                   |
 
 ### 集群管理
 
-| 主题        | 链接                                                                   |
-| ----------- | ---------------------------------------------------------------------- |
-| KubeClipper | https://kubeclipper.io/                                                |
-| kubeadm     | https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/ |
+| 主题        | 链接                                                                                                                                             |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| KubeClipper | [https://kubeclipper.io/](https://kubeclipper.io/)                                                                                               |
+| kubeadm     | [https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/) |
 
 ### 可观测与安全
 
-| 主题                     | 链接                                                          |
-| ------------------------ | ------------------------------------------------------------- |
-| Prometheus               | https://prometheus.io/docs/                                   |
-| Grafana Loki             | https://grafana.com/docs/loki/latest/                         |
-| CNCF Security Whitepaper | https://www.cncf.io/reports/cloud-native-security-whitepaper/ |
-| CIS Kubernetes Benchmark | https://www.cisecurity.org/benchmark/kubernetes               |
+| 主题                     | 链接                                                                                                                           |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| Prometheus               | [https://prometheus.io/docs/](https://prometheus.io/docs/)                                                                     |
+| Grafana Loki             | [https://grafana.com/docs/loki/latest/](https://grafana.com/docs/loki/latest/)                                                 |
+| CNCF Security Whitepaper | [https://www.cncf.io/reports/cloud-native-security-whitepaper/](https://www.cncf.io/reports/cloud-native-security-whitepaper/) |
+| CIS Kubernetes Benchmark | [https://www.cisecurity.org/benchmark/kubernetes](https://www.cisecurity.org/benchmark/kubernetes)                             |
 
 ### 本仓库相关课程
 
@@ -1665,33 +1735,3 @@ kubectl uncordon <node>
 | Kubernetes-Development    | [class-02-Kubernetes-Development.md](class-02-Kubernetes-Development.md)                 |
 | 边缘容器云解决方案        | [class-03-Kubernetes-Edge-Solutions.md](class-03-Kubernetes-Edge-Solutions.md)           |
 | Kubernetes 安全           | [class-04-Kubernetes-Security-Specialist.md](class-04-Kubernetes-Security-Specialist.md) |
-
-### 延伸阅读（lab-kubernetes）
-
-| 主题                | 链接                                                                                                                             |
-| ------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| Kubernetes 最佳实践 | [kubernetes-best-practices.md](https://gitee.com/wu-wen-xiang/lab-kubernetes/blob/master/doc/kubernetes-best-practices.md)       |
-| 云原生和微服务      | [cloudnative-and-mircoservice.md](https://gitee.com/wu-wen-xiang/lab-kubernetes/blob/master/doc/cloudnative-and-mircoservice.md) |
-| 边缘云和边缘智算    | [mec-edge-and-ai.md](https://gitee.com/wu-wen-xiang/lab-kubernetes/blob/master/doc/mec-edge-and-ai.md)                           |
-| 云原生和 AI         | [ai-cloud.md](https://gitee.com/wu-wen-xiang/lab-kubernetes/blob/master/doc/ai-cloud.md)                                         |
-
-### 本讲义插图索引
-
-| 章节              | 图片                                             | 来源                         |
-| ----------------- | ------------------------------------------------ | ---------------------------- |
-| 容器演进          | `../images/container-evolution.png`              | class-01                     |
-| Docker 架构       | `../images/docker-arch.png`                      | class-01                     |
-| CRI / containerd  | `../images/k8s-containerd-1-1.png` 等            | class-01                     |
-| K8S 架构          | `../images/k8s-architecture.png`                 | class-01                     |
-| Controller 调谐   | lab-kubernetes `kubernetes-controller-loop.webp` | cloudnative                  |
-| 工作负载          | `images/kubernetes-arch.png`                     | class-03                     |
-| 镜像拉取 / 供应链 | `images/chapter-3-1.png`                         | class-04（Grafeas/签名概念） |
-| 4C 安全           | `images/what-is-security.png`                    | class-04                     |
-| Bridge 网络       | `images/bridge_network.jpeg`                     | class-01                     |
-| OpenShift 扩展    | `../images/openshift-k8s.svg`                    | class-01                     |
-
----
-
-**第 2
-天收束**：掌握多类工作负载与存储、调度策略；能完成一次完整发布闭环；了解监控、日志、生产部署与 AIOps
-方向；建立「核心 + 扩展」全景认知。
