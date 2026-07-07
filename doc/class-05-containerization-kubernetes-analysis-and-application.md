@@ -6,6 +6,14 @@
 - **版本说明**：本讲义以 **Kubernetes 1.30+** 为基线，重点标注 **1.33（Octarine）**
   及之后的新特性；不涉及 dockershim、Pod Security Policy（PSP）等过时内容。
 
+## 下载
+
+VSCode IDE：
+
+- [百度云盘下载](https://pan.baidu.com/s/1fOLxOiF1pfb78MywMJCflA) 提取码: h6au
+- [官网下载](https://code.visualstudio.com/)
+- [安装步骤](https://gitee.com/duicikeyihangaolou/training-python/blob/master/doc/Installation-VSCode.md)
+
 ## 注意 ⚠️
 
 - **未经允许，禁止转载**
