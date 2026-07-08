@@ -283,7 +283,7 @@ flask
 EOF
 
 cat > Dockerfile <<'EOF'
-FROM python:3.12-slim
+FROM registry.cn-shanghai.aliyuncs.com/99cloud-sh/python:3.12
 WORKDIR /app
 COPY . /app
 RUN pip install --no-cache-dir -r requirements.txt
