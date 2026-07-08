@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-headless
+spec:
+  clusterIP: None
+  selector:
+    app: nginx-sts
+  ports:
+  - port: 80
+---
+# 身份/有序启停演示：无 StorageClass 时用 emptyDir。
+# 有动态供给时，可改为 volumeClaimTemplates（见文档 StatefulSet 要点）。
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: nginx-sts
+spec:
+  serviceName: nginx-headless
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx-sts
+  template:
+    metadata:
+      labels:
+        app: nginx-sts
+    spec:
+      containers:
+      - name: nginx
+        image: registry.cn-shanghai.aliyuncs.com/99cloud-sh/nginx-slim:0.21
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: data
+          mountPath: /usr/share/nginx/html
+      volumes:
+      - name: data
+        emptyDir: {}

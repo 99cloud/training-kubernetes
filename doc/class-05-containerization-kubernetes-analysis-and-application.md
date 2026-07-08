@@ -689,7 +689,7 @@ metadata:
 spec:
   containers:
   - name: nginx
-    image: registry.k8s.io/nginx-slim:0.21
+    image: registry.cn-shanghai.aliyuncs.com/99cloud-sh/nginx-slim:0.21
     ports:
     - containerPort: 80
 ```
@@ -710,6 +710,21 @@ kubectl describe pod nginx
 #### Deployment
 
 管理 Pod 副本、滚动更新、回滚的 Controller。
+
+构建机上的 `docker` 镜像与节点 `containerd`（K8S 默认命名空间 `k8s.io`）**不共享**存储。本机
+`docker build` 后，需导出再导入到节点，否则 Deployment 会 `ErrImagePull` / `ImagePullBackOff`：
+
+```bash
+# 构建机：导出
+docker save demo-web:latest -o demo-web-latest.tar
+
+# 拷到节点后导入（containerd / nerdctl）
+nerdctl -n k8s.io load -i demo-web-latest.tar
+# 或：ctr -n k8s.io images import demo-web-latest.tar
+
+# 确认节点可见
+crictl images | grep demo-web
+```
 
 ```yaml
 apiVersion: apps/v1
@@ -854,7 +869,25 @@ kubectl get endpointslice -l kubernetes.io/service-name=hello-python-svc
 
 #### DaemonSet 示例
 
+使用 `node-exporter`（Prometheus 节点指标 Agent）。实验网若无法直连 Docker Hub，可在可出国的跳板（如
+`ali-fq`）上 pull → retag → push 到 ACR 后再部署：
+
+```bash
+# 在 ali-fq（或其它可访问 docker.io 的机器）上
+docker pull prom/node-exporter:v1.8.0
+docker tag prom/node-exporter:v1.8.0 \
+  registry.cn-shanghai.aliyuncs.com/99cloud-sh/node-exporter:v1.8.0
+docker push registry.cn-shanghai.aliyuncs.com/99cloud-sh/node-exporter:v1.8.0
+```
+
+完整清单见 [src/class05/daemonset.yaml](../src/class05/daemonset.yaml)。
+
 ```yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+---
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -873,7 +906,7 @@ spec:
       - operator: Exists   # 容忍所有污点，确保每节点都跑
       containers:
       - name: node-exporter
-        image: prom/node-exporter:v1.8.0
+        image: registry.cn-shanghai.aliyuncs.com/99cloud-sh/node-exporter:v1.8.0
         ports:
         - containerPort: 9100
 ```
@@ -886,7 +919,9 @@ spec:
 
 - 稳定 Pod 名：`<statefulset>-0`, `<statefulset>-1`, ...
 - 稳定 DNS：`<pod>.<headless-svc>.<ns>.svc.cluster.local`
-- 需配合 **Headless Service** 与 **volumeClaimTemplates**
+- 生产需配合 **Headless Service** 与 **volumeClaimTemplates**（依赖 StorageClass/动态供给）
+- **实验集群无 StorageClass 时**：先用 `emptyDir` 观察序号与有序扩缩（见
+  [src/class05/statefulset.yaml](../src/class05/statefulset.yaml)）；持久化另做 3.2 PV/PVC
 
 ```yaml
 apiVersion: v1
@@ -917,17 +952,15 @@ spec:
     spec:
       containers:
       - name: nginx
-        image: registry.k8s.io/nginx-slim:0.21
+        image: registry.cn-shanghai.aliyuncs.com/99cloud-sh/nginx-slim:0.21
         ports:
         - containerPort: 80
-  volumeClaimTemplates:
-  - metadata:
-      name: data
-    spec:
-      accessModes: ["ReadWriteOnce"]
-      resources:
-        requests:
-          storage: 1Gi
+        volumeMounts:
+        - name: data
+          mountPath: /usr/share/nginx/html
+      volumes:
+      - name: data
+        emptyDir: {}   # 有 StorageClass 时可改为 volumeClaimTemplates
 ```
 
 **Reference**
@@ -937,9 +970,11 @@ spec:
 
 #### 实验：观察 Deployment vs DaemonSet vs StatefulSet 行为差异
 
+> 清单：`src/class05/daemonset.yaml`、`src/class05/statefulset.yaml`
+
 ```bash
-kubectl apply -f daemonset.yaml
-kubectl apply -f statefulset.yaml
+kubectl apply -f src/class05/daemonset.yaml
+kubectl apply -f src/class05/statefulset.yaml
 kubectl get ds,sts,pods -o wide
 kubectl delete pod nginx-sts-0    # StatefulSet 会按同名重建
 kubectl scale sts nginx-sts --replicas=5  # 有序扩缩
@@ -959,27 +994,36 @@ kubectl scale sts nginx-sts --replicas=5  # 有序扩缩
 PVC 申请 storage → StorageClass 触发 Provisioner → 自动创建 PV → 绑定 Pod
 ```
 
-#### StorageClass 动态供给示例
+#### 实验清单：静态 PV（hostPath）— 无 CSI 时可用
+
+> 完整 YAML：[src/class05/pvc-demo.yaml](../src/class05/pvc-demo.yaml)。\
+> `kubernetes.io/no-provisioner` **不会**自动创建卷；无 StorageClass/CSI 的实验集群请用静态 PV。
 
 ```yaml
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
+apiVersion: v1
+kind: PersistentVolume
 metadata:
-  name: standard
-provisioner: kubernetes.io/no-provisioner   # 实验环境按实际 CSI 驱动替换
-volumeBindingMode: WaitForFirstConsumer
+  name: data-pv
+spec:
+  capacity:
+    storage: 2Gi
+  accessModes: ["ReadWriteOnce"]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: manual
+  hostPath:
+    path: /data/pvc-demo
+    type: DirectoryOrCreate
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: data-pvc
 spec:
-  accessModes:
-  - ReadWriteOnce
+  accessModes: ["ReadWriteOnce"]
   resources:
     requests:
       storage: 2Gi
-  storageClassName: standard
+  storageClassName: manual
 ---
 apiVersion: v1
 kind: Pod
@@ -988,7 +1032,7 @@ metadata:
 spec:
   containers:
   - name: app
-    image: registry.k8s.io/nginx-slim:0.21
+    image: registry.cn-shanghai.aliyuncs.com/99cloud-sh/nginx-slim:0.21
     volumeMounts:
     - name: data
       mountPath: /data
@@ -998,15 +1042,20 @@ spec:
       claimName: data-pvc
 ```
 
+有 CSI 时再引入 StorageClass 动态供给（按集群实际 provisioner 替换）。
+
 #### 实验：数据写入后 Pod 重建仍保留
 
 ```bash
-kubectl apply -f pvc-demo.yaml
-kubectl exec -it app-with-pvc -- sh -c 'echo hello-pv > /data/test.txt'
+# 控制面/节点上预先准备目录（hostPath）
+sudo mkdir -p /data/pvc-demo && sudo chmod 777 /data/pvc-demo
+
+kubectl apply -f src/class05/pvc-demo.yaml
+kubectl exec app-with-pvc -- sh -c 'echo hello-pv > /data/test.txt'
 kubectl delete pod app-with-pvc
 # 重新创建 Pod 并挂载同一 PVC
-kubectl apply -f pvc-demo.yaml
-kubectl exec -it app-with-pvc -- cat /data/test.txt   # 应输出 hello-pv
+kubectl apply -f src/class05/pvc-demo.yaml
+kubectl exec app-with-pvc -- cat /data/test.txt   # 应输出 hello-pv
 ```
 
 **Reference**
@@ -1051,8 +1100,12 @@ spec:
 - **Toleration**：Pod「容忍」节点 Taint
 
 ```bash
-# 给节点打污点（实验：专用节点）
-kubectl taint nodes node1 dedicated=training:NoSchedule
+# 给节点打污点（实验：专用节点；单节点集群务必实验后去掉污点）
+NODE=$(kubectl get nodes -o jsonpath='{.items[0].metadata.name}')
+kubectl taint nodes "$NODE" dedicated=training:NoSchedule
+# 观察：无 toleration 的 Pod 会 Pending；带 toleration 的可调度
+# 清理：
+# kubectl taint nodes "$NODE" dedicated=training:NoSchedule-
 
 # Pod 侧 toleration
 ```
@@ -1130,6 +1183,7 @@ spec:
       containers:
       - name: app
         image: demo-web:latest
+        imagePullPolicy: IfNotPresent   # 实验节点预加载镜像时避免误拉 docker.io
         env:
         - name: APP_MODE
           valueFrom:
@@ -1305,15 +1359,25 @@ containers:
 Sidecar（日志/代理/监控 Agent）在 1.33 成为稳定特性：在 `initContainers` 中设置
 `restartPolicy: Always`。
 
+实验网若无法直连 Docker Hub，同样经跳板同步到 ACR：
+
+```bash
+docker pull fluent/fluent-bit:3.0
+docker tag fluent/fluent-bit:3.0 \
+  registry.cn-shanghai.aliyuncs.com/99cloud-sh/fluent-bit:3.0
+docker push registry.cn-shanghai.aliyuncs.com/99cloud-sh/fluent-bit:3.0
+```
+
 ```yaml
 spec:
   initContainers:
   - name: log-shipper
-    image: fluent/fluent-bit:3.0
+    image: registry.cn-shanghai.aliyuncs.com/99cloud-sh/fluent-bit:3.0
     restartPolicy: Always    # Sidecar：与应用容器并行运行
   containers:
   - name: app
     image: demo-web:latest
+    imagePullPolicy: IfNotPresent
 ```
 
 **Reference**
@@ -1448,10 +1512,22 @@ K8S 生态关键组件：
 | **Prometheus Operator** | 以 CRD 管理 Prometheus 实例（概念）     |
 
 ```bash
-# 安装 metrics-server（以官方 manifest 为例，按集群版本选择 release）
+# 1) 安装 metrics-server（官方 manifest）
 kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
 
-# 验证
+# 2) 实验网常见问题：
+#    - registry.k8s.io 拉镜像超时 → 换国内镜像
+#    - kubelet 证书校验失败 → 增加 --kubelet-insecure-tls
+# 可用清单补丁：src/class05/metrics-server-patch.yaml
+kubectl -n kube-system set image deploy/metrics-server \
+  metrics-server=registry.cn-hangzhou.aliyuncs.com/google_containers/metrics-server:v0.7.1
+kubectl -n kube-system patch deploy metrics-server --type='json' -p='[
+  {"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"},
+  {"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-preferred-address-types=InternalIP,Hostname"}
+]'
+
+# 3) 验证（首次可能需等 15~30s 出数）
+kubectl rollout status -n kube-system deploy/metrics-server
 kubectl top nodes
 kubectl top pods -A
 ```
@@ -1491,6 +1567,27 @@ groups:
 
 - 默认：`/var/log/pods/<namespace>_<pod>_<uid>/<container>/`
 - 应用应写 stdout/stderr，避免写容器内本地文件
+
+#### 实验：对照三层日志视图
+
+```bash
+POD=$(kubectl get pod -l app=hello-python -o jsonpath='{.items[0].metadata.name}')
+
+# 1) API：kubectl logs
+kubectl logs "$POD" --tail=20
+
+# 2) 节点文件：与 kubectl logs 同源
+sudo ls /var/log/pods/default_${POD}_*/app/
+sudo tail -5 /var/log/pods/default_${POD}_*/app/*.log
+
+# 3) CRI：crictl（需在节点执行；注意不是 docker）
+sudo crictl ps --name app
+CID=$(sudo crictl ps --name app -q | head -1)
+sudo crictl logs --tail 5 "$CID"
+
+# 可选：kubelet 组件日志
+# journalctl -u kubelet -n 50 --no-pager
+```
 
 **Reference**
 
@@ -1588,36 +1685,44 @@ kubectl label namespace dev \
 
 ### 4.6 综合 Demo：完整发布闭环
 
+> 清单：[src/class05/](../src/class05/)（`configmap.yaml` / `deployment-v2.yaml` /
+> `service.yaml`）。\
+> 实验网 Docker Hub 常超时：若节点已有 `demo-web:v2`，跳过构建/推送，并用
+> `imagePullPolicy: IfNotPresent`。访问 NodePort 请用**节点 IP**（`127.0.0.1` 可能不通）。
+
 ```bash
-# === 1. 构建镜像 ===
-docker build -t demo-web:v2 .
-docker tag demo-web:v2 registry.example.com/training/demo-web:v2
-docker push registry.example.com/training/demo-web:v2
+# === 1. 构建镜像（可选；镜像已预加载可跳过）===
+# docker build -t demo-web:v2 .
+# 若需 Registry：tag + push；否则保留本地 tag，部署时 IfNotPresent
 
-# === 2. 创建拉取凭据 ===
-kubectl create secret docker-registry regcred \
-  --docker-server=registry.example.com \
-  --docker-username=<user> --docker-password=<pass>
-
-kubectl patch sa default -p '{"imagePullSecrets":[{"name":"regcred"}]}'
+# === 2. 创建拉取凭据（有私有 Registry 时）===
+# kubectl create secret docker-registry regcred \
+#   --docker-server=registry.example.com \
+#   --docker-username=<user> --docker-password=<pass>
+# kubectl patch sa default -p '{"imagePullSecrets":[{"name":"regcred"}]}'
 
 # === 3. 声明式部署（含 ConfigMap + 探针）===
-kubectl apply -f configmap.yaml -f deployment-v2.yaml -f service.yaml
+kubectl apply -f src/class05/configmap.yaml \
+  -f src/class05/deployment-v2.yaml \
+  -f src/class05/service.yaml
+kubectl rollout status deployment/hello-python
 
 # === 4. 访问验证 ===
-curl http://<node-ip>:31000/
+NODEIP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
+curl http://${NODEIP}:31000/   # 期望 Hello TrainingK8S
 
 # === 5. 滚动更新 ===
-kubectl set image deployment/hello-python app=registry.example.com/training/demo-web:v2
+kubectl set image deployment/hello-python app=demo-web:latest
 kubectl rollout status deployment/hello-python
 
 # === 6. 回滚 ===
 kubectl rollout undo deployment/hello-python
+kubectl rollout status deployment/hello-python
 
 # === 7. 节点侧对照 ===
-ssh <node>
-sudo crictl ps | grep hello-python
-sudo crictl logs <container-id>
+sudo crictl ps --name app
+CID=$(sudo crictl ps --name app -q | head -1)
+sudo crictl logs --tail 20 "$CID"
 ```
 
 ### 4.7 研发场景收束：何时引入 K8S

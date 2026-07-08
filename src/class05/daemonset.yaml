@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+---
+# 镜像已同步至 ACR（ali-fq: docker pull/tag/push）
+# registry.cn-shanghai.aliyuncs.com/99cloud-sh/node-exporter:v1.8.0
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: node-exporter
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: node-exporter
+  template:
+    metadata:
+      labels:
+        app: node-exporter
+    spec:
+      tolerations:
+      - operator: Exists # 容忍所有污点，确保每节点都跑
+      containers:
+      - name: node-exporter
+        image: registry.cn-shanghai.aliyuncs.com/99cloud-sh/node-exporter:v1.8.0
+        ports:
+        - containerPort: 9100
