@@ -594,7 +594,7 @@ ReplicaSet、Deployment、Node 等数十种内置控制器。
 
 ```bash
 # 1. 安装 kcctl
-curl -sfLk https://oss.kubeclipper.io/get-kubeclipper.sh | bash -
+curl -sfLk https://oss.kubeclipper.io/get-kubeclipper.sh | KC_REGION=cn bash -
 
 # 2. 单机 All-in-One 部署 KubeClipper（实验环境）
 kcctl deploy
