@@ -608,6 +608,7 @@ kcctl deploy
 # 4. 获取节点 IP 并创建单节点集群
 NODE=$(kcctl get node -o yaml | grep ipv4DefaultIP | head -1 | awk '{print $2}')
 kcctl create cluster --master $NODE --name demo --untaint-master
+# kcctl create cluster --master "$(kcctl get node -o yaml | grep ipv4DefaultIP | head -1 | awk '{print $2}')" --name demo --untaint-master
 
 # 5. 查看集群状态（Running 即就绪）
 kcctl get cluster
