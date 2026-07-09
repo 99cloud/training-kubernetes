@@ -49,12 +49,15 @@ VSCode IDE：
 
 ## Catalog
 
-| 天数        | 时段 | 主题                                                     | 核心内容                                        |
-| ----------- | ---- | -------------------------------------------------------- | ----------------------------------------------- |
-| **第 1 天** | 上午 | [1. 容器与运行时](#lesson-01-容器与运行时)               | 容器原理、Docker、containerd 生态               |
-|             | 下午 | [2. K8S 架构与首批部署](#lesson-02-k8s-架构与首批部署)   | 声明式模型、KubeClipper、Pod/Deployment/Service |
-| **第 2 天** | 上午 | [3. 工作负载、存储与调度](#lesson-03-工作负载存储与调度) | DaemonSet/StatefulSet、PV/PVC、调度策略         |
-|             | 下午 | [4. 配置发布与运维概览](#lesson-04-配置发布与运维概览)   | ConfigMap/Secret、探针、排障、可观测、AIOps     |
+| 天数        | 时段 | 主题                                                              | 核心内容                                        |
+| ----------- | ---- | ----------------------------------------------------------------- | ----------------------------------------------- |
+| **第 1 天** | 上午 | [1. 容器与运行时](#lesson-01-容器与运行时)                        | 容器原理、Docker、containerd 生态               |
+|             | 下午 | [2. K8S 架构与首批部署](#lesson-02-k8s-架构与首批部署)            | 声明式模型、KubeClipper、Pod/Deployment/Service |
+| **第 2 天** | 上午 | [3. 工作负载、存储与调度](#lesson-03-工作负载存储与调度)          | DaemonSet/StatefulSet、PV/PVC、调度策略         |
+|             | 下午 | [4. 配置发布与运维概览](#lesson-04-配置发布与运维概览)            | ConfigMap/Secret、探针、排障、可观测、AIOps     |
+| **课后**    | —    | [附录 D 自测题](#附录-d自测题与巩固问答)                          | 检验与巩固                                      |
+|             | —    | [附录 E 实操清单](#附录-e实操清单与知识点串联)                    | 串联知识点                                      |
+|             | —    | [附录 F AI IDE 实践](#附录-fai-idecursor--trae辅助开发与运维实践) | Cursor / Trae 辅助开发与排错                    |
 
 ### 课程主线（对照大纲）
 
@@ -1526,10 +1529,69 @@ kubectl -n kube-system patch deploy metrics-server --type='json' -p='[
   {"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-preferred-address-types=InternalIP,Hostname"}
 ]'
 
-# 3) 验证（首次可能需等 15~30s 出数）
+# 3) 验证 metrics-server（首次可能需等 15~30s 出数）
 kubectl rollout status -n kube-system deploy/metrics-server
 kubectl top nodes
 kubectl top pods -A
+```
+
+> **区分**：`metrics-server` 供 `kubectl top`；**Prometheus** 是时序库，负责长期存储、PromQL
+> 查询与告警。
+
+#### 实验：部署 Prometheus 并抓取 node-exporter
+
+前置：3.1 已部署 `node-exporter` DaemonSet。镜像经跳板同步到 ACR（与 node-exporter 相同流程）：
+
+```bash
+# 在 ali-fq 上
+docker pull prom/prometheus:v2.54.1
+docker tag prom/prometheus:v2.54.1 \
+  registry.cn-shanghai.aliyuncs.com/99cloud-sh/prometheus:v2.54.1
+docker push registry.cn-shanghai.aliyuncs.com/99cloud-sh/prometheus:v2.54.1
+```
+
+```bash
+# 部署（含 node-exporter Service + Prometheus Deployment/NodePort）
+kubectl apply -f src/class05/prometheus.yaml
+kubectl rollout status -n monitoring deploy/prometheus --timeout=120s
+kubectl get pods,svc -n monitoring
+```
+
+**验证 Prometheus 部署成功**
+
+```bash
+# 1) 健康检查
+kubectl exec -n monitoring deploy/prometheus -- wget -qO- http://127.0.0.1:9090/-/healthy
+kubectl exec -n monitoring deploy/prometheus -- wget -qO- http://127.0.0.1:9090/-/ready
+
+# 2) Targets 均为 UP（刚启动可等 ~30s）
+kubectl exec -n monitoring deploy/prometheus -- wget -qO- \
+  'http://127.0.0.1:9090/api/v1/targets' | python3 -c "
+import sys,json
+for t in json.load(sys.stdin)['data']['activeTargets']:
+    print(t['labels'].get('job'), t['health'])
+"
+
+# 3) PromQL：up 指标应为 1
+kubectl exec -n monitoring deploy/prometheus -- wget -qO- \
+  'http://127.0.0.1:9090/api/v1/query?query=up' | python3 -c "
+import sys,json
+for r in json.load(sys.stdin)['data']['result']:
+    print(r['metric'].get('job'), r['value'][1])
+"
+
+# 4) 能查到 node-exporter 指标
+kubectl exec -n monitoring deploy/prometheus -- wget -qO- \
+  'http://127.0.0.1:9090/api/v1/query?query=node_cpu_seconds_total' | python3 -c "
+import sys,json
+print('samples', len(json.load(sys.stdin)['data']['result']))
+"
+
+# 5) 浏览器 / curl（NodePort 30090，用节点 IP）
+NODEIP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
+curl http://${NODEIP}:30090/-/healthy
+# UI: http://${NODEIP}:30090 → Status → Targets → node-exporter = UP
+# PromQL 示例: up{job="node-exporter"}
 ```
 
 **告警思路（示例规则概念）**
@@ -1563,12 +1625,91 @@ groups:
 | **Loki 栈**    | Promtail/Fluent Bit → Loki → Grafana        | 与 Prometheus 标签模型一致；成本较低 |
 | **云厂商日志** | 托管采集 + 存储                             | 运维简单；厂商绑定                   |
 
+> **本课实验栈**：`Fluent Bit`（DaemonSet 采集）→ `Loki`（单实例存储）→ LogQL 查询验证。\
+> 未部署 Grafana / Elasticsearch（生产可再接 Grafana 做日志大盘）。
+
 容器日志路径约定：
 
 - 默认：`/var/log/pods/<namespace>_<pod>_<uid>/<container>/`
 - 应用应写 stdout/stderr，避免写容器内本地文件
 
-#### 实验：对照三层日志视图
+#### 实验：部署 Loki（最简单实例）
+
+镜像经跳板同步到 ACR：
+
+```bash
+# 在 ali-fq 上
+docker pull grafana/loki:3.0.0
+docker tag grafana/loki:3.0.0 registry.cn-shanghai.aliyuncs.com/99cloud-sh/loki:3.0.0
+docker push registry.cn-shanghai.aliyuncs.com/99cloud-sh/loki:3.0.0
+```
+
+```bash
+kubectl apply -f src/class05/loki.yaml
+kubectl rollout status -n monitoring deploy/loki --timeout=120s
+kubectl get pods,svc -n monitoring -l app=loki
+```
+
+**验证 Loki 部署成功**
+
+```bash
+# 1) Ready
+kubectl exec -n monitoring deploy/loki -- wget -qO- http://127.0.0.1:3100/ready
+
+# 2) NodePort（用节点 IP）
+NODEIP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
+curl http://${NODEIP}:30100/ready
+
+# 3) 已有 label（Fluent Bit 推送后才有数据；见下一节）
+kubectl exec -n monitoring deploy/loki -- wget -qO- http://127.0.0.1:3100/loki/api/v1/labels
+```
+
+#### 实验：Fluent Bit → Loki
+
+`src/class05/fluent-bit.yaml` 已配置 OUTPUT 指向 `loki.monitoring.svc:3100`。更新 ConfigMap 后需重启
+DaemonSet：
+
+```bash
+kubectl apply -f src/class05/fluent-bit.yaml
+kubectl rollout restart -n monitoring ds/fluent-bit
+kubectl rollout status -n monitoring ds/fluent-bit --timeout=120s
+kubectl get pods -n monitoring -l app=fluent-bit -o wide
+```
+
+**验证日志进入 Loki**
+
+```bash
+NODEIP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
+
+# 1) 产生应用访问日志
+curl http://${NODEIP}:31000/
+sleep 5
+
+# 2) Loki 已有 label（auto_kubernetes_labels 会把 Pod label 提升为 Loki label）
+kubectl exec -n monitoring deploy/loki -- wget -qO- \
+  http://127.0.0.1:3100/loki/api/v1/label/app/values
+# 期望含 hello-python
+
+# 3) LogQL 查询 hello-python 日志
+kubectl exec -n monitoring deploy/loki -- wget -qO- \
+  'http://127.0.0.1:3100/loki/api/v1/query_range?query=%7Bapp%3D%22hello-python%22%7D&limit=5' \
+  | python3 -m json.tool | head -40
+# 期望看到 "GET / HTTP/1.1" 200
+
+# 4) 过滤关键字（LogQL）
+kubectl exec -n monitoring deploy/loki -- wget -qO- \
+  'http://127.0.0.1:3100/loki/api/v1/query_range?query=%7Bapp%3D%22hello-python%22%7D%20%7C%3D%20%22GET%20%2F%20HTTP%22&limit=3' \
+  | python3 -m json.tool | grep -E 'GET / HTTP|status'
+
+# 5) 与 kubectl logs 对照
+POD=$(kubectl get pod -l app=hello-python -o jsonpath='{.items[0].metadata.name}')
+kubectl logs "$POD" --tail=3
+```
+
+> **说明**：本 Demo 使用 Pod label `app` 作为 Loki 查询维度（`{app="hello-python"}`），与 Prometheus
+> 标签模型一致；生产可再接 Grafana 数据源 `http://loki.monitoring.svc:3100`。
+
+#### 实验：对照三层日志视图（无 Loki 时也可用）
 
 ```bash
 POD=$(kubectl get pod -l app=hello-python -o jsonpath='{.items[0].metadata.name}')
@@ -1848,3 +1989,521 @@ kubectl uncordon <node>
 | Kubernetes-Development    | [class-02-Kubernetes-Development.md](class-02-Kubernetes-Development.md)                 |
 | 边缘容器云解决方案        | [class-03-Kubernetes-Edge-Solutions.md](class-03-Kubernetes-Edge-Solutions.md)           |
 | Kubernetes 安全           | [class-04-Kubernetes-Security-Specialist.md](class-04-Kubernetes-Security-Specialist.md) |
+
+---
+
+<a id="附录-d自测题与巩固问答"></a>
+
+## 附录 D：自测题与巩固问答
+
+> 学员：先**闭卷自测**，再对照 [参考答案要点](#d-参考答案要点)。\
+> 建议：每章做完对应 Lesson 实验后再做题；错题回到正文对应小节复习。
+
+### D.1 Lesson 01 — 容器与运行时
+
+**选择题**
+
+1. 容器与虚拟机相比，最典型的优势是？\
+   A. 可运行不同操作系统内核\
+   B. 进程级隔离、镜像小、启动快\
+   C. 完全不需要宿主机内核\
+   D. 天然支持硬件虚拟化
+
+2. Linux 容器隔离主要靠？\
+   A. Namespace + Cgroups\
+   B. iptables alone\
+   C. SELinux alone\
+   D. LVM
+
+3. K8S 节点上查「与 `kubectl get po -A` 一致的容器列表」，应优先用？\
+   A. `docker ps`\
+   B. `crictl ps`\
+   C. `systemctl list-units`\
+   D. `kubectl docker`
+
+4. 构建机 `docker build` 的镜像，节点 kubelet 能直接拉取的前提是？\
+   A. 自动同步，无需操作\
+   B. 推送到 Registry，或 `docker save` + 节点 `nerdctl -n k8s.io load`\
+   C. 复制到 `/var/lib/docker`\
+   D. 重启 kubelet
+
+5. Dockerfile 中 `COPY` 与 `ADD` 推荐优先用？\
+   A. ADD（功能更多，可以把一个 tar 包自动解压到镜像某目录）\
+   B. COPY（语义更清晰）\
+   C. 都可以，无区别\
+   D. RUN
+
+**判断题**（对 / 错）
+
+6. 容器里 PID 1 进程退出，整个容器就退出。
+7. `docker run -d` 启动的容器，停止后数据卷里的数据一定丢失。
+8. containerd 通过 CRI 插件实现了 CRI 接口，kubelet 通过 CRI 调用它管理 Pod。
+9. 实验环境无法访问 Docker Hub 时，可以经跳板机 pull → push 到 ACR 再在集群使用。
+10. `EXPOSE` 指令会自动在宿主机打开端口。
+
+**简答题**
+
+11. 为什么 K8S 不再内置 dockershim？
+12. 写出查看容器日志的两种命令（宿主机 docker/nerdctl 视角 + K8S API 视角各一种）。
+13. 镜像分层（Layer）有什么好处？
+14. 什么是「镜像 tag」？生产环境为什么不建议用 `:latest`？
+
+**场景题**
+
+15. 同事在笔记本 `docker build -t demo-web:latest .` 成功，但 K8S Deployment 报
+    `ImagePullBackOff`，可能原因有哪些？排查顺序？
+16. 应用监听 `127.0.0.1:5000`，打成容器后在 K8S 里 Service 无法访问，为什么？
+
+---
+
+### D.2 Lesson 02 — K8S 架构与首批部署
+
+**选择题**
+
+1. K8S 的「声明式」是指？\
+   A. 每次手写具体操作步骤\
+   B. 描述期望状态，由控制器调谐\
+   C. 只能使用 Helm\
+   D. 必须用 Python SDK
+
+2. Pod 处于 `CrashLoopBackOff`，第一步最应看？\
+   A. `kubectl get nodes`\
+   B. `kubectl logs <pod> [--previous]`\
+   C. `kubectl delete pod`\
+   D. 重启集群
+
+3. Service `type: NodePort` 的 `nodePort` 范围默认是？\
+   A. 1–1024\
+   B. 30000–32767\
+   C. 8080–8888\
+   D. 任意端口
+
+4. Deployment 的 `replicas: 3` 表示？\
+   A. 3 个节点各跑一个\
+   B. 期望 3 个匹配 label 的 Pod 副本\
+   C. 滚动更新分 3 批\
+   D. 保留 3 个历史版本
+
+5. `kubectl apply` 与 `kubectl create` 的主要区别？\
+   A. apply 可重复执行、幂等更新\
+   B. create 更快\
+   C. apply 只能创建\
+   D. 无区别
+
+**判断题**
+
+6. 删除 Pod 后，Deployment 会自动创建新 Pod 维持副本数。
+7. `curl http://127.0.0.1:<nodePort>` 在节点本机一定能访问 NodePort Service。
+8. Controller 通过「观察当前状态 → 对比期望状态 → 执行差异」循环工作。
+9. `kubectl describe pod` 的 Events 对排障很有帮助。
+10. Namespace 是集群内的逻辑隔离，不同 Namespace 的 Service DNS 名不会冲突。
+
+**简答题**
+
+11. 画出或描述：用户 `kubectl apply` 一个 Deployment 后，到 Pod Running 的简要链路。
+12. ClusterIP、NodePort、LoadBalancer 各适合什么场景？
+13. Service 的 `selector` 与 Pod `labels` 不匹配会导致什么现象？
+
+**场景题**
+
+14. `kubectl get pods` 显示 Running，但 `curl <node-ip>:31000` 连接失败，列出至少 4 条排查路径。
+15. 如何用 `kubectl scale` 和 `kubectl rollout` 分别完成「改副本数」和「改镜像版本」？
+
+---
+
+### D.3 Lesson 03 — 工作负载、存储与调度
+
+**选择题**
+
+1. 每个节点跑一个监控 Agent，应选？\
+   A. Deployment\
+   B. DaemonSet\
+   C. StatefulSet\
+   D. Job
+
+2. StatefulSet Pod 名 `nginx-sts-2` 删除后重建，新 Pod 名是？\
+   A. 随机名\
+   B. `nginx-sts-2`\
+   C. `nginx-sts-0`\
+   D. `nginx-sts-3`
+
+3. Headless Service（`clusterIP: None`）主要用于？\
+   A. 对外暴露\
+   B. StatefulSet 稳定 DNS\
+   C. 负载均衡到云 LB\
+   D. 禁用 DNS
+
+4. PVC `Pending` 常见原因？\
+   A. 没有匹配的 PV / StorageClass 无法供给\
+   B. Pod 太多\
+   C. 镜像拉取慢\
+   D. 探针失败
+
+5. `kubectl taint nodes <node> key=value:NoSchedule` 的效果？\
+   A. 节点关机\
+   B. 无 toleration 的 Pod 无法调度到该节点\
+   C. 删除节点上所有 Pod\
+   D. 节点变 NotReady
+
+**判断题**
+
+6. DaemonSet 会给集群每个（匹配）节点创建一个 Pod。
+7. `emptyDir` 卷在 Pod 删除后数据仍保留在节点。
+8. `requests` 影响调度，`limits` 是容器可用资源上限。
+9. 单节点实验集群打污点后忘记去掉，可能导致所有新 Pod Pending。
+10. hostPath PV 适合生产多节点共享存储。
+
+**简答题**
+
+11. Deployment、DaemonSet、StatefulSet 各举一个典型业务例子。
+12. 静态 PV + PVC 绑定流程与动态供给有何不同？
+13. 解释 Taint 与 Toleration 的关系。
+14. Pod Anti-Affinity 解决什么问题？
+
+**场景题**
+
+15. 实验集群无 StorageClass，如何演示「Pod 重建后数据仍在」？
+16. 扩缩 StatefulSet 从 3 到 5，Pod 启动顺序有什么特点？
+
+---
+
+### D.4 Lesson 04 — 配置、发布、可观测与排障
+
+**选择题**
+
+1. 数据库密码应放？\
+   A. ConfigMap\
+   B. Secret\
+   C. Deployment annotations\
+   D. Dockerfile ENV 明文
+
+2. `readinessProbe` 失败时？\
+   A. 立即删除 Pod\
+   B. 从 Service 后端摘除，不接收流量\
+   C. 重启节点\
+   D. 无影响
+
+3. `metrics-server` 的主要用途？\
+   A. 长期存储 Prometheus 指标\
+   B. 支撑 `kubectl top`\
+   C. 收集应用日志\
+   D. 替代 kubelet
+
+4. Prometheus 抓取 node-exporter 属于？\
+   A. Push 模型\
+   B. Pull 模型\
+   C. 日志流\
+   D. Trace
+
+5. Fluent Bit → Loki 属于可观测性哪一维？\
+   A. Metrics\
+   B. Logs\
+   C. Traces\
+   D. Events only
+
+**判断题**
+
+6. `kubectl rollout undo` 可回滚 Deployment 到上一版本。
+7. `imagePullSecrets` 可绑定到 ServiceAccount，Pod 自动继承。
+8. Loki 查询常用 LogQL，如 `{app="hello-python"}`。
+9. `kubectl logs` 与节点 `/var/log/pods` 下的文件内容同源。
+10. AIOps 适合自动在生产环境执行 `kubectl delete` 而无人工复核。
+
+**简答题**
+
+11. startup / readiness / liveness 三种探针分别解决什么问题？
+12. 滚动更新中 `maxUnavailable: 0` 的含义？
+13. 列出 Metrics / Logs / Traces 在本课实验环境中的对应组件。
+14. Pod Pending、ImagePullBackOff、CrashLoopBackOff 各先查什么？
+
+**场景题**
+
+15. Prometheus Target 显示 `node-exporter` DOWN，可能原因与修复步骤？
+16. Fluent Bit 改 ConfigMap 后 Loki 查不到新日志，应检查什么？
+17. 把 `kubectl describe pod` Events + `kubectl logs` 片段交给 AI 分析时，提示词应包含哪些信息？
+
+---
+
+### D.5 综合辨析（易混淆）
+
+| 编号 | 题目                                                     | 考察点         |
+| ---- | -------------------------------------------------------- | -------------- |
+| 1    | metrics-server vs Prometheus vs node-exporter 各干什么？ | 可观测组件分工 |
+| 2    | docker vs crictl vs kubectl logs 看到的日志一样吗？      | 运行时视角     |
+| 3    | ConfigMap 更新后，已运行 Pod 里的 env 会自动变吗？       | 配置热更新     |
+| 4    | Service 与 Ingress 的区别（本课粒度）                    | 网络入口       |
+| 5    | 何时用 Job/CronJob 而非 Deployment？                     | 工作负载选型   |
+| 6    | `IfNotPresent` 与 `Always` 拉镜像策略差异                | 镜像策略       |
+| 7    | PSP 被什么替代？baseline 与 restricted 区别？            | 安全基线       |
+| 8    | Sidecar（1.33）与普通 container 的差异                   | 新特性         |
+| 9    | 实验网 NodePort 为什么要用节点 IP 而不是 127.0.0.1？     | 网络实践       |
+| 10   | 为什么说「不必为了云原生而云原生」？                     | 架构判断       |
+
+---
+
+<a id="d-参考答案要点"></a>
+
+### D.6 参考答案要点
+
+<details>
+<summary>点击展开（讲师备课用；学员建议先自测）</summary>
+
+**D.1**：1-B 2-A 3-B 4-B 5-B | 6-对 7-错（卷可保留）8-对 9-对 10-错\
+11-精简 CRI 路径、减少中间层维护成本\
+12-例：`docker logs` / `kubectl logs`\
+13-复用层、加快构建与分发\
+14-tag 标识版本；latest 不可追溯、易漂移\
+15-镜像未在节点/Registry；imagePullPolicy；名不对；先 describe pod → events\
+16-容器内 127.0.0.1 仅容器自身；应监听 0.0.0.0
+
+**D.2**：1-B 2-B 3-B 4-B 5-A | 6-对 7-错（部分 CNI/环境本机不通）8-对 9-对 10-对\
+14-endpoints、selector、readiness、targetPort、防火墙、用节点 IP\
+15-scale 改副本；set image + rollout 改版本
+
+**D.3**：1-B 2-B 3-B 4-A 5-B | 6-对 7-错 8-对 9-对 10-错\
+15-hostPath 静态 PV；先写文件再删 Pod 再验证
+
+**D.4**：1-B 2-B 3-B 4-B 5-B | 6-对 7-对 8-对 9-对 10-错\
+13-metrics-server/Prometheus/node-exporter；Fluent Bit/Loki；Trace 本课未展开\
+15-无 Service、网络、exporter 未起、Prometheus 配置错、等 scrape 间隔\
+16-`kubectl rollout restart ds/fluent-bit`；OUTPUT 配置；Loki 是否 ready
+
+</details>
+
+---
+
+<a id="附录-e实操清单与知识点串联"></a>
+
+## 附录 E：实操清单与知识点串联
+
+> 实验环境：`lab-k8s21`（单节点、containerd、KubeClipper）。清单在 `src/class05/`。\
+> 每项含：**目标 → 命令要点 → 验证标准 → 对应章节**。
+
+### E.1 第 1 天实操路线
+
+| 序号 | 实操名称           | 目标                     | 关键命令 / 文件                                | 验证标准                            | 章节  |
+| ---- | ------------------ | ------------------------ | ---------------------------------------------- | ----------------------------------- | ----- |
+| E1-1 | Docker 跑通        | 理解镜像与容器生命周期   | `docker run` / `docker ps` / `docker logs`     | 能访问容器端口并看到日志            | 1.5   |
+| E1-2 | 构建 demo-web      | 掌握 Dockerfile 基本结构 | `docker build -t demo-web:latest .`            | `docker run -p 5000:5000` 可访问    | 1.5.1 |
+| E1-3 | 镜像进节点         | 理解构建机与节点镜像隔离 | `docker save` + `nerdctl -n k8s.io load`       | `crictl images \| grep demo-web`    | 2.7   |
+| E1-4 | 节点容器视角       | 会用 crictl 对照 K8S     | `crictl ps` / `crictl logs` / `crictl inspect` | 能对应到 kubectl 中的 Pod           | 1.6   |
+| E1-5 | 首个 Pod           | 理解最小调度单位         | `kubectl apply -f pod.yaml`                    | Pod Running；describe 无异常 Events | 2.7   |
+| E1-6 | Deployment+Service | 完成首次应用上线         | `deployment.yaml` + `service.yaml`             | NodePort 用**节点 IP** 可 curl      | 2.7   |
+| E1-7 | 观察 EndpointSlice | 理解 Service 后端        | `kubectl get endpointslice`                    | 后端 IP 与 Pod IP 一致              | 2.7   |
+
+### E.2 第 2 天实操路线
+
+| 序号  | 实操名称          | 目标                | 关键命令 / 文件                                  | 验证标准                                  | 章节  |
+| ----- | ----------------- | ------------------- | ------------------------------------------------ | ----------------------------------------- | ----- |
+| E2-1  | DaemonSet         | 每节点一个 Agent    | `src/class05/daemonset.yaml`                     | `kubectl get ds -n monitoring` READY=1    | 3.1   |
+| E2-2  | StatefulSet 行为  | 稳定序号与有序扩缩  | `statefulset.yaml`；delete pod；scale            | 重建同名；0→1→2 顺序                      | 3.1   |
+| E2-3  | PV/PVC 持久化     | 数据跨 Pod 生命周期 | `pvc-demo.yaml` + hostPath 准备                  | 重建后 `cat /data/test.txt` 仍为 hello-pv | 3.2   |
+| E2-4  | 污点与容忍        | 理解调度排斥        | `kubectl taint` + 两个对比 Pod                   | 无 toleration Pending；实验后 untaint     | 3.3   |
+| E2-5  | ConfigMap 注入    | 非敏感配置外置      | `configmap.yaml` + Deployment env/volume         | 容器内能读到配置                          | 4.1   |
+| E2-6  | 滚动更新与回滚    | 发布闭环            | `set image` / `rollout status` / `rollout undo`  | 版本切换可访问；可回滚                    | 4.2   |
+| E2-7  | 健康探针          | 理解三种探针        | `deployment-v2.yaml` 含探针                      | 故意改错端口观察 readiness 行为（可选）   | 4.2   |
+| E2-8  | metrics-server    | `kubectl top`       | 官方 manifest + `metrics-server-patch.yaml`      | `kubectl top nodes` 有数据                | 4.5.2 |
+| E2-9  | Prometheus        | Pull 抓取 exporter  | `prometheus.yaml`                                | Targets UP；`up{job="node-exporter"}==1`  | 4.5.2 |
+| E2-10 | Loki + Fluent Bit | 日志采集与查询      | `loki.yaml` + `fluent-bit.yaml`                  | LogQL `{app="hello-python"}` 有访问日志   | 4.5.3 |
+| E2-11 | 三层日志对照      | 建立排障直觉        | `kubectl logs` / `/var/log/pods` / `crictl logs` | 三条路径看到同源日志                      | 4.5.3 |
+| E2-12 | 综合发布闭环      | 串讲全流程          | `configmap` + `deployment-v2` + `service`        | build/save/load → apply → curl → 回滚     | 4.6   |
+
+### E.3 排障专项实操（建议 2 人一组）
+
+| 场景 | 讲师/AI 注入故障            | 学员任务              | 预期恢复手段                       |
+| ---- | --------------------------- | --------------------- | ---------------------------------- |
+| F-1  | 改错 Deployment 镜像名      | 定位 ImagePullBackOff | describe → 修正 image 或 load 镜像 |
+| F-2  | Service selector 写错 label | Service 不通          | 对比 pod labels 与 svc selector    |
+| F-3  | 去掉 readinessProbe 的 port | Pod Running 但无流量  | get endpoints；修探针              |
+| F-4  | 节点打污点未清理            | 新 Pod 全 Pending     | describe pod；taint -              |
+| F-5  | Fluent Bit 未 restart       | Loki 无新日志         | rollout restart ds                 |
+| F-6  | curl 127.0.0.1:nodePort     | 「Service 坏了」误判  | 改用节点 IP                        |
+
+### E.4 知识点串联图（自检用）
+
+```text
+镜像构建(docker build)
+    → 进节点(save/load 或 push Registry)
+        → Deployment(副本+滚动更新+探针)
+            → Service(稳定入口+NodePort)
+                → 可观测(metrics-server / Prometheus / Loki)
+                    → 排障(describe → logs → crictl → 节点)
+```
+
+完成 E.1–E.2 全部打勾，即覆盖课程收获 Checklist 中的实操项。
+
+---
+
+<a id="附录-fai-idecursor--trae辅助开发与运维实践"></a>
+
+## 附录 F：AI IDE（Cursor / Trae）辅助开发与运维实践
+
+> 适用 **Cursor**、**Trae IDE** 等带 AI 对话 / Agent 能力的编辑器。\
+> 原则：**AI 提速，人做校验**——所有 YAML、命令、镜像名需在实验环境实测。
+
+### F.1 使用原则（学员必读）
+
+| 原则           | 说明                                                    |
+| -------------- | ------------------------------------------------------- |
+| **小步提交**   | 一次只改一个文件或一类问题，便于回滚                    |
+| **贴全上下文** | 报错信息、YAML、`describe` Events、日志片段一并给 AI    |
+| **指定环境**   | 写明 K8S 版本、运行时 containerd、单节点、镜像源 ACR 等 |
+| **要求可验证** | 让 AI 给出「预期输出」和「验证命令」，你亲自跑一遍      |
+| **不盲信删除** | 生产/实验集群上 `delete`、`drain`、`--force` 需人工确认 |
+| **敏感信息**   | 密码、Token、kubeconfig 打码；不要贴进公开对话          |
+
+### F.2 通用 Prompt 模板
+
+```text
+【环境】K8S 1.36，单节点 lab-k8s21，containerd，镜像仓库 registry.cn-shanghai.aliyuncs.com/99cloud-sh/
+【目标】（一句话）
+【现状】（贴 yaml / 报错 / kubectl get 输出）
+【约束】尽量小改动；给出验证命令；中文解释
+```
+
+### F.3 场景示例与推荐步骤
+
+#### F.3.1 新项目容器化（Python Web 为例）
+
+**目标**：把 `app.py` + `requirements.txt` 变成可在 K8S 跑的镜像与 YAML。
+
+**推荐步骤**
+
+1. 在 IDE 打开项目根目录，选中 `app.py`、`requirements.txt`
+2. Prompt 示例：
+
+```text
+请为 Flask 应用生成 Dockerfile（python:3.9-slim 或 ACR 可拉取基础镜像）、
+.dockerignore、以及最小 Deployment+NodePort Service YAML。
+应用监听 0.0.0.0:5000。镜像名 demo-web:v1，imagePullPolicy: IfNotPresent。
+给出 docker build、docker save、nerdctl -n k8s.io load 和 kubectl apply 验证步骤。
+```
+
+3. 人工检查：是否监听 `0.0.0.0`、是否多阶段构建不必要复杂、资源 requests/limits 是否合理
+4. 在节点执行 AI 给出的验证命令；失败则把**完整报错**贴回 AI 迭代
+
+#### F.3.2 旧项目分析与容器化改造
+
+**目标**：读懂遗留仓库，判断能否容器化、缺什么。
+
+**推荐步骤**
+
+1. `@` 引用整个项目目录（或关键：`pom.xml` / `package.json` / `config.ini` / 启动脚本）
+2. Prompt 示例：
+
+```text
+分析该 Java/Python 项目的启动方式、依赖外部服务（MySQL/Redis）、配置文件位置、
+是否写死 IP/路径。输出：① 容器化阻塞点 ② 建议 Dockerfile 结构 ③ 需改为环境变量的配置项
+④ 是否适合上 K8S（单副本可否）。不要一次改太多文件。
+```
+
+3. 让 AI 输出「改造清单」表格，你按项逐项确认后再让它写 Dockerfile
+4. 对有状态依赖（本地文件数据库）明确问：「无状态化需要改什么？」
+
+#### F.3.3 编写 / 修改 K8S YAML
+
+**Prompt 示例**
+
+```text
+基于现有 deployment.yaml，增加 readiness/liveness HTTP 探针（path=/ port=5000），
+滚动策略 maxUnavailable=0。保持原有 labels 与镜像不变。只输出 diff 说明和完整文件。
+```
+
+**最佳实践**
+
+- 用 `kubectl apply --dry-run=client -o yaml` 或 `kubectl diff -f` 验证
+- 让 AI 解释每个新增字段「失败时会发生什么」
+
+#### F.3.4 运维：滚动发布与回滚
+
+**Prompt 示例**
+
+```text
+hello-python Deployment 3 副本，要把镜像从 demo-web:v1 升到 v2，要求零中断偏好。
+请给出 kubectl set image、rollout status、出问题时的 rollout undo 命令序列，
+并说明如何确认 Endpoint 仍健康。
+```
+
+#### F.3.5 排错：Pod / Service / 镜像
+
+**Prompt 示例（高效）**
+
+```text
+【现象】Pod ImagePullBackOff
+【Events】（粘贴 kubectl describe pod 最后 20 行）
+【节点镜像】crictl images | grep demo
+【问题】根因是什么？给最小修复步骤，不要重装集群。
+```
+
+**推荐信息采集脚本（复制给 AI）**
+
+```bash
+kubectl get pod <name> -o wide
+kubectl describe pod <name> | tail -30
+kubectl logs <name> --previous 2>&1 | tail -30
+kubectl get svc,endpointslices -l app=<app>
+crictl images | grep -i <image>
+```
+
+#### F.3.6 可观测性：Prometheus / Loki 排障
+
+**Prompt 示例**
+
+```text
+Prometheus target node-exporter 显示 DOWN，lab 单节点，node-exporter 在 monitoring namespace。
+已用 ACR 镜像。请列出检查 Service、Endpoints、Prometheus scrape_config、网络的最短路径。
+```
+
+```text
+Fluent Bit 已改 OUTPUT 为 Loki，但 LogQL {app="hello-python"} 无结果。
+请给排查清单：ConfigMap 是否生效、ds 是否 restart、Loki /ready、label 名称等。
+```
+
+#### F.3.7 日志 / 指标 / 事件交给 AI 做「运维解读」
+
+**Prompt 示例（本课 4.5.5 AIOps 思路落地）**
+
+```text
+以下是 Pod Events 和容器日志片段。请用中文：① 现象概括 ② 最可能根因（Top 3）
+③ 建议执行的 kubectl 命令（按顺序）④ 哪些操作需要人工确认后再做。
+不要建议直接删除生产 Namespace。
+```
+
+### F.4 Cursor vs Trae 使用差异（简要）
+
+| 能力               | Cursor                          | Trae IDE                  |
+| ------------------ | ------------------------------- | ------------------------- |
+| 代码库索引 `@文件` | 强，适合改 Dockerfile/YAML      | 支持，用法类似            |
+| 终端命令执行       | Agent 可代跑（需确认）          | 远程/SSH 场景常见         |
+| SSH 远程节点       | 可配 Remote SSH 后 `@` 远端项目 | 常用于连 lab 服务器       |
+| 适合本课的场景     | 改仓库内 `src/class05` 清单     | 在 lab 节点上排障、拉日志 |
+
+**远程 lab 建议工作流**
+
+1. IDE SSH 连 `lab-k8s21`
+2. 打开 `/root/class05-repo` 或本仓库 `training-kubernetes`
+3. 终端执行 kubectl；把输出贴回 AI 或让 Agent 读 terminal
+4. 改 YAML 后 `kubectl apply` → 立即跑文档「验证」小节命令
+
+### F.5 反模式（避免）
+
+| 反模式                      | 后果             | 应改为                          |
+| --------------------------- | ---------------- | ------------------------------- |
+| 「帮我部署一整套生产 K8S」  | 过度复杂、难排错 | 按附录 E 逐项来                 |
+| 不贴报错让 AI 猜            | 浪费轮次         | 贴 Events + logs                |
+| AI 生成 YAML 直接上生产     | 安全风险         | 先 dry-run / 实验集群           |
+| 用 `docker ps` 判断 K8S Pod | 视角错误         | `kubectl get pod` + `crictl ps` |
+| 让 AI 自动 exec 删数据      | 误删 PVC/NS      | 人工确认破坏性命令              |
+
+### F.6 课后练习：用 AI 完成一次「迷你闭环」
+
+1. 用 AI 为 `demo-web` 增加环境变量 `VERSION=v3` 并更新 ConfigMap 引用
+2. 自己执行：build/save/load → apply → curl 确认输出变化
+3. 故意改错 `targetPort`，用 AI 协助从 Service 不通恢复到正常
+4. 写 5 句话总结：哪些步骤 AI 帮了大忙，哪些必须自己判断（AI 写草案、人做核对；AI
+   读报错、人跑验证；凡是 delete / taint / 生产变更，先停一下）
+
+---
+
+_文档版本与实验环境同步：Prometheus `src/class05/prometheus.yaml`、Loki
+`src/class05/loki.yaml`、Fluent Bit `src/class05/fluent-bit.yaml`。_
