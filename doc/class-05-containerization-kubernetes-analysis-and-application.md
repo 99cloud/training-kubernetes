@@ -55,6 +55,7 @@ VSCode IDE：
 |             | 下午 | [2. K8S 架构与首批部署](#lesson-02-k8s-架构与首批部署)            | 声明式模型、KubeClipper、Pod/Deployment/Service |
 | **第 2 天** | 上午 | [3. 工作负载、存储与调度](#lesson-03-工作负载存储与调度)          | DaemonSet/StatefulSet、PV/PVC、调度策略         |
 |             | 下午 | [4. 配置发布与运维概览](#lesson-04-配置发布与运维概览)            | ConfigMap/Secret、探针、排障、可观测、AIOps     |
+|             |      | [4.8 下午授课建议](#48-第二天下午授课建议)                        | 讲师时间分配与课堂讨论                          |
 | **课后**    | —    | [附录 D 自测题](#附录-d自测题与巩固问答)                          | 检验与巩固                                      |
 |             | —    | [附录 E 实操清单](#附录-e实操清单与知识点串联)                    | 串联知识点                                      |
 |             | —    | [附录 F AI IDE 实践](#附录-fai-idecursor--trae辅助开发与运维实践) | Cursor / Trae 辅助开发与排错                    |
@@ -82,6 +83,7 @@ VSCode IDE：
 - [ ] 熟练使用 Deployment、Service；了解 DaemonSet、StatefulSet 典型场景
 - [ ] 完成 PV/PVC 持久化存储与调度策略 Demo
 - [ ] 完成配置注入、滚动更新、回滚与常见故障初判
+- [ ] 理解 ConfigMap 更新后需 rollout restart；会用排障四件套与集群内 DNS
 - [ ] 了解 CRD、Operator、Ingress Controller 等扩展生态（概览）
 - [ ] 建立 Metrics/Logs 可观测性认知；了解生产部署要点与 AIOps 方向
 
@@ -1223,6 +1225,40 @@ kubectl create secret generic db-secret \
 - [Secret](https://kubernetes.io/docs/concepts/configuration/secret/)
 - [Configure a Pod to Use a ConfigMap](https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/)
 
+<a id="412-configmap-更新与-pod-生效"></a>
+
+#### 4.1.2 ConfigMap / Secret 更新与 Pod 生效（重点）
+
+很多新手以为 `kubectl edit configmap` 后，运行中 Pod 会**立刻**读到新配置——多数情况下**不会**。
+
+| 引用方式            | 更新 ConfigMap 后                | 让 Pod 生效                                 |
+| ------------------- | -------------------------------- | ------------------------------------------- |
+| **env / envFrom**   | 环境变量在容器启动时注入         | `kubectl rollout restart deployment/<name>` |
+| **volume 挂载文件** | kubelet 会同步文件内容（有延迟） | 应用需支持重读；否则仍要 restart            |
+| **Secret**          | 同 ConfigMap                     | 同左                                        |
+
+```bash
+# 实验：改 ConfigMap 中的 NAME
+kubectl edit configmap hello-config
+
+# 旧 Pod 里 env 可能仍是旧值
+kubectl exec deploy/hello-python -- printenv NAME
+
+# 滚动重启 Deployment（会逐个替换 Pod）
+kubectl rollout restart deployment/hello-python
+kubectl rollout status deployment/hello-python
+kubectl exec deploy/hello-python -- printenv NAME   # 应为新值
+```
+
+**课堂讨论**
+
+- 生产「改配置」和「改镜像发版」有何异同？（都可能需要滚动；配置错误同样可引发故障）
+- ConfigMap 和 Secret 能互换吗？（技术上可，但 Secret 有类型与权限语义；**base64 不是加密**）
+
+**Reference**
+
+- [Configure ConfigMap — mounted as volume](https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/#configure-configmap-mounted-as-volume)
+
 <a id="411-私有镜像拉取imagepullsecrets重点"></a>
 
 #### 4.1.1 私有镜像拉取：imagePullSecrets（重点）
@@ -1324,6 +1360,25 @@ spec:
 - [Rolling Update Deployment](https://kubernetes.io/docs/tutorials/kubernetes-basics/update/update-intro/)
 - [Deployment — Rolling Update](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#rolling-update-deployment)
 
+#### Deployment 背后：ReplicaSet 与 revision
+
+`kubectl rollout` 操作的是 **Deployment**；真正增减 Pod 副本的是 **ReplicaSet**（每个版本一个 RS）。
+
+```bash
+kubectl get deploy,rs,pods -l app=hello-python
+kubectl rollout history deployment/hello-python
+kubectl rollout history deployment/hello-python --revision=3
+```
+
+| 概念                  | 说明                                           |
+| --------------------- | ---------------------------------------------- |
+| **ReplicaSet**        | 维持「某一版 Pod 模板」的副本数                |
+| **revision**          | 每次模板变更产生新 revision，可 `rollout undo` |
+| **maxUnavailable: 0** | 滚动时尽量保证可用副本不减少（本课推荐）       |
+
+**课堂问题**：回滚是换镜像还是换整个 YAML？——`rollout undo` 回到上一 revision 的 Pod 模板；与
+`kubectl apply` 改 YAML 可能产生 `last-applied-configuration` 提示，实验环境以 `rollout` 为主即可。
+
 #### 健康探针
 
 | 探针               | 作用                             | 失败后果                             |
@@ -1358,6 +1413,39 @@ containers:
     periodSeconds: 20
 ```
 
+**探针口诀**：慢启动用 **startup**；能不能接流量看 **readiness**（失败只摘流量、不杀容器）；活不活看
+**liveness**（失败会重启——别太敏感）。
+
+#### 实验：探针误杀 vs readiness 摘流
+
+```bash
+# 1) 故意把 liveness 指到错误端口（实验后记得改回）
+kubectl patch deployment hello-python --type='json' -p='[
+  {"op":"replace","path":"/spec/template/spec/containers/0/livenessProbe/httpGet/port","value":9999}
+]'
+kubectl get pods -l app=hello-python -w   # 观察 CrashLoopBackOff
+
+# 2) 改回正确端口
+kubectl patch deployment hello-python --type='json' -p='[
+  {"op":"replace","path":"/spec/template/spec/containers/0/livenessProbe/httpGet/port","value":5000}
+]'
+
+# 3) 对比：只让 readiness 失败时，Pod 往往仍 Running，但 EndpointSlice 副本减少
+```
+
+#### 发布前 YAML 自检清单（最佳实践）
+
+上线前逐项过一遍（实验/生产均适用）：
+
+- [ ] 镜像使用**固定 tag**，避免 `:latest`
+- [ ] `imagePullPolicy` 与环境匹配（实验预加载镜像用 `IfNotPresent`）
+- [ ] 应用监听 **0.0.0.0**，不是 127.0.0.1
+- [ ] Deployment `selector` 与 Pod `labels` 一致
+- [ ] Service `selector` 与 Pod `labels` 一致
+- [ ] 对外服务配置 **readinessProbe**
+- [ ] 写了 `resources.requests`（哪怕很小，便于调度）
+- [ ] NodePort 验证用**节点 IP**，不是 127.0.0.1
+
 #### 原生 Sidecar 容器（K8S 1.33 Stable）
 
 Sidecar（日志/代理/监控 Agent）在 1.33 成为稳定特性：在 `initContainers` 中设置
@@ -1390,7 +1478,104 @@ spec:
 - [Sidecar Containers](https://kubernetes.io/docs/concepts/workloads/pods/sidecar-containers/) —
   **v1.33 stable**
 
+#### 可选：多容器 Pod 日志与 Job 速览
+
+> 时间充裕时选讲；不影响本课主实验闭环。
+
+**多容器 Pod 日志**（配合 Sidecar 概念）：
+
+```bash
+kubectl logs <pod> -c app
+kubectl logs <pod> -c log-shipper
+kubectl logs <pod> --all-containers=true
+```
+
+**课堂问题**：Fluent Bit 用 DaemonSet 每节点一个，和 Sidecar 模式各适合什么场景？
+
+**Job**（跑完即结束，非常驻服务）：
+
+```bash
+kubectl create job demo-job --image=registry.cn-shanghai.aliyuncs.com/99cloud-sh/nginx-slim:0.21 -- /bin/sh -c 'echo done; sleep 3'
+kubectl get jobs,pods -l job-name=demo-job
+kubectl logs job/demo-job
+kubectl delete job demo-job
+```
+
+#### 可选：resources 与 OOM 现象
+
+给 Deployment 设过低 `memory.limits` 可观察 `OOMKilled`（实验后恢复）：
+
+| 现象                 | 常见原因                       |
+| -------------------- | ------------------------------ |
+| **OOMKilled**        | `memory.limits` 太小           |
+| **CPU 很慢但不重启** | CPU 被 throttle（limits 过低） |
+| **Pending**          | `requests` 总和超过节点可分配  |
+
+```bash
+kubectl describe pod <name> | grep -A3 "Last State\|Reason"
+kubectl top pods -l app=hello-python   # 需 metrics-server
+```
+
 ### 4.3 常见排障思路
+
+<a id="431-新手排障四件套"></a>
+
+#### 4.3.1 新手排障四件套（建议背下来）
+
+```
+① kubectl get pods -o wide
+② kubectl describe pod <name>   # 重点看 Events
+③ kubectl logs <name> [--previous] [-c <container>]
+④ kubectl get endpointslices -l kubernetes.io/service-name=<svc>
+```
+
+**apply 之前先检查**（减少低级错误）：
+
+```bash
+kubectl explain deployment.spec.template.spec.containers[0].readinessProbe
+kubectl apply -f deployment-v2.yaml --dry-run=client
+kubectl diff -f deployment-v2.yaml
+```
+
+**集群事件**（调度、拉镜像失败等常在这里）：
+
+```bash
+kubectl get events -A --sort-by=.lastTimestamp | tail -20
+```
+
+#### 实验：集群内 DNS 访问 Service
+
+NodePort 解决「集群外访问」；Pod 之间应使用 **ClusterIP + DNS**：
+
+```bash
+# DNS 形式：<service>.<namespace>.svc.cluster.local
+kubectl run dns-test --rm -it --restart=Never \
+  --image=registry.cn-shanghai.aliyuncs.com/99cloud-sh/nginx-slim:0.21 -- \
+  sh -c "wget -qO- http://hello-python-svc.default.svc.cluster.local || curl -s http://hello-python-svc"
+```
+
+**对比**
+
+| 访问方式               | 谁在用          | 本课实验                         |
+| ---------------------- | --------------- | -------------------------------- |
+| **ClusterIP + DNS**    | 集群内 Pod 互访 | ✅ 上式                          |
+| **NodePort + 节点 IP** | 集群外/跨机访问 | ✅ `curl http://<node-ip>:31000` |
+| **127.0.0.1:nodePort** | 本机回环        | ❌ 常失败（见附录 D）            |
+
+**课堂问题**：`targetPort` 与 `containerPort` 不一致时会怎样？——Service 把流量转到 Pod 的
+`targetPort`，必须与应用监听端口一致。
+
+#### 可选：kubectl port-forward 本机调试
+
+不依赖 NodePort，适合笔记本本地快速验证：
+
+```bash
+kubectl port-forward svc/hello-python-svc 8080:80
+# 另开终端
+curl http://127.0.0.1:8080/
+```
+
+与 NodePort 区别：port-forward 是 **kubectl 建立的临时隧道**，不是集群正式入口。
 
 #### 通用排查流程
 
@@ -1415,6 +1600,11 @@ kubectl exec -it <pod> -- sh    # 进容器
 | **ImagePullBackOff** | 镜像名错误、无凭据                | `describe pod` → Failed pull；检查 imagePullSecrets           |
 | **Service 不可达**   | selector 不匹配、readiness 未通过 | `kubectl get endpointslices`；`kubectl get pod --show-labels` |
 | **节点 NotReady**    | kubelet/CNI/磁盘压力              | `kubectl describe node`；节点 `systemctl status kubelet`      |
+
+#### 课堂排障演练（建议 2 人一组，约 15 分钟）
+
+使用 [附录 E.3](#e3-排障专项实操) 故障场景：讲师注入 F-1～F-6 之一，学员用**四件套**在 10
+分钟内定位并恢复。评优标准：命令顺序合理、能解释 Events 含义、恢复后 `curl` 验证通过。
 
 #### 节点侧调试
 
@@ -1491,6 +1681,16 @@ Kubernetes 核心 API
 
 - 应用暴露 `/metrics` 或依赖 Exporter
 - 日志写 **stdout/stderr**（容器最佳实践），由平台采集
+
+**本课实验环境对照表**
+
+| 我想知道…            | 用什么            | 验证命令示例                                     |
+| -------------------- | ----------------- | ------------------------------------------------ |
+| 当前 CPU/内存        | metrics-server    | `kubectl top pods -A`                            |
+| 指标历史、告警规则   | Prometheus        | `up{job="node-exporter"}`                        |
+| 应用访问日志         | Loki + Fluent Bit | LogQL `{app="hello-python"}`                     |
+| 调度/拉镜像/探针失败 | Events            | `kubectl describe pod`                           |
+| 集群内最近异常       | 事件流            | `kubectl get events -A --sort-by=.lastTimestamp` |
 
 #### 4.5.2 Prometheus 监控（概览 + 轻量 Demo）
 
@@ -1627,7 +1827,7 @@ groups:
 | **云厂商日志** | 托管采集 + 存储                             | 运维简单；厂商绑定                   |
 
 > **本课实验栈**：`Fluent Bit`（DaemonSet 采集）→ `Loki`（单实例存储）→ LogQL 查询验证。\
-> 未部署 Grafana / Elasticsearch（生产可再接 Grafana 做日志大盘）。
+> Grafana 见下方 [可选：Grafana 接入](#可选grafana-接入prometheus--loki)（时间紧可只演示不讲部署）。
 
 容器日志路径约定：
 
@@ -1736,6 +1936,28 @@ sudo crictl logs --tail 5 "$CID"
 - [Logging Architecture](https://kubernetes.io/docs/concepts/cluster-administration/logging/)
 - [Fluent Bit](https://fluentbit.io/)
 - [Grafana Loki](https://grafana.com/docs/loki/latest/)
+
+#### 可选：Grafana 接入 Prometheus + Loki
+
+> 约 25 分钟；需先将 `grafana/grafana` 镜像同步至 ACR（同 node-exporter 跳板流程）。\
+> 目的：让学员看到「指标 + 日志」可视化闭环，部署步骤可由讲师演示，学员跟做可选。
+
+```bash
+# 在 ali-fq 上（示例）
+docker pull grafana/grafana:11.0.0
+docker tag grafana/grafana:11.0.0 registry.cn-shanghai.aliyuncs.com/99cloud-sh/grafana:11.0.0
+docker push registry.cn-shanghai.aliyuncs.com/99cloud-sh/grafana:11.0.0
+```
+
+**最小步骤概念**
+
+1. Deployment + NodePort Service 暴露 Grafana（如 `30200`）
+2. 浏览器打开 `http://<node-ip>:30200`（默认 admin/admin，首次登录改密）
+3. 添加数据源：Prometheus `http://prometheus.monitoring.svc:9090`、Loki
+   `http://loki.monitoring.svc:3100`
+4. Explore → Loki → `{app="hello-python"}`；Prometheus → `up`
+
+**验证**：Grafana 能查到与 CLI 相同的日志行与 `up` 指标即成功。
 
 #### 4.5.4 生产级部署要点清单
 
@@ -1866,6 +2088,34 @@ sudo crictl ps --name app
 CID=$(sudo crictl ps --name app -q | head -1)
 sudo crictl logs --tail 20 "$CID"
 ```
+
+<a id="48-第二天下午授课建议"></a>
+
+### 4.8 第二天下午授课建议（讲师用）
+
+> 下午约 3h；内容较多时**压缩概览、保证实操**。下列「可选」章节可跳过或改为课后阅读。
+
+| 时段      | 内容                                                                                                                                                                        | 类型          |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| 0:00–0:25 | 4.1 ConfigMap/Secret + [4.1.2 热更新](#412-configmap-更新与-pod-生效)                                                                                                       | **必讲**      |
+| 0:25–0:55 | 4.2 滚动更新、RS/revision、探针 + [探针误杀实验](#实验探针误杀-vs-readiness-摘流)                                                                                           | **必讲**      |
+| 0:55–1:10 | [发布前自检清单](#发布前-yaml-自检清单最佳实践) + 休息                                                                                                                      | **必讲**      |
+| 1:10–1:25 | [4.3.1 四件套](#431-新手排障四件套) + [E.3 排障演练](#e3-排障专项实操)                                                                                                      | **必讲**      |
+| 1:25–1:40 | [集群内 DNS](#实验集群内-dns-访问-service)                                                                                                                                  | **必讲**      |
+| 1:40–2:30 | 4.5 metrics-server → Prometheus → Loki/Fluent Bit                                                                                                                           | **必讲**      |
+| 2:30–2:45 | 4.6 综合闭环 或 [附录 F.6 迷你闭环](#f6-课后练习用-ai-完成一次迷你闭环)                                                                                                     | **必讲**      |
+| 2:45–3:00 | 4.7 收束 + 课堂讨论 + 附录 D 错题讲评                                                                                                                                       | **必讲**      |
+| 穿插/替换 | 4.4 扩展生态、4.5.4 生产清单、4.5.5 AIOps                                                                                                                                   | 各 ≤5min 概览 |
+| 时间充裕  | [port-forward](#可选kubectl-port-forward-本机调试)、[Job](#可选多容器-pod-日志与-job-速览)、[OOM](#可选resources-与-oom-现象)、[Grafana](#可选grafana-接入prometheus--loki) | **可选**      |
+
+**课堂讨论题库**（不必全讲，挑 3～5 个）：
+
+1. 为什么 K8S 不用 `docker run` 管 Pod？（CRI / kubelet）
+2. ConfigMap 和 Secret 能互换吗？base64 是加密吗？
+3. 单节点实验集群与生产最大差别？（HA、多节点调度、真实存储）
+4. 日志写文件 vs stdout，对 Loki 采集有何影响？
+5. AI 生成的 YAML 上线前必须检查什么？（附录 F）
+6. 什么时候不必上 K8S？（4.7）
 
 ### 4.7 研发场景收束：何时引入 K8S
 
@@ -2216,12 +2466,14 @@ kubectl uncordon <node>
 12. 滚动更新中 `maxUnavailable: 0` 的含义？
 13. 列出 Metrics / Logs / Traces 在本课实验环境中的对应组件。
 14. Pod Pending、ImagePullBackOff、CrashLoopBackOff 各先查什么？
+15. 改 ConfigMap 的 env 引用后，为什么必须 `rollout restart`？
+16. `kubectl port-forward` 和 NodePort 分别适合什么场景？
 
 **场景题**
 
-15. Prometheus Target 显示 `node-exporter` DOWN，可能原因与修复步骤？
-16. Fluent Bit 改 ConfigMap 后 Loki 查不到新日志，应检查什么？
-17. 把 `kubectl describe pod` Events + `kubectl logs` 片段交给 AI 分析时，提示词应包含哪些信息？
+17. Prometheus Target 显示 `node-exporter` DOWN，可能原因与修复步骤？
+18. Fluent Bit 改 ConfigMap 后 Loki 查不到新日志，应检查什么？
+19. 把 `kubectl describe pod` Events + `kubectl logs` 片段交给 AI 分析时，提示词应包含哪些信息？
 
 ---
 
@@ -2239,6 +2491,8 @@ kubectl uncordon <node>
 | 8    | Sidecar（1.33）与普通 container 的差异                   | 新特性         |
 | 9    | 实验网 NodePort 为什么要用节点 IP 而不是 127.0.0.1？     | 网络实践       |
 | 10   | 为什么说「不必为了云原生而云原生」？                     | 架构判断       |
+| 11   | rollout restart 与改镜像滚动发布有何异同？               | 配置发布       |
+| 12   | 集群内应用互访用 DNS 还是 NodePort？                     | 网络           |
 
 ---
 
@@ -2266,8 +2520,11 @@ kubectl uncordon <node>
 
 **D.4**：1-B 2-B 3-B 4-B 5-B | 6-对 7-对 8-对 9-对 10-错\
 13-metrics-server/Prometheus/node-exporter；Fluent Bit/Loki；Trace 本课未展开\
-15-无 Service、网络、exporter 未起、Prometheus 配置错、等 scrape 间隔\
-16-`kubectl rollout restart ds/fluent-bit`；OUTPUT 配置；Loki 是否 ready
+15-env 启动时注入，需 rollout restart 新 Pod\
+16-port-forward 本机调试；NodePort 集群外经节点 IP\
+17-无 Service、exporter 未起、scrape 配置错、等待 scrape\
+18-rollout restart ds/fluent-bit；OUTPUT 指向 Loki；Loki ready\
+19-现象、Events、logs、环境版本、已尝试命令
 
 </details>
 
@@ -2294,20 +2551,37 @@ kubectl uncordon <node>
 
 ### E.2 第 2 天实操路线
 
-| 序号  | 实操名称          | 目标                | 关键命令 / 文件                                  | 验证标准                                  | 章节  |
-| ----- | ----------------- | ------------------- | ------------------------------------------------ | ----------------------------------------- | ----- |
-| E2-1  | DaemonSet         | 每节点一个 Agent    | `src/class05/daemonset.yaml`                     | `kubectl get ds -n monitoring` READY=1    | 3.1   |
-| E2-2  | StatefulSet 行为  | 稳定序号与有序扩缩  | `statefulset.yaml`；delete pod；scale            | 重建同名；0→1→2 顺序                      | 3.1   |
-| E2-3  | PV/PVC 持久化     | 数据跨 Pod 生命周期 | `pvc-demo.yaml` + hostPath 准备                  | 重建后 `cat /data/test.txt` 仍为 hello-pv | 3.2   |
-| E2-4  | 污点与容忍        | 理解调度排斥        | `kubectl taint` + 两个对比 Pod                   | 无 toleration Pending；实验后 untaint     | 3.3   |
-| E2-5  | ConfigMap 注入    | 非敏感配置外置      | `configmap.yaml` + Deployment env/volume         | 容器内能读到配置                          | 4.1   |
-| E2-6  | 滚动更新与回滚    | 发布闭环            | `set image` / `rollout status` / `rollout undo`  | 版本切换可访问；可回滚                    | 4.2   |
-| E2-7  | 健康探针          | 理解三种探针        | `deployment-v2.yaml` 含探针                      | 故意改错端口观察 readiness 行为（可选）   | 4.2   |
-| E2-8  | metrics-server    | `kubectl top`       | 官方 manifest + `metrics-server-patch.yaml`      | `kubectl top nodes` 有数据                | 4.5.2 |
-| E2-9  | Prometheus        | Pull 抓取 exporter  | `prometheus.yaml`                                | Targets UP；`up{job="node-exporter"}==1`  | 4.5.2 |
-| E2-10 | Loki + Fluent Bit | 日志采集与查询      | `loki.yaml` + `fluent-bit.yaml`                  | LogQL `{app="hello-python"}` 有访问日志   | 4.5.3 |
-| E2-11 | 三层日志对照      | 建立排障直觉        | `kubectl logs` / `/var/log/pods` / `crictl logs` | 三条路径看到同源日志                      | 4.5.3 |
-| E2-12 | 综合发布闭环      | 串讲全流程          | `configmap` + `deployment-v2` + `service`        | build/save/load → apply → curl → 回滚     | 4.6   |
+| 序号  | 实操名称          | 目标                | 关键命令 / 文件                                   | 验证标准                                  | 章节  |
+| ----- | ----------------- | ------------------- | ------------------------------------------------- | ----------------------------------------- | ----- |
+| E2-1  | DaemonSet         | 每节点一个 Agent    | `src/class05/daemonset.yaml`                      | `kubectl get ds -n monitoring` READY=1    | 3.1   |
+| E2-2  | StatefulSet 行为  | 稳定序号与有序扩缩  | `statefulset.yaml`；delete pod；scale             | 重建同名；0→1→2 顺序                      | 3.1   |
+| E2-3  | PV/PVC 持久化     | 数据跨 Pod 生命周期 | `pvc-demo.yaml` + hostPath 准备                   | 重建后 `cat /data/test.txt` 仍为 hello-pv | 3.2   |
+| E2-4  | 污点与容忍        | 理解调度排斥        | `kubectl taint` + 两个对比 Pod                    | 无 toleration Pending；实验后 untaint     | 3.3   |
+| E2-5  | ConfigMap 注入    | 非敏感配置外置      | `configmap.yaml` + Deployment env/volume          | 容器内能读到配置                          | 4.1   |
+| E2-5b | ConfigMap 热更新  | 理解 restart 必要   | `edit configmap` + `rollout restart`              | `printenv NAME` 为新值                    | 4.1.2 |
+| E2-6  | 滚动更新与回滚    | 发布闭环            | `set image` / `rollout status` / `rollout undo`   | 版本切换可访问；可回滚                    | 4.2   |
+| E2-6b | RS 与 revision    | 理解 rollout 本质   | `kubectl get rs` / `rollout history`              | 能看到多 revision 与对应 RS               | 4.2   |
+| E2-7  | 健康探针          | 理解三种探针        | `deployment-v2.yaml` 含探针                       | 探针误杀实验：liveness 错端口 → 恢复      | 4.2   |
+| E2-7b | 发布自检清单      | 上线前习惯          | 对照 4.2 检查表逐项勾选                           | 至少发现 1 项自己 YAML 中的隐患           | 4.2   |
+| E2-8b | 排障四件套        | 肌肉记忆            | get → describe → logs → endpointslices            | 10 分钟内定位 E.3 注入故障之一            | 4.3.1 |
+| E2-8c | 集群内 DNS        | Service 集群内访问  | `wget hello-python-svc.default.svc.cluster.local` | 返回 Hello 页面                           | 4.3.1 |
+| E2-8  | metrics-server    | `kubectl top`       | 官方 manifest + `metrics-server-patch.yaml`       | `kubectl top nodes` 有数据                | 4.5.2 |
+| E2-9  | Prometheus        | Pull 抓取 exporter  | `prometheus.yaml`                                 | Targets UP；`up{job="node-exporter"}==1`  | 4.5.2 |
+| E2-10 | Loki + Fluent Bit | 日志采集与查询      | `loki.yaml` + `fluent-bit.yaml`                   | LogQL `{app="hello-python"}` 有访问日志   | 4.5.3 |
+| E2-11 | 三层日志对照      | 建立排障直觉        | `kubectl logs` / `/var/log/pods` / `crictl logs`  | 三条路径看到同源日志                      | 4.5.3 |
+| E2-12 | 综合发布闭环      | 串讲全流程          | `configmap` + `deployment-v2` + `service`         | build/save/load → apply → curl → 回滚     | 4.6   |
+
+**可选加练**（见各节「可选」标记）
+
+| 序号    | 实操名称     | 章节  |
+| ------- | ------------ | ----- |
+| E2-OPT1 | port-forward | 4.3   |
+| E2-OPT2 | Job 速览     | 4.2   |
+| E2-OPT3 | OOM 现象观察 | 4.2   |
+| E2-OPT4 | 多容器 logs  | 4.2   |
+| E2-OPT5 | Grafana 大盘 | 4.5.3 |
+
+<a id="e3-排障专项实操"></a>
 
 ### E.3 排障专项实操（建议 2 人一组）
 
@@ -2319,6 +2593,8 @@ kubectl uncordon <node>
 | F-4  | 节点打污点未清理            | 新 Pod 全 Pending     | describe pod；taint -              |
 | F-5  | Fluent Bit 未 restart       | Loki 无新日志         | rollout restart ds                 |
 | F-6  | curl 127.0.0.1:nodePort     | 「Service 坏了」误判  | 改用节点 IP                        |
+| F-7  | 改 ConfigMap 未 restart     | 页面仍显示旧配置      | `rollout restart`；对比 printenv   |
+| F-8  | liveness 端口故意改错       | CrashLoopBackOff      | 四件套 + 修回探针端口              |
 
 ### E.4 知识点串联图（自检用）
 
